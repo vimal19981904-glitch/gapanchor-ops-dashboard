@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Finance ────────────────────────────────────────
+model Transaction {
+  id              String   @id @default(cuid())
+  date            DateTime
+  type            String   // "income" | "expense"
+  sourceOrCategory String
+  platform        String?  // Manhattan WMS, Blue Yonder, Kinaxis, SAP
+  amount          Float
+  paymentMethod   String   // UPI, Cash, Bank Transfer, Credit Card
+  notes           String?
+  quarter         String   // Q1, Q2, Q3, Q4
+  year            Int
+  origin          String   @default("manual") // "manual" | "outlook_email" | "auto_sync"
+  outlookMessageId String? // Graph API message ID if parsed from email
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── Training Ops ───────────────────────────────────
+model Session {
+  id               String   @id @default(cuid())
+  title            String
+  platform         String   // Manhattan WMS, Blue Yonder, Kinaxis, SAP S/4HANA
+  trainer          String   @default("Arul Xavier")
+  participantsCount Int     @default(0)
+  date             DateTime
+  time             String?
+  status           String   @default("Scheduled") // Scheduled, In Progress, Completed
+  quarter          String
+  location         String?
+  calendarEventId  String?  // Outlook calendar event ID
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ─── WhatsApp Comms / Enquiries ─────────────────────
+model Enquiry {
+  id                String    @id @default(cuid())
+  participantName   String
+  email             String?
+  phone             String
+  country           String?
+  serviceType       String?
+  trainingType      String?
+  topic             String
+  lastMessage       String?
+  messageTimestamp   DateTime
+  dateSubmitted     DateTime?
+  receivedDate      DateTime?
+  leadQuality       String    @default("Unrated") // Unrated, High, Medium, Low
+  contactStatus     String    @default("Pending") // Pending, Talked, In Touch, Converted, Lost
+  isStale           Boolean   @default(false)
+  status            String    @default("Open") // Open, Active, Action Required, Processed, Resolved
+  staleReason       String?
+  processedAt       DateTime? // When "Process" button was clicked
+  processedNotes    String?   // Notes added during processing
+  source            String    @default("whatsapp") // whatsapp, manual, outlook, excel
+  whatsappMessageId String?   // WhatsApp Cloud API or Outlook message ID
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ─── Dev Progress ───────────────────────────────────
+model DevLog {
+  id          String   @id @default(cuid())
+  quarter     String
+  title       String
+  type        String   @default("feature") // feature, fix, infra
+  description String
+  date        DateTime
+  shippedBy   String   @default("Antigravity Team")
+  commitSha   String?  // GitHub commit SHA if from API
+  prNumber    Int?     // GitHub PR number
+  createdAt   DateTime @default(now())
+}
+
+// ─── Integration Config (runtime state) ─────────────
+model IntegrationConfig {
+  id          String   @id @default(cuid())
+  service     String   @unique // "microsoft_graph" | "whatsapp" | "github"
+  connected   Boolean  @default(false)
+  metadata    String?  // JSON string with service-specific config
+  lastSynced  DateTime?
+  updatedAt   DateTime @updatedAt
+}
