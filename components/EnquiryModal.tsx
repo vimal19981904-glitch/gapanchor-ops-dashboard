@@ -208,13 +208,27 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
           </div>
 
           <div className="flex items-center space-x-3">
+            {/* Hidden file input for Excel upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleSyncExcel(file);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+            />
             <button
-              onClick={handleSyncExcel}
+              onClick={() => fileInputRef.current?.click()}
               disabled={syncing}
               className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Syncing Excel...' : 'Run Script & Sync Excel'}</span>
+              {syncing
+                ? <RefreshCw className="w-4 h-4 animate-spin" />
+                : <Upload className="w-4 h-4" />}
+              <span>{syncing ? 'Uploading & Syncing...' : 'Upload Excel & Sync'}</span>
             </button>
 
             <button
