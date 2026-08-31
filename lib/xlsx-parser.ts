@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import path from 'path';
 import fs from 'fs';
 
+// Local-only default paths – only work on developer machines, not in production
 export const DEFAULT_EXCEL_PATH = `C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\Desktop\\DemoEnquiry_Extracted.xlsx`;
 export const FALLBACK_EXCEL_PATH = `C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\Desktop\\DemoEnquiry_Dashboard_Final.xlsx`;
 export const LIVE_EXCEL_PATH = `C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\Desktop\\DemoEnquiry_Extracted_Live.xlsx`;

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   X, RefreshCw, Search, Filter, Globe, BookOpen, MessageSquare, Phone,
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
-  Send, Calendar, ArrowUpDown, ArrowLeft, Building2, User, Eye, FileText, ExternalLink
+  Send, Calendar, ArrowUpDown, ArrowLeft, Building2, User, Eye, FileText,
+  ExternalLink, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,6 +35,8 @@ export default function EnquiriesPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [summary, setSummary] = useState<any>(null);
 
   // Filters
@@ -72,16 +75,32 @@ export default function EnquiriesPage() {
     fetchEnquiries();
   }, []);
 
-  const handleSyncExcel = async () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file) handleSyncExcel(file);
+  };
+
+  const handleSyncExcel = async (file?: File) => {
+    const fileToUpload = file || selectedFile;
+    if (!fileToUpload) {
+      // Open file picker
+      fileInputRef.current?.click();
+      return;
+    }
     setSyncing(true);
     try {
-      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST' });
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
       const json = await res.json();
       if (json.success) {
-        toast.success(json.message || 'Excel & Outlook synced successfully!');
+        toast.success(json.message || 'Excel synced successfully!');
         setEnquiries(json.enquiries || []);
         if (json.summary) setSummary(json.summary);
         setLastSynced(new Date().toISOString());
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
         toast.error(`Sync failed: ${json.error}`);
       }
@@ -204,20 +223,30 @@ export default function EnquiriesPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Auto-synchronized with Outlook Demo Enquiries (`DemoEnquiry_Extracted.xlsx`) & DB Persistence
+                Upload your Excel file to sync enquiries into the database
                 {lastSynced && <span className="ml-2 text-slate-500">• Last Synced: {new Date(lastSynced).toLocaleTimeString()}</span>}
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <button
-              onClick={handleSyncExcel}
+              onClick={() => fileInputRef.current?.click()}
               disabled={syncing}
               className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Syncing Outlook & Excel...' : 'Run Script & Sync Excel'}</span>
+              {syncing
+                ? <RefreshCw className="w-4 h-4 animate-spin" />
+                : <Upload className="w-4 h-4" />}
+              <span>{syncing ? 'Uploading & Syncing...' : 'Upload Excel & Sync'}</span>
             </button>
           </div>
         </div>

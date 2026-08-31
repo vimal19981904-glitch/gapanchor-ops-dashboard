@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X, RefreshCw, Search, Filter, Globe, BookOpen, MessageSquare, Phone,
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
-  Send, Calendar, ArrowUpDown
+  Send, Calendar, ArrowUpDown, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +40,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -76,10 +77,16 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
     }
   }, [isOpen]);
 
-  const handleSyncExcel = async () => {
+  const handleSyncExcel = async (file?: File) => {
+    if (!file) {
+      fileInputRef.current?.click();
+      return;
+    }
     setSyncing(true);
     try {
-      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST' });
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
       const json = await res.json();
       if (json.success) {
         toast.success(json.message || 'Excel file synced successfully!');
@@ -87,6 +94,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
         if (json.summary) setSummary(json.summary);
         setLastSynced(new Date().toISOString());
         if (onRefreshParent) onRefreshParent();
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
         toast.error(`Sync failed: ${json.error}`);
       }

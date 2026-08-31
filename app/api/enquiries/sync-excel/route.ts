@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { parseEnquiryExcel, DEFAULT_EXCEL_PATH } from '@/lib/xlsx-parser';
-import { exec } from 'child_process';
-import util from 'util';
-import fs from 'fs';
+import { parseEnquiryExcel } from '@/lib/xlsx-parser';
+import { writeFile } from 'fs/promises';
 import path from 'path';
-
-const execPromise = util.promisify(exec);
+import os from 'os';
 
 export async function GET(request: Request) {
   try {
@@ -56,32 +53,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const filePath = body.filePath || DEFAULT_EXCEL_PATH;
-    const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
-    const localScriptPath = path.join(process.cwd(), 'scripts', 'extract_outlook_enquiries.py');
-
-    let scriptOutput = '';
-    const scriptToRun = fs.existsSync(userScriptPath) ? userScriptPath : (fs.existsSync(localScriptPath) ? localScriptPath : null);
-
-    if (scriptToRun) {
-      try {
-        const { stdout } = await execPromise(`python "${scriptToRun}"`, {
-          cwd: path.dirname(scriptToRun),
-          maxBuffer: 20 * 1024 * 1024,
-        });
-        scriptOutput = stdout;
-      } catch (err: any) {
-        console.warn('Outlook python script execution note:', err.message);
-      }
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
     }
 
-    const { enquiries, summary, totalParsed } = parseEnquiryExcel(filePath);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const tempPath = path.join(os.tmpdir(), `enquiries-${Date.now()}.xlsx`);
+    await writeFile(tempPath, buffer);
+
+    const { enquiries, summary, totalParsed } = parseEnquiryExcel(tempPath);
 
     let insertedCount = 0;
     let updatedCount = 0;
 
-    // Fast in-memory lookup map
     const existingEnquiries = await prisma.enquiry.findMany();
     const emailMap = new Map<string, typeof existingEnquiries[0]>();
     const nameMap = new Map<string, typeof existingEnquiries[0]>();
@@ -149,26 +137,24 @@ export async function POST(request: Request) {
     }
 
     if (txOperations.length > 0) {
-      // Execute transaction in chunks of 50 to avoid SQLite limits
       const chunkSize = 50;
       for (let i = 0; i < txOperations.length; i += chunkSize) {
         await prisma.$transaction(txOperations.slice(i, i + chunkSize));
       }
     }
 
-    // Save integration metadata
     await prisma.integrationConfig.upsert({
       where: { service: 'excel_enquiries' },
       create: {
         service: 'excel_enquiries',
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
+        metadata: JSON.stringify({ summary, totalParsed, insertedCount, updatedCount }),
       },
       update: {
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
+        metadata: JSON.stringify({ summary, totalParsed, insertedCount, updatedCount }),
       },
     });
 
@@ -184,7 +170,6 @@ export async function POST(request: Request) {
       updatedCount,
       summary,
       enquiries: allEnquiries,
-      scriptOutput,
     });
   } catch (error: any) {
     console.error('Excel sync error:', error);
