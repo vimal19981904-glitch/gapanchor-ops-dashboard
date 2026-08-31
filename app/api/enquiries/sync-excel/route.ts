@@ -53,11 +53,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+    // Parse multipart form-data (file upload) - gracefully handle missing file
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json({
+        success: false,
+        error: 'Please use the "Upload Excel & Sync" button to select and upload your Excel file. Direct POST without a file is not supported in production.',
+      }, { status: 400 });
+    }
+
+    const file = formData.get('file') as File | null;
+    if (!file || file.size === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'No Excel file received. Please click "Upload Excel & Sync" and select your .xlsx file.',
+      }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
