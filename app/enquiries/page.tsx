@@ -82,20 +82,19 @@ export default function EnquiriesPage() {
   };
 
   const handleSyncExcel = async (file?: File) => {
-    const fileToUpload = file || selectedFile;
-    if (!fileToUpload) {
-      // Open file picker
-      fileInputRef.current?.click();
-      return;
-    }
     setSyncing(true);
     try {
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/enquiries/sync-excel', { method: 'POST' });
+      }
       const json = await res.json();
       if (json.success) {
-        toast.success(json.message || 'Excel synced successfully!');
+        toast.success(json.message || 'Outlook & Excel synced successfully!');
         setEnquiries(json.enquiries || []);
         if (json.summary) setSummary(json.summary);
         setLastSynced(new Date().toISOString());
@@ -230,13 +229,21 @@ export default function EnquiriesPage() {
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => handleSyncExcel()}
               disabled={syncing}
-              className="group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-60 overflow-hidden cursor-pointer"
+              className="group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer"
             >
               <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-              {syncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              <span>{syncing ? 'Uploading & Syncing…' : 'Upload Excel & Sync'}</span>
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Extracting & Syncing…' : 'Sync Outlook & Excel'}</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={syncing}
+              title="Upload custom Excel file"
+              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
             </button>
           </div>
         </div>

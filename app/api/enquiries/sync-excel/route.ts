@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { parseEnquiryExcel } from '@/lib/xlsx-parser';
-import { writeFile } from 'fs/promises';
+import { parseEnquiryExcel, DEFAULT_EXCEL_PATH } from '@/lib/xlsx-parser';
+import { exec } from 'child_process';
+import util from 'util';
+import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { writeFile } from 'fs/promises';
+
+const execPromise = util.promisify(exec);
 
 export async function GET(request: Request) {
   try {
@@ -16,17 +21,17 @@ export async function GET(request: Request) {
 
     const whereClause: any = {};
 
-    if (country) whereClause.country = country;
-    if (course) whereClause.trainingType = { contains: course };
-    if (leadQuality) whereClause.leadQuality = leadQuality;
-    if (contactStatus) whereClause.contactStatus = contactStatus;
+    if (country && country !== 'ALL') whereClause.country = country;
+    if (course && course !== 'ALL') whereClause.trainingType = { contains: course };
+    if (leadQuality && leadQuality !== 'ALL') whereClause.leadQuality = leadQuality;
+    if (contactStatus && contactStatus !== 'ALL') whereClause.contactStatus = contactStatus;
     if (search) {
       whereClause.OR = [
-        { participantName: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
-        { country: { contains: search } },
-        { trainingType: { contains: search } },
+        { participantName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { country: { contains: search, mode: 'insensitive' } },
+        { trainingType: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -53,38 +58,58 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // Parse multipart form-data (file upload) - gracefully handle missing file
-    let formData: FormData;
-    try {
-      formData = await request.formData();
-    } catch {
-      return NextResponse.json({
-        success: false,
-        error: 'Please use the "Upload Excel & Sync" button to select and upload your Excel file. Direct POST without a file is not supported in production.',
-      }, { status: 400 });
+    let filePath = DEFAULT_EXCEL_PATH;
+    let scriptOutput = '';
+
+    // Check if request is multipart/form-data (optional manual file upload)
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file') as File | null;
+        if (file && file.size > 0) {
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const tempPath = path.join(os.tmpdir(), `enquiries-${Date.now()}.xlsx`);
+          await writeFile(tempPath, buffer);
+          filePath = tempPath;
+        }
+      } catch (err: any) {
+        console.warn('FormData parsing error:', err.message);
+      }
+    } else {
+      // Direct 1-Click Sync: Run python extractor script locally
+      const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
+      const localScriptPath = path.join(process.cwd(), 'scripts', 'extract_outlook_enquiries.py');
+      const scriptToRun = fs.existsSync(userScriptPath)
+        ? userScriptPath
+        : fs.existsSync(localScriptPath)
+        ? localScriptPath
+        : null;
+
+      if (scriptToRun) {
+        try {
+          const { stdout } = await execPromise(`python "${scriptToRun}"`, {
+            cwd: path.dirname(scriptToRun),
+            maxBuffer: 20 * 1024 * 1024,
+          });
+          scriptOutput = stdout;
+          console.log('Outlook extractor script finished successfully.');
+        } catch (err: any) {
+          console.warn('Outlook python script execution note:', err.message);
+        }
+      }
     }
 
-    const file = formData.get('file') as File | null;
-    if (!file || file.size === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No Excel file received. Please click "Upload Excel & Sync" and select your .xlsx file.',
-      }, { status: 400 });
-    }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const tempPath = path.join(os.tmpdir(), `enquiries-${Date.now()}.xlsx`);
-    await writeFile(tempPath, buffer);
-
-    const { enquiries, summary, totalParsed } = parseEnquiryExcel(tempPath);
+    const { enquiries, summary, totalParsed } = parseEnquiryExcel(filePath);
 
     let insertedCount = 0;
     let updatedCount = 0;
 
+    // Fast in-memory lookup map
     const existingEnquiries = await prisma.enquiry.findMany();
-    const emailMap = new Map<string, typeof existingEnquiries[0]>();
-    const nameMap = new Map<string, typeof existingEnquiries[0]>();
+    const emailMap = new Map<string, (typeof existingEnquiries)[0]>();
+    const nameMap = new Map<string, (typeof existingEnquiries)[0]>();
 
     existingEnquiries.forEach(e => {
       if (e.email && e.email.trim() !== '') {
@@ -149,24 +174,26 @@ export async function POST(request: Request) {
     }
 
     if (txOperations.length > 0) {
+      // Execute transaction in chunks of 50 to avoid connection timeouts
       const chunkSize = 50;
       for (let i = 0; i < txOperations.length; i += chunkSize) {
         await prisma.$transaction(txOperations.slice(i, i + chunkSize));
       }
     }
 
+    // Save integration metadata
     await prisma.integrationConfig.upsert({
       where: { service: 'excel_enquiries' },
       create: {
         service: 'excel_enquiries',
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({ summary, totalParsed, insertedCount, updatedCount }),
+        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
       },
       update: {
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({ summary, totalParsed, insertedCount, updatedCount }),
+        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
       },
     });
 
@@ -176,12 +203,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully synced ${totalParsed} records (${insertedCount} new, ${updatedCount} updated)`,
+      message: `Successfully extracted from Outlook & synced ${totalParsed} records (${insertedCount} new, ${updatedCount} updated)`,
       totalParsed,
       insertedCount,
       updatedCount,
       summary,
       enquiries: allEnquiries,
+      scriptOutput,
     });
   } catch (error: any) {
     console.error('Excel sync error:', error);

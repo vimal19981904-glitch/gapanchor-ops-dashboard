@@ -78,18 +78,19 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
   }, [isOpen]);
 
   const handleSyncExcel = async (file?: File) => {
-    if (!file) {
-      fileInputRef.current?.click();
-      return;
-    }
     setSyncing(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
+      let res: Response;
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        res = await fetch('/api/enquiries/sync-excel', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/enquiries/sync-excel', { method: 'POST' });
+      }
       const json = await res.json();
       if (json.success) {
-        toast.success(json.message || 'Excel file synced successfully!');
+        toast.success(json.message || 'Outlook & Excel synced successfully!');
         setEnquiries(json.enquiries || []);
         if (json.summary) setSummary(json.summary);
         setLastSynced(new Date().toISOString());
@@ -221,14 +222,20 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
               }}
             />
             <button
+              onClick={() => handleSyncExcel()}
+              disabled={syncing}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Extracting & Syncing...' : 'Sync Outlook & Excel'}</span>
+            </button>
+            <button
               onClick={() => fileInputRef.current?.click()}
               disabled={syncing}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50 cursor-pointer"
+              title="Upload custom Excel file"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
-              {syncing
-                ? <RefreshCw className="w-4 h-4 animate-spin" />
-                : <Upload className="w-4 h-4" />}
-              <span>{syncing ? 'Uploading & Syncing...' : 'Upload Excel & Sync'}</span>
+              <Upload className="w-4 h-4" />
             </button>
 
             <button
