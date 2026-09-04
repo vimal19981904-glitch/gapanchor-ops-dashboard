@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     let filePath = DEFAULT_EXCEL_PATH;
     let scriptOutput = '';
 
-    // Check if request is multipart/form-data (optional manual file upload)
+    // Check if request is multipart/form-data (manual file upload)
     const contentType = request.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       try {
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         console.warn('FormData parsing error:', err.message);
       }
     } else {
-      // Direct 1-Click Sync: Run python extractor script locally
+      // Direct 1-Click Sync: Run python extractor script locally if present
       const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
       const localScriptPath = path.join(process.cwd(), 'scripts', 'extract_outlook_enquiries.py');
       const scriptToRun = fs.existsSync(userScriptPath)
@@ -101,113 +101,132 @@ export async function POST(request: Request) {
       }
     }
 
-    const { enquiries, summary, totalParsed } = parseEnquiryExcel(filePath);
-
+    let enquiries: any[] = [];
+    let summary: any = null;
+    let totalParsed = 0;
     let insertedCount = 0;
     let updatedCount = 0;
+    let isExcelParsed = false;
 
-    // Fast in-memory lookup map
-    const existingEnquiries = await prisma.enquiry.findMany();
-    const emailMap = new Map<string, (typeof existingEnquiries)[0]>();
-    const nameMap = new Map<string, (typeof existingEnquiries)[0]>();
-
-    existingEnquiries.forEach(e => {
-      if (e.email && e.email.trim() !== '') {
-        emailMap.set(e.email.trim().toLowerCase(), e);
-      }
-      if (e.participantName && e.messageTimestamp) {
-        const key = `${e.participantName.trim().toLowerCase()}_${new Date(e.messageTimestamp).getTime()}`;
-        nameMap.set(key, e);
-      }
-    });
-
-    const txOperations: any[] = [];
-
-    for (const item of enquiries) {
-      const emailKey = item.email ? item.email.trim().toLowerCase() : '';
-      const nameKey = `${item.participantName.trim().toLowerCase()}_${item.messageTimestamp ? new Date(item.messageTimestamp).getTime() : 0}`;
-
-      const existing = (emailKey && emailMap.get(emailKey)) || nameMap.get(nameKey);
-
-      if (existing) {
-        txOperations.push(
-          prisma.enquiry.update({
-            where: { id: existing.id },
-            data: {
-              phone: item.phone || existing.phone,
-              country: item.country || existing.country,
-              serviceType: item.serviceType || existing.serviceType,
-              trainingType: item.trainingType,
-              topic: item.topic || item.trainingType,
-              lastMessage: item.lastMessage || existing.lastMessage,
-              dateSubmitted: item.dateSubmitted || existing.dateSubmitted,
-              receivedDate: item.receivedDate || existing.receivedDate,
-              messageTimestamp: item.messageTimestamp,
-            },
-          })
-        );
-        updatedCount++;
-      } else {
-        txOperations.push(
-          prisma.enquiry.create({
-            data: {
-              participantName: item.participantName,
-              email: item.email,
-              phone: item.phone,
-              country: item.country,
-              serviceType: item.serviceType,
-              trainingType: item.trainingType,
-              topic: item.topic,
-              lastMessage: item.lastMessage,
-              dateSubmitted: item.dateSubmitted,
-              receivedDate: item.receivedDate,
-              messageTimestamp: item.messageTimestamp,
-              source: 'excel',
-              status: 'Open',
-              leadQuality: 'Unrated',
-              contactStatus: 'Pending',
-            },
-          })
-        );
-        insertedCount++;
-      }
+    try {
+      const parsed = parseEnquiryExcel(filePath);
+      enquiries = parsed.enquiries;
+      summary = parsed.summary;
+      totalParsed = parsed.totalParsed;
+      isExcelParsed = true;
+    } catch (parseErr: any) {
+      console.warn('Excel parse note (running in cloud environment):', parseErr.message);
     }
 
-    if (txOperations.length > 0) {
-      // Execute transaction in chunks of 50 to avoid connection timeouts
-      const chunkSize = 50;
-      for (let i = 0; i < txOperations.length; i += chunkSize) {
-        await prisma.$transaction(txOperations.slice(i, i + chunkSize));
-      }
-    }
+    if (isExcelParsed && enquiries.length > 0) {
+      // Fast in-memory lookup map
+      const existingEnquiries = await prisma.enquiry.findMany();
+      const emailMap = new Map<string, (typeof existingEnquiries)[0]>();
+      const nameMap = new Map<string, (typeof existingEnquiries)[0]>();
 
-    // Save integration metadata
-    await prisma.integrationConfig.upsert({
-      where: { service: 'excel_enquiries' },
-      create: {
-        service: 'excel_enquiries',
-        connected: true,
-        lastSynced: new Date(),
-        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
-      },
-      update: {
-        connected: true,
-        lastSynced: new Date(),
-        metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
-      },
-    });
+      existingEnquiries.forEach(e => {
+        if (e.email && e.email.trim() !== '') {
+          emailMap.set(e.email.trim().toLowerCase(), e);
+        }
+        if (e.participantName && e.messageTimestamp) {
+          const key = `${e.participantName.trim().toLowerCase()}_${new Date(e.messageTimestamp).getTime()}`;
+          nameMap.set(key, e);
+        }
+      });
+
+      const txOperations: any[] = [];
+
+      for (const item of enquiries) {
+        const emailKey = item.email ? item.email.trim().toLowerCase() : '';
+        const nameKey = `${item.participantName.trim().toLowerCase()}_${item.messageTimestamp ? new Date(item.messageTimestamp).getTime() : 0}`;
+
+        const existing = (emailKey && emailMap.get(emailKey)) || nameMap.get(nameKey);
+
+        if (existing) {
+          txOperations.push(
+            prisma.enquiry.update({
+              where: { id: existing.id },
+              data: {
+                phone: item.phone || existing.phone,
+                country: item.country || existing.country,
+                serviceType: item.serviceType || existing.serviceType,
+                trainingType: item.trainingType,
+                topic: item.topic || item.trainingType,
+                lastMessage: item.lastMessage || existing.lastMessage,
+                dateSubmitted: item.dateSubmitted || existing.dateSubmitted,
+                receivedDate: item.receivedDate || existing.receivedDate,
+                messageTimestamp: item.messageTimestamp,
+              },
+            })
+          );
+          updatedCount++;
+        } else {
+          txOperations.push(
+            prisma.enquiry.create({
+              data: {
+                participantName: item.participantName,
+                email: item.email,
+                phone: item.phone,
+                country: item.country,
+                serviceType: item.serviceType,
+                trainingType: item.trainingType,
+                topic: item.topic,
+                lastMessage: item.lastMessage,
+                dateSubmitted: item.dateSubmitted,
+                receivedDate: item.receivedDate,
+                messageTimestamp: item.messageTimestamp,
+                source: 'excel',
+                status: 'Open',
+                leadQuality: 'Unrated',
+                contactStatus: 'Pending',
+              },
+            })
+          );
+          insertedCount++;
+        }
+      }
+
+      if (txOperations.length > 0) {
+        // Execute transaction in chunks of 50
+        const chunkSize = 50;
+        for (let i = 0; i < txOperations.length; i += chunkSize) {
+          await prisma.$transaction(txOperations.slice(i, i + chunkSize));
+        }
+      }
+
+      // Save integration metadata
+      await prisma.integrationConfig.upsert({
+        where: { service: 'excel_enquiries' },
+        create: {
+          service: 'excel_enquiries',
+          connected: true,
+          lastSynced: new Date(),
+          metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
+        },
+        update: {
+          connected: true,
+          lastSynced: new Date(),
+          metadata: JSON.stringify({ filePath, summary, totalParsed, insertedCount, updatedCount }),
+        },
+      });
+    }
 
     const allEnquiries = await prisma.enquiry.findMany({
       orderBy: { messageTimestamp: 'desc' },
     });
 
+    const config = await prisma.integrationConfig.findUnique({ where: { service: 'excel_enquiries' } });
+    const meta = config?.metadata ? JSON.parse(config.metadata) : null;
+
     return NextResponse.json({
       success: true,
-      message: `Successfully extracted from Outlook & synced ${totalParsed} records (${insertedCount} new, ${updatedCount} updated)`,
-      totalParsed,
+      message: isExcelParsed
+        ? `Successfully synced ${totalParsed} records (${insertedCount} new, ${updatedCount} updated)`
+        : `Refreshed ${allEnquiries.length} live database records. (For new Outlook extraction, run local sync or use file upload)`,
+      totalParsed: totalParsed || allEnquiries.length,
       insertedCount,
       updatedCount,
-      summary,
+      summary: summary || meta?.summary || null,
       enquiries: allEnquiries,
       scriptOutput,
     });
