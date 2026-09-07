@@ -845,8 +845,6 @@ export default function EnquiriesPage() {
             </div>
           </div>
         </div>
-          </div>
-        </div>
       )}
 
       {/* ── Assign Lead Modal ── */}
