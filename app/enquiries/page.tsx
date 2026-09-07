@@ -6,9 +6,11 @@ import {
   X, RefreshCw, Search, Filter, Globe, BookOpen, MessageSquare, Phone,
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
   Send, Calendar, ArrowUpDown, ArrowLeft, Building2, User, Eye, FileText,
-  ExternalLink, Upload
+  ExternalLink, Upload, ChevronLeft, ChevronRight, Clock, PhoneCall, XCircle,
+  Zap, ShieldAlert, Circle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import AssignLeadModal from '@/components/AssignLeadModal';
 
 interface Enquiry {
   id: string;
@@ -28,6 +30,128 @@ interface Enquiry {
   status: string; // Open, Action Required, Processed, Resolved
   source: string;
   processedNotes: string | null;
+  assignedToId?: string | null;
+  assignedToName?: string | null;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  'Pending': { label: 'Pending', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  'In Touch': { label: 'In Touch', icon: MessageSquare, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+  'Talked': { label: 'Talked', icon: PhoneCall, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
+  'Future': { label: 'Future', icon: Calendar, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+  'Converted': { label: 'Converted', icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  'Lost': { label: 'Lost', icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30' },
+};
+
+const QUALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  'High': { label: 'High Quality', icon: Star, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  'Medium': { label: 'Medium Quality', icon: Zap, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+  'Low': { label: 'Low Quality', icon: ShieldAlert, color: 'text-slate-400', bg: 'bg-slate-800/60', border: 'border-slate-700' },
+  'Unrated': { label: 'Unrated', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-900/50', border: 'border-slate-800' },
+};
+
+function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const current = STATUS_CONFIG[value] || STATUS_CONFIG['Pending'];
+  const Icon = current.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+      >
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>{current.label}</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 mt-1 w-36 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1 space-y-0.5 animate-[fadeIn_0.15s_ease]">
+          {Object.entries(STATUS_CONFIG).map(([key, config]) => {
+            const ItemIcon = config.icon;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { onChange(key); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  value === key ? 'bg-slate-800 text-white font-bold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <ItemIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                <span>{config.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const current = QUALITY_CONFIG[value] || QUALITY_CONFIG['Unrated'];
+  const Icon = current.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+      >
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>{current.label}</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 mt-1 w-40 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1 space-y-0.5 animate-[fadeIn_0.15s_ease]">
+          {Object.entries(QUALITY_CONFIG).map(([key, config]) => {
+            const ItemIcon = config.icon;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { onChange(key); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  value === key ? 'bg-slate-800 text-white font-bold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <ItemIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                <span>{config.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function EnquiriesPage() {
@@ -47,16 +171,32 @@ export default function EnquiriesPage() {
   const [qualityFilter, setQualityFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'quality'>('date_desc');
 
-  // Notes Drawer state
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
+
+  // Reset to page 1 when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy]);
+
+  // Notes & Assign Modal state
   const [editingEnquiry, setEditingEnquiry] = useState<Enquiry | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [selectedDetailEnquiry, setSelectedDetailEnquiry] = useState<Enquiry | null>(null);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignTargetEnquiry, setAssignTargetEnquiry] = useState<Enquiry | null>(null);
+
+  const openAssignModal = (enquiry: Enquiry) => {
+    setAssignTargetEnquiry(enquiry);
+    setAssignModalOpen(true);
+  };
 
   const fetchEnquiries = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/enquiries/sync-excel');
+      const res = await fetch('/api/enquiries/sync-excel', { cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
         setEnquiries(json.enquiries || []);
@@ -190,6 +330,14 @@ export default function EnquiriesPage() {
     });
   }, [enquiries, search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy]);
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredEnquiries.length / pageSize) || 1;
+
+  const paginatedEnquiries = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredEnquiries.slice(start, start + pageSize);
+  }, [filteredEnquiries, currentPage, pageSize]);
+
   // Stats calculation
   const totalCount = enquiries.length;
   const highQualityCount = enquiries.filter(e => e.leadQuality === 'High').length;
@@ -198,7 +346,7 @@ export default function EnquiriesPage() {
 
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans" style={{backgroundImage:'radial-gradient(ellipse at 20% 0%, rgba(6,182,212,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)'}}>
-      <div className="max-w-[1400px] mx-auto w-full px-4 md:px-8 py-6 space-y-5 flex-1 flex flex-col">
+      <div className="w-full max-w-full px-4 md:px-8 py-6 space-y-5 flex-1 flex flex-col">
 
         {/* ── Top Navigation Bar ── */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl">
@@ -251,8 +399,8 @@ export default function EnquiriesPage() {
         {/* ── KPI Metric Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Total Enquiries', value: summary?.totalEnquiries ?? totalCount, icon: MessageSquare, color: 'cyan', iconBg: 'bg-cyan-500/10', iconColor: 'text-cyan-400', glow: 'shadow-cyan-500/20', border: 'border-cyan-500/15' },
-            { label: 'Countries Reached', value: summary?.uniqueCountries ?? uniqueCountries.length, icon: Globe, color: 'emerald', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20', border: 'border-emerald-500/15' },
+            { label: 'Total Enquiries', value: totalCount, icon: MessageSquare, color: 'cyan', iconBg: 'bg-cyan-500/10', iconColor: 'text-cyan-400', glow: 'shadow-cyan-500/20', border: 'border-cyan-500/15' },
+            { label: 'Countries Reached', value: uniqueCountries.length, icon: Globe, color: 'emerald', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20', border: 'border-emerald-500/15' },
             { label: 'High Quality Leads', value: highQualityCount, icon: Star, color: 'amber', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400', glow: 'shadow-amber-500/20', border: 'border-amber-500/15', suffix: highQualityCount > 0 ? '🔥' : '' },
             { label: 'Talked / In Touch', value: talkedCount, icon: UserCheck, color: 'violet', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-400', glow: 'shadow-violet-500/20', border: 'border-violet-500/15', sub: `${pendingCount} pending` },
           ].map((card) => (
@@ -317,8 +465,8 @@ export default function EnquiriesPage() {
               {[
                 { value: courseFilter, onChange: setCourseFilter, options: [['ALL','All Courses'], ...uniqueCourses.map(c => [c, c])] },
                 { value: countryFilter, onChange: setCountryFilter, options: [['ALL',`All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
-                { value: qualityFilter, onChange: setQualityFilter, options: [['ALL','All Quality'], ['High','🔥 High'], ['Medium','⚡ Medium'], ['Low','❄️ Low'], ['Unrated','⚪ Unrated']] },
-                { value: statusFilter, onChange: setStatusFilter, options: [['ALL','All Statuses'], ['Pending','⏳ Pending'], ['In Touch','💬 In Touch'], ['Talked','📞 Talked'], ['Converted','✅ Converted'], ['Lost','❌ Lost']] },
+                { value: qualityFilter, onChange: setQualityFilter, options: [['ALL','All Quality'], ['High','💎 High Quality'], ['Medium','⚡ Medium Quality'], ['Low','🧊 Low Quality'], ['Unrated','⚪ Unrated']] },
+                { value: statusFilter, onChange: setStatusFilter, options: [['ALL','All Statuses'], ['Pending','⏳ Pending'], ['In Touch','💬 In Touch'], ['Talked','📞 Talked'], ['Future','🔮 Future'], ['Converted','💎 Converted'], ['Lost','❌ Lost']] },
               ].map((sel, i) => (
                 <select
                   key={i}
@@ -384,7 +532,7 @@ export default function EnquiriesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40">
-                  {filteredEnquiries.map(enquiry => (
+                  {paginatedEnquiries.map(enquiry => (
                     <tr key={enquiry.id} className="group hover:bg-slate-800/40 transition-all duration-150">
 
                       {/* Lead & Contact */}
@@ -435,41 +583,18 @@ export default function EnquiriesPage() {
 
                       {/* Contact Status */}
                       <td className="py-4 px-4">
-                        <select
+                        <StatusBadgeSelect
                           value={enquiry.contactStatus || 'Pending'}
-                          onChange={e => handleUpdateStatus(enquiry.id, { contactStatus: e.target.value })}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer transition-all appearance-none ${
-                            enquiry.contactStatus === 'Converted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : enquiry.contactStatus === 'Talked' || enquiry.contactStatus === 'In Touch' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                            : enquiry.contactStatus === 'Lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          }`}
-                        >
-                          <option value="Pending" className="bg-slate-900">⏳ Pending</option>
-                          <option value="In Touch" className="bg-slate-900">💬 In Touch</option>
-                          <option value="Talked" className="bg-slate-900">📞 Talked</option>
-                          <option value="Converted" className="bg-slate-900">✅ Converted</option>
-                          <option value="Lost" className="bg-slate-900">❌ Lost</option>
-                        </select>
+                          onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
+                        />
                       </td>
 
                       {/* Lead Quality */}
                       <td className="py-4 px-4">
-                        <select
+                        <QualityBadgeSelect
                           value={enquiry.leadQuality || 'Unrated'}
-                          onChange={e => handleUpdateStatus(enquiry.id, { leadQuality: e.target.value })}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer transition-all appearance-none ${
-                            enquiry.leadQuality === 'High' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : enquiry.leadQuality === 'Medium' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                            : enquiry.leadQuality === 'Low' ? 'bg-slate-700/80 text-slate-400 border-slate-600'
-                            : 'bg-slate-800/50 text-slate-500 border-slate-700'
-                          }`}
-                        >
-                          <option value="Unrated" className="bg-slate-900">⚪ Unrated</option>
-                          <option value="High" className="bg-slate-900">🔥 High</option>
-                          <option value="Medium" className="bg-slate-900">⚡ Medium</option>
-                          <option value="Low" className="bg-slate-900">❄️ Low</option>
-                        </select>
+                          onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
+                        />
                       </td>
 
                       {/* Notes */}
@@ -496,6 +621,15 @@ export default function EnquiriesPage() {
                             <Eye className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">View</span>
                           </button>
+
+                          <button
+                            onClick={() => openAssignModal(enquiry)}
+                            className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
+                            title="Assign to Employee"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </button>
+
                           {enquiry.phone && (
                             <a href={`https://wa.me/${enquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer" title="WhatsApp">
                               <MessageSquare className="w-3.5 h-3.5" />
@@ -515,13 +649,60 @@ export default function EnquiriesPage() {
             </div>
           )}
 
-          {/* Footer */}
-          <div className="px-5 py-3 border-t border-slate-800/60 bg-slate-950/40 flex items-center justify-between text-xs text-slate-500 flex-shrink-0">
-            <span className="font-medium">{filteredEnquiries.length} of {totalCount} enquiries</span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Prisma DB Active</span>
-            </span>
+          {/* Pagination & Footer */}
+          <div className="px-5 py-3 border-t border-slate-800/60 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="font-medium text-slate-300">
+                Showing {filteredEnquiries.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} – {Math.min(currentPage * pageSize, filteredEnquiries.length)} of {filteredEnquiries.length} enquiries
+                {filteredEnquiries.length !== totalCount && <span className="text-slate-500 ml-1">(filtered from {totalCount} total)</span>}
+              </span>
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <span className="text-slate-500">Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                  className="bg-slate-900 border border-slate-700/60 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none cursor-pointer hover:border-slate-500 transition-colors"
+                >
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
+                >
+                  <ChevronLeft className="w-4 h-4 text-cyan-400" />
+                  <span>Previous</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+                  <span>Page</span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-bold font-mono">{currentPage}</span>
+                  <span>of <span className="font-semibold text-slate-300">{totalPages}</span></span>
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4 text-cyan-400" />
+                </button>
+              </div>
+
+              <span className="hidden lg:flex items-center gap-1.5 text-emerald-400 border-l border-slate-800 pl-3">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Prisma DB Active</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -595,13 +776,21 @@ export default function EnquiriesPage() {
                   </a>
                 )}
               </div>
-              <div className="flex gap-2">
-                <select value={selectedDetailEnquiry.contactStatus || 'Pending'} onChange={async e => { const v = e.target.value; await handleUpdateStatus(selectedDetailEnquiry.id, { contactStatus: v }); setSelectedDetailEnquiry(p => p ? { ...p, contactStatus: v } : null); }} className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer">
-                  <option value="Pending">⏳ Pending</option><option value="In Touch">💬 In Touch</option><option value="Talked">📞 Talked</option><option value="Converted">✅ Converted</option><option value="Lost">❌ Lost</option>
-                </select>
-                <select value={selectedDetailEnquiry.leadQuality || 'Unrated'} onChange={async e => { const v = e.target.value; await handleUpdateStatus(selectedDetailEnquiry.id, { leadQuality: v }); setSelectedDetailEnquiry(p => p ? { ...p, leadQuality: v } : null); }} className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer">
-                  <option value="Unrated">⚪ Unrated</option><option value="High">🔥 High</option><option value="Medium">⚡ Medium</option><option value="Low">❄️ Low</option>
-                </select>
+              <div className="flex items-center gap-2">
+                <StatusBadgeSelect
+                  value={selectedDetailEnquiry.contactStatus || 'Pending'}
+                  onChange={async val => {
+                    await handleUpdateStatus(selectedDetailEnquiry.id, { contactStatus: val });
+                    setSelectedDetailEnquiry(p => p ? { ...p, contactStatus: val } : null);
+                  }}
+                />
+                <QualityBadgeSelect
+                  value={selectedDetailEnquiry.leadQuality || 'Unrated'}
+                  onChange={async val => {
+                    await handleUpdateStatus(selectedDetailEnquiry.id, { leadQuality: val });
+                    setSelectedDetailEnquiry(p => p ? { ...p, leadQuality: val } : null);
+                  }}
+                />
               </div>
             </div>
 
@@ -656,7 +845,20 @@ export default function EnquiriesPage() {
             </div>
           </div>
         </div>
+          </div>
+        </div>
       )}
+
+      {/* ── Assign Lead Modal ── */}
+      <AssignLeadModal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        enquiryId={assignTargetEnquiry?.id || null}
+        participantName={assignTargetEnquiry?.participantName}
+        topic={assignTargetEnquiry?.topic}
+        currentAssignedId={assignTargetEnquiry?.assignedToId}
+        onSuccess={fetchEnquiries}
+      />
 
     </div>
   );

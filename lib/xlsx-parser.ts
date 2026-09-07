@@ -68,6 +68,95 @@ function parseExcelDate(val: any): Date | null {
   return null;
 }
 
+export function normalizeCountry(phone: string, rawCountry: string): string {
+  let cleaned = (phone || '').replace(/[^\d+]/g, '');
+  if (cleaned.includes('+')) {
+    cleaned = '+' + cleaned.replace(/\+/g, '');
+  }
+
+  // Country Code rules based on phone number prefix
+  if (cleaned.startsWith('+91') || (cleaned.length === 10 && /^[6789]/.test(cleaned)) || (cleaned.length === 12 && cleaned.startsWith('91'))) {
+    return 'India';
+  }
+  if (cleaned.startsWith('+1') || (cleaned.length === 11 && cleaned.startsWith('1'))) {
+    return 'USA';
+  }
+  if (cleaned.startsWith('+44')) {
+    return 'United Kingdom';
+  }
+  if (cleaned.startsWith('+971')) {
+    return 'United Arab Emirates';
+  }
+  if (cleaned.startsWith('+966')) {
+    return 'Saudi Arabia';
+  }
+  if (cleaned.startsWith('+33')) {
+    return 'France';
+  }
+  if (cleaned.startsWith('+49')) {
+    return 'Germany';
+  }
+  if (cleaned.startsWith('+32')) {
+    return 'Belgium';
+  }
+  if (cleaned.startsWith('+31')) {
+    return 'Netherlands';
+  }
+  if (cleaned.startsWith('+34')) {
+    return 'Spain';
+  }
+  if (cleaned.startsWith('+62')) {
+    return 'Indonesia';
+  }
+  if (cleaned.startsWith('+52')) {
+    return 'Mexico';
+  }
+
+  // Sub-region / State / City fallback mapping
+  const text = (rawCountry || '').trim().toLowerCase();
+  if (!text || text === 'unknown' || text === 'n/a') {
+    return 'India';
+  }
+
+  if (
+    text.includes('india') || text.includes('karnataka') || text.includes('gujarat') ||
+    text.includes('madhya pradesh') || text.includes('maharashtra') || text.includes('uttar pradesh') ||
+    text.includes('bangalore') || text.includes('ahmedabad') || text.includes('delhi') ||
+    text.includes('mumbai') || text.includes('punjab') || text.includes('haryana') ||
+    text.includes('kerala') || text.includes('tamil nadu') || text.includes('telangana') ||
+    text.includes('andhra') || text.includes('rajasthan') || text.includes('baghpat') ||
+    text.includes('baraut') || text.includes('gwalior') || text.includes('kalyan') ||
+    text.includes('gundlupet') || text.includes('malhargarh')
+  ) {
+    return 'India';
+  }
+
+  if (
+    text.includes('united states') || text.includes('usa') || text.includes('us') ||
+    text.includes('kansas') || text.includes('missouri') || text.includes('california') ||
+    text.includes('north carolina') || text.includes('ohio') || text.includes('new hampshire') ||
+    text.includes('michigan') || text.includes('illinois') || text.includes('massachusetts') ||
+    text.includes('texas') || text.includes('new york') || text.includes('georgia') ||
+    text.includes('pennsylvania') || text.includes('florida')
+  ) {
+    return 'USA';
+  }
+
+  if (text.includes('canada') || text.includes('alberta') || text.includes('ontario') || text.includes('toronto') || text.includes('nova scotia') || text.includes('prince edward')) {
+    return 'Canada';
+  }
+
+  if (text.includes('mexico') || text.includes('gomez farias') || text.includes('sayula') || text.includes('jal')) {
+    return 'Mexico';
+  }
+
+  if (text.includes('united kingdom') || text.includes('uk') || text.includes('england') || text.includes('scotland') || text.includes('wales')) {
+    return 'United Kingdom';
+  }
+
+  return rawCountry.trim();
+}
+
 export function parseEnquiryExcel(filePath: string = DEFAULT_EXCEL_PATH) {
   const candidatePaths = [
     filePath,
@@ -110,7 +199,8 @@ export function parseEnquiryExcel(filePath: string = DEFAULT_EXCEL_PATH) {
     const serviceType = String(row['Service Type'] || row['Service'] || 'Training').trim();
     const trainingType = String(row['Training Type'] || row['Training'] || '').trim();
     const message = String(row['Message'] || row['message'] || '').trim();
-    const country = String(row['Country'] || row['country'] || 'India').trim();
+    const rawCountry = String(row['Country'] || row['country'] || 'India').trim();
+    const country = normalizeCountry(phone, rawCountry);
     
     const dateSubmitted = parseExcelDate(row['Date Submitted']);
     const receivedDate = parseExcelDate(row['Received Date']);
@@ -207,6 +297,8 @@ export function parseEnquiryExcel(filePath: string = DEFAULT_EXCEL_PATH) {
       }
     }
   }
+
+  dashboardSummary.uniqueCountries = new Set(enquiries.map(e => e.country)).size;
 
   return {
     enquiries,

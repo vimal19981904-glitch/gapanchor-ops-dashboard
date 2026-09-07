@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X, RefreshCw, Search, Filter, Globe, BookOpen, MessageSquare, Phone,
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
-  Send, Calendar, ArrowUpDown, Upload
+  Send, Calendar, ArrowUpDown, Upload, Clock, PhoneCall, XCircle, Zap, ShieldAlert, Circle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,6 +26,126 @@ interface Enquiry {
   status: string; // Open, Action Required, Processed, Resolved
   source: string;
   processedNotes: string | null;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  'Pending': { label: 'Pending', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  'In Touch': { label: 'In Touch', icon: MessageSquare, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+  'Talked': { label: 'Talked', icon: PhoneCall, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
+  'Future': { label: 'Future', icon: Calendar, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+  'Converted': { label: 'Converted', icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  'Lost': { label: 'Lost', icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30' },
+};
+
+const QUALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  'High': { label: 'High Quality', icon: Star, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  'Medium': { label: 'Medium Quality', icon: Zap, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+  'Low': { label: 'Low Quality', icon: ShieldAlert, color: 'text-slate-400', bg: 'bg-slate-800/60', border: 'border-slate-700' },
+  'Unrated': { label: 'Unrated', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-900/50', border: 'border-slate-800' },
+};
+
+function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const current = STATUS_CONFIG[value] || STATUS_CONFIG['Pending'];
+  const Icon = current.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+      >
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>{current.label}</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 mt-1 w-36 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1 space-y-0.5 animate-[fadeIn_0.15s_ease]">
+          {Object.entries(STATUS_CONFIG).map(([key, config]) => {
+            const ItemIcon = config.icon;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { onChange(key); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  value === key ? 'bg-slate-800 text-white font-bold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <ItemIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                <span>{config.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const current = QUALITY_CONFIG[value] || QUALITY_CONFIG['Unrated'];
+  const Icon = current.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+      >
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>{current.label}</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 mt-1 w-40 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1 space-y-0.5 animate-[fadeIn_0.15s_ease]">
+          {Object.entries(QUALITY_CONFIG).map(([key, config]) => {
+            const ItemIcon = config.icon;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { onChange(key); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  value === key ? 'bg-slate-800 text-white font-bold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <ItemIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                <span>{config.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface EnquiryModalProps {
@@ -252,7 +372,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Enquiries</p>
-              <p className="text-xl font-bold text-white mt-0.5">{summary?.totalEnquiries || totalCount}</p>
+              <p className="text-xl font-bold text-white mt-0.5">{totalCount}</p>
             </div>
             <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
               <MessageSquare className="w-5 h-5" />
@@ -262,7 +382,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Countries Reached</p>
-              <p className="text-xl font-bold text-emerald-400 mt-0.5">{summary?.uniqueCountries || uniqueCountries.length}</p>
+              <p className="text-xl font-bold text-emerald-400 mt-0.5">{uniqueCountries.length}</p>
             </div>
             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
               <Globe className="w-5 h-5" />
@@ -368,9 +488,9 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                 className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer"
               >
                 <option value="ALL">All Quality Ratings</option>
-                <option value="High">🔥 High Quality</option>
+                <option value="High">💎 High Quality</option>
                 <option value="Medium">⚡ Medium Quality</option>
-                <option value="Low">❄️ Low Quality</option>
+                <option value="Low">🧊 Low Quality</option>
                 <option value="Unrated">⚪ Unrated</option>
               </select>
 
@@ -384,7 +504,8 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                 <option value="Pending">⏳ Pending</option>
                 <option value="In Touch">💬 In Touch</option>
                 <option value="Talked">📞 Talked</option>
-                <option value="Converted">✅ Converted</option>
+                <option value="Future">🔮 Future</option>
+                <option value="Converted">💎 Converted</option>
                 <option value="Lost">❌ Lost</option>
               </select>
 
@@ -450,26 +571,16 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                         <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
                           {enquiry.participantName}
                         </div>
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
-                          {enquiry.email && (
-                            <span className="flex items-center space-x-1 truncate max-w-[180px]" title={enquiry.email}>
-                              <Mail className="w-3 h-3 text-slate-500" />
-                              <span>{enquiry.email}</span>
-                            </span>
-                          )}
-                          {enquiry.phone && (
-                            <span className="flex items-center space-x-1 font-mono text-slate-400">
-                              <Phone className="w-3 h-3 text-slate-500" />
-                              <span>{enquiry.phone}</span>
-                            </span>
-                          )}
+                        <div className="text-[10px] text-slate-400 flex items-center space-x-2">
+                          {enquiry.email && <span>{enquiry.email}</span>}
+                          {enquiry.phone && <span>{enquiry.phone}</span>}
                         </div>
                       </td>
 
                       {/* Country */}
                       <td className="py-3 px-3">
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-200">
-                          <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="inline-flex items-center space-x-1 text-xs text-slate-300">
+                          <Globe className="w-3 h-3 text-cyan-400" />
                           <span>{enquiry.country || 'India'}</span>
                         </span>
                       </td>
@@ -493,47 +604,18 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
 
                       {/* Contact Status Selectable */}
                       <td className="py-3 px-3">
-                        <select
+                        <StatusBadgeSelect
                           value={enquiry.contactStatus || 'Pending'}
-                          onChange={e => handleUpdateStatus(enquiry.id, { contactStatus: e.target.value })}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border focus:outline-none cursor-pointer transition-colors ${
-                            enquiry.contactStatus === 'Converted'
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                              : enquiry.contactStatus === 'Talked' || enquiry.contactStatus === 'In Touch'
-                              ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                              : enquiry.contactStatus === 'Lost'
-                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          }`}
-                        >
-                          <option value="Pending" className="bg-slate-900 text-slate-100">⏳ Pending</option>
-                          <option value="In Touch" className="bg-slate-900 text-slate-100">💬 In Touch</option>
-                          <option value="Talked" className="bg-slate-900 text-slate-100">📞 Talked</option>
-                          <option value="Converted" className="bg-slate-900 text-slate-100">✅ Converted</option>
-                          <option value="Lost" className="bg-slate-900 text-slate-100">❌ Lost</option>
-                        </select>
+                          onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
+                        />
                       </td>
 
                       {/* Lead Quality Selectable */}
                       <td className="py-3 px-3">
-                        <select
+                        <QualityBadgeSelect
                           value={enquiry.leadQuality || 'Unrated'}
-                          onChange={e => handleUpdateStatus(enquiry.id, { leadQuality: e.target.value })}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border focus:outline-none cursor-pointer transition-colors ${
-                            enquiry.leadQuality === 'High'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                              : enquiry.leadQuality === 'Medium'
-                              ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                              : enquiry.leadQuality === 'Low'
-                              ? 'bg-slate-800 text-slate-400 border-slate-700'
-                              : 'bg-slate-900 text-slate-400 border-slate-800'
-                          }`}
-                        >
-                          <option value="Unrated" className="bg-slate-900 text-slate-100">⚪ Unrated</option>
-                          <option value="High" className="bg-slate-900 text-slate-100">🔥 High Quality</option>
-                          <option value="Medium" className="bg-slate-900 text-slate-100">⚡ Medium</option>
-                          <option value="Low" className="bg-slate-900 text-slate-100">❄️ Low</option>
-                        </select>
+                          onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
+                        />
                       </td>
 
                       {/* Quick Actions */}

@@ -86,7 +86,7 @@ export default function Dashboard() {
   const devCount = devData?.updates?.length || 0;
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 md:p-6">
+    <div className="w-full max-w-full px-4 md:px-8 py-6">
       <DashboardHeader
         onRefresh={handleRefresh}
         isRefreshing={refreshing}

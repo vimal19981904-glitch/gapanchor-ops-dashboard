@@ -7,11 +7,24 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { writeFile } from 'fs/promises';
+import { cookies } from 'next/headers';
 
 const execPromise = util.promisify(exec);
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('gapanchor_session');
+    let sessionUser: any = null;
+
+    if (sessionCookie && sessionCookie.value) {
+      try {
+        sessionUser = JSON.parse(sessionCookie.value);
+      } catch (err) {}
+    }
+
     const { searchParams } = new URL(request.url);
     const country = searchParams.get('country');
     const course = searchParams.get('course');
@@ -20,6 +33,9 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
 
     const whereClause: any = {};
+    if (sessionUser && sessionUser.role === 'employee') {
+      whereClause.assignedToId = sessionUser.id;
+    }
 
     if (country && country !== 'ALL') whereClause.country = country;
     if (course && course !== 'ALL') whereClause.trainingType = { contains: course };
@@ -44,12 +60,19 @@ export async function GET(request: Request) {
     const config = await prisma.integrationConfig.findUnique({ where: { service: 'excel_enquiries' } });
     const metadata = config?.metadata ? JSON.parse(config.metadata) : null;
 
+    const uniqueCountriesCount = new Set(enquiries.map(e => e.country).filter(Boolean)).size;
+    const liveSummary = {
+      ...(metadata?.summary || {}),
+      totalEnquiries: total,
+      uniqueCountries: uniqueCountriesCount,
+    };
+
     return NextResponse.json({
       success: true,
       total,
       enquiries,
       lastSynced: config?.lastSynced || null,
-      summary: metadata?.summary || null,
+      summary: liveSummary,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

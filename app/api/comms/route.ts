@@ -1,10 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('gapanchor_session');
+    let sessionUser: any = null;
+
+    if (sessionCookie && sessionCookie.value) {
+      try {
+        sessionUser = JSON.parse(sessionCookie.value);
+      } catch (err) {}
+    }
+
+    const whereClause: any = {};
+    if (sessionUser && sessionUser.role === 'employee') {
+      whereClause.assignedToId = sessionUser.id;
+    }
+
     const enquiries = await prisma.enquiry.findMany({
+      where: whereClause,
       orderBy: { messageTimestamp: 'desc' },
+      include: {
+        assignedTo: {
+          select: { id: true, name: true, email: true, role: true, assignedCourse: true }
+        }
+      }
     });
 
     const total = enquiries.length;
@@ -13,7 +35,7 @@ export async function GET() {
     const processedCount = enquiries.filter(e => e.status === 'Processed').length;
     const actionRequiredCount = enquiries.filter(e => e.status === 'Action Required').length;
 
-    // Calculate avg response time (mock for now — will come from WhatsApp API)
+    // Calculate avg response time
     const avgResponseTimeMins = 14;
 
     const whatsappConfig = await prisma.integrationConfig.findUnique({ where: { service: 'whatsapp' } });
@@ -43,20 +65,54 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, enquiryId, notes } = body;
+    const { action, enquiryId, notes, assignedToId, assignedToName } = body;
 
     // ──── PROCESS BUTTON ACTION ─────────────────────
     if (action === 'process' && enquiryId) {
+      const updateData: any = {
+        status: 'Processed',
+        isStale: false,
+        processedAt: new Date(),
+        processedNotes: notes || 'Processed via dashboard',
+      };
+
+      if (assignedToId) {
+        updateData.assignedToId = assignedToId;
+        updateData.assignedToName = assignedToName || null;
+      }
+
+      const updated = await prisma.enquiry.update({
+        where: { id: enquiryId },
+        data: updateData,
+        include: {
+          assignedTo: {
+            select: { id: true, name: true, email: true, role: true, assignedCourse: true }
+          }
+        }
+      });
+      return NextResponse.json({ success: true, message: 'Enquiry processed successfully', enquiry: updated });
+    }
+
+    // ──── ASSIGN LEAD ACTION ────────────────────────
+    if (action === 'assign' && enquiryId) {
+      if (!assignedToId) {
+        return NextResponse.json({ success: false, error: 'assignedToId required for lead assignment' }, { status: 400 });
+      }
+
       const updated = await prisma.enquiry.update({
         where: { id: enquiryId },
         data: {
-          status: 'Processed',
-          isStale: false,
-          processedAt: new Date(),
-          processedNotes: notes || 'Processed via dashboard',
+          assignedToId,
+          assignedToName: assignedToName || null,
+          processedNotes: notes ? `Assigned: ${notes}` : undefined,
         },
+        include: {
+          assignedTo: {
+            select: { id: true, name: true, email: true, role: true, assignedCourse: true }
+          }
+        }
       });
-      return NextResponse.json({ success: true, message: 'Enquiry processed successfully', enquiry: updated });
+      return NextResponse.json({ success: true, message: `Lead assigned to ${assignedToName || 'employee'}`, enquiry: updated });
     }
 
     // ──── RESOLVE ACTION ────────────────────────────
@@ -78,14 +134,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'enquiryIds array required' }, { status: 400 });
       }
 
+      const updateData: any = {
+        status: 'Processed',
+        isStale: false,
+        processedAt: new Date(),
+        processedNotes: notes || 'Bulk processed via dashboard',
+      };
+
+      if (assignedToId) {
+        updateData.assignedToId = assignedToId;
+        updateData.assignedToName = assignedToName || null;
+      }
+
       await prisma.enquiry.updateMany({
         where: { id: { in: enquiryIds } },
-        data: {
-          status: 'Processed',
-          isStale: false,
-          processedAt: new Date(),
-          processedNotes: notes || 'Bulk processed via dashboard',
-        },
+        data: updateData,
       });
       return NextResponse.json({ success: true, message: `${enquiryIds.length} enquiries processed` });
     }
@@ -106,6 +169,8 @@ export async function POST(request: Request) {
           messageTimestamp: new Date(),
           status: 'Open',
           source: 'manual',
+          assignedToId: assignedToId || null,
+          assignedToName: assignedToName || null,
         },
       });
       return NextResponse.json({ success: true, enquiry });

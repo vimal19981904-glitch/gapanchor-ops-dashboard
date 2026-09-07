@@ -63,8 +63,24 @@ model Enquiry {
   staleReason       String?
   processedAt       DateTime? // When "Process" button was clicked
   processedNotes    String?   // Notes added during processing
+  assignedToId      String?   // Assigned employee/user ID
+  assignedToName    String?   // Assigned employee/user name
+  assignedTo        User?     @relation("AssignedEnquiries", fields: [assignedToId], references: [id])
   source            String    @default("whatsapp") // whatsapp, manual, outlook, excel
   whatsappMessageId String?   // WhatsApp Cloud API or Outlook message ID
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ─── Users / Employee Access ────────────────────────
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String
+  role              String    @default("employee") // "admin" | "employee"
+  assignedCourse    String?   // "Manhattan WMS" | "Blue Yonder" | "Kinaxis" | "SAP S/4HANA"
+  assignedEnquiries Enquiry[] @relation("AssignedEnquiries")
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
