@@ -22,40 +22,24 @@ def normalize_country(phone_str, geocoder_country=""):
         return "United Arab Emirates"
     if cleaned.startswith('+966'):
         return "Saudi Arabia"
-    if cleaned.startswith('+33'):
-        return "France"
-    if cleaned.startswith('+49'):
-        return "Germany"
-    if cleaned.startswith('+32'):
-        return "Belgium"
-    if cleaned.startswith('+31'):
-        return "Netherlands"
-    if cleaned.startswith('+34'):
-        return "Spain"
-    if cleaned.startswith('+62'):
-        return "Indonesia"
-    if cleaned.startswith('+52'):
-        return "Mexico"
     
     geo = (geocoder_country or "").strip().lower()
     if not geo or geo == "unknown" or geo == "n/a":
         return "India"
 
-    if any(kw in geo for kw in ["india", "karnataka", "gujarat", "madhya pradesh", "maharashtra", "uttar pradesh", "bangalore", "ahmedabad", "delhi", "mumbai", "punjab", "haryana", "kerala", "tamil nadu", "telangana", "andhra", "rajasthan", "baghpat", "baraut", "gwalior", "kalyan", "gundlupet", "malhargarh"]):
+    if any(kw in geo for kw in ["india", "karnataka", "gujarat", "madhya pradesh", "maharashtra", "uttar pradesh", "bangalore", "mumbai"]):
         return "India"
-    if any(kw in geo for kw in ["united states", "usa", "us", "kansas", "missouri", "california", "north carolina", "ohio", "new hampshire", "michigan", "illinois", "massachusetts", "texas", "new york", "georgia", "pennsylvania", "florida"]):
+    if any(kw in geo for kw in ["united states", "usa", "us", "kansas", "missouri", "california", "texas", "new york"]):
         return "USA"
-    if any(kw in geo for kw in ["canada", "alberta", "ontario", "toronto", "nova scotia", "prince edward"]):
+    if any(kw in geo for kw in ["canada", "ontario", "toronto"]):
         return "Canada"
-    if any(kw in geo for kw in ["mexico", "gomez farias", "sayula", "jal"]):
-        return "Mexico"
-    if any(kw in geo for kw in ["united kingdom", "uk", "england", "scotland", "wales"]):
-        return "United Kingdom"
         
     return geocoder_country.strip() if geocoder_country else "India"
 
 def extract_enquiries():
     try:
+        import pythoncom
+        pythoncom.CoInitialize()
         import win32com.client
         import openpyxl
     except ImportError as e:
@@ -118,14 +102,15 @@ def extract_enquiries():
                 sender_name = getattr(email, 'SenderName', '') or ''
                 sender_email = getattr(email, 'SenderEmailAddress', '') or ''
 
-                # Regex matches
                 name_match = re.search(r'Name:\s*(.+?)(?:\r?\n|Email:|$)', body, re.IGNORECASE)
                 email_match = re.search(r'Email:\s*(.+?)(?:\r?\n|Phone:|$)', body, re.IGNORECASE)
-                phone_match = re.search(r'Phone:\s*(.+?)(?:\r?\n|Service\s*Type:|Message:|$)', body, re.IGNORECASE)
+                phone_match = re.search(r'Phone:\s*(.+?)(?:\r?\n|Service\s*Type:|Training\s*Type:|Message:|$)', body, re.IGNORECASE)
                 service_match = re.search(r'Service\s*Type:\s*(.+?)(?:\r?\n|Training\s*Type:|Message:|$)', body, re.IGNORECASE)
                 training_match = re.search(r'Training\s*Type:\s*(.+?)(?:\r?\n|Message:|$)', body, re.IGNORECASE)
-                message_match = re.search(r'Message:\s*(.+?)(?:\s*---|\r?\n|Submitted at:|$)', body, re.IGNORECASE | re.DOTALL)
+                message_match = re.search(r'Message:\s*(.+?)(?:\s*---|\r?\n|Submitted\s*at:|$)', body, re.IGNORECASE | re.DOTALL)
                 country_match = re.search(r'Country:\s*(.+?)(?:\r?\n|$)', body, re.IGNORECASE)
+                submitted_match = re.search(r'Submitted\s*at:\s*(.+?)(?:\r?\n|$)', body, re.IGNORECASE)
+
                 name = name_match.group(1).strip() if name_match else (sender_name if sender_name else "Unknown")
                 email_addr = email_match.group(1).strip() if email_match else (sender_email if "@" in sender_email else "")
                 phone = phone_match.group(1).strip() if phone_match else ""
@@ -136,29 +121,37 @@ def extract_enquiries():
                 country = normalize_country(phone, raw_country)
                 submitted_at = submitted_match.group(1).strip() if submitted_match else received_str
 
-                if "--- Submitted at:" in message_raw:
-                    message_raw = message_raw.split("--- Submitted at:")[0].strip()
+                if "---" in message_raw:
+                    message_raw = message_raw.split("---")[0].strip()
 
                 training_type = training_type_raw
                 combined_text = f"{training_type_raw} {message_raw} {subject}".lower()
 
-                if "proactive" in combined_text:
+                if "active transportation" in combined_text or "transportation" in combined_text:
+                    training_type = "Manhattan Active Transportation"
+                elif "proactive" in combined_text:
                     training_type = "Manhattan ProActive"
+                elif "manhattan active" in combined_text or "active wms" in combined_text:
+                    training_type = "Manhattan Active WMS"
                 elif "manhattan wms" in combined_text or ("manhattan" in combined_text and "wms" in combined_text):
                     training_type = "Manhattan WMS"
                 elif "blue yonder" in combined_text or "jda" in combined_text:
                     training_type = "Blue Yonder WMS (JDA)"
                 elif "kinaxis" in combined_text:
-                    training_type = "Kinaxis RapidResponse"
+                    training_type = "Kinaxis"
                 elif "sap" in combined_text:
                     training_type = "SAP S/4HANA"
-                elif not training_type or training_type.lower() == "training" or training_type.lower() == "n/a":
-                    if message_raw and message_raw.lower() != "n/a":
-                        training_type = message_raw
-                    else:
-                        training_type = "General Training"
+                elif training_type_raw and training_type_raw.lower() not in ["training", "n/a", "none"]:
+                    training_type = training_type_raw
+                elif message_raw and message_raw.lower() not in ["n/a", "none"]:
+                    training_type = message_raw
+                else:
+                    training_type = "General Training"
 
                 message = message_raw if message_raw else training_type
+
+                if name == "Unknown" and not email_addr and not phone:
+                    continue
 
                 raw_list.append({
                     "sort_ts": sort_ts,
@@ -175,12 +168,9 @@ def extract_enquiries():
             except Exception:
                 continue
 
-        # Sort newest first in Python memory
         raw_list.sort(key=lambda x: x["sort_ts"], reverse=True)
-
         enquiries = raw_list
 
-        # Save to Excel (with lock handling)
         saved_file = EXCEL_PATH
         try:
             wb = openpyxl.load_workbook(EXCEL_PATH) if os.path.exists(EXCEL_PATH) else openpyxl.Workbook()

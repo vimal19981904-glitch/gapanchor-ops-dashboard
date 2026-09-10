@@ -173,6 +173,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
   // Notes Modal state
   const [editingEnquiry, setEditingEnquiry] = useState<Enquiry | null>(null);
   const [noteText, setNoteText] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const fetchEnquiries = async () => {
     setLoading(true);
@@ -194,6 +195,12 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
   useEffect(() => {
     if (isOpen) {
       fetchEnquiries();
+      fetch('/api/auth/me')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user) setCurrentUser(data.user);
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -329,34 +336,38 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Hidden file input for Excel upload */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleSyncExcel(file);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-              }}
-            />
-            <button
-              onClick={() => handleSyncExcel()}
-              disabled={syncing}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Extracting & Syncing...' : 'Sync Outlook & Excel'}</span>
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={syncing}
-              title="Upload custom Excel file"
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-            </button>
+            {currentUser?.role === 'admin' && (
+              <>
+                {/* Hidden file input for Excel upload */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleSyncExcel(file);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                />
+                <button
+                  onClick={() => handleSyncExcel()}
+                  disabled={syncing}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  <span>{syncing ? 'Extracting & Syncing...' : 'Sync Outlook & Excel'}</span>
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={syncing}
+                  title="Upload custom Excel file"
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
             <button
               onClick={onClose}

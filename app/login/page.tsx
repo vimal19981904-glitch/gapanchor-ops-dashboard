@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, CheckCircle2, LogOut, User, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -10,6 +10,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const checkUserSession = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data.success && data.user) {
+        setCurrentUser(data.user);
+      } else {
+        setCurrentUser(null);
+      }
+    } catch {
+      setCurrentUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkUserSession();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +49,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (data.success) {
         toast.success(`Welcome back, ${data.user.name}!`);
+        setCurrentUser(data.user);
         router.push('/enquiries');
       } else {
         toast.error(data.error || 'Login failed');
@@ -40,6 +61,26 @@ export default function LoginPage() {
     }
   };
 
+  const handleSignOut = async () => {
+    setLoggingOut(true);
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Signed out successfully');
+        setCurrentUser(null);
+        setEmail('');
+        setPassword('');
+      } else {
+        toast.error('Sign out failed');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Sign out failed');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   const setDemoAccount = (empEmail: string) => {
     setEmail(empEmail);
     setPassword('employee123#password');
@@ -48,7 +89,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
       <div className="w-full max-w-md glass-card p-8 rounded-3xl border border-white/10 shadow-2xl animate-fade-in backdrop-blur-xl">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-500/20 border border-brand-500/40 text-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
             <Lock size={28} />
           </div>
@@ -59,6 +100,38 @@ export default function LoginPage() {
             GapAnchor Operations & Lead Intelligence Hub
           </p>
         </div>
+
+        {/* Active Session Status Banner */}
+        {currentUser && (
+          <div className="mb-6 p-4 rounded-2xl bg-slate-800/80 border border-emerald-500/30 text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <ShieldCheck size={16} />
+                <span>Currently Signed In</span>
+              </div>
+              <button
+                onClick={() => router.push('/enquiries')}
+                className="text-[11px] font-bold text-cyan-400 hover:underline"
+              >
+                Go to Dashboard &rarr;
+              </button>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-white/10">
+              <div>
+                <div className="font-bold text-white text-sm">{currentUser.name}</div>
+                <div className="text-[11px] text-slate-400">{currentUser.email}</div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                disabled={loggingOut}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold transition-all text-xs cursor-pointer disabled:opacity-50"
+              >
+                <LogOut size={13} className={loggingOut ? 'animate-spin' : ''} />
+                <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -94,7 +167,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 mt-6"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 mt-6 cursor-pointer"
           >
             <span>{loading ? 'Authenticating...' : 'Sign In to Portal'}</span>
             <ArrowRight size={15} />
@@ -117,7 +190,7 @@ export default function LoginPage() {
                 key={i}
                 type="button"
                 onClick={() => setDemoAccount(acc.email)}
-                className="w-full text-left p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs transition-colors flex items-center justify-between"
+                className="w-full text-left p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs transition-colors flex items-center justify-between cursor-pointer"
               >
                 <div>
                   <div className="font-semibold text-slate-200">{acc.name}</div>

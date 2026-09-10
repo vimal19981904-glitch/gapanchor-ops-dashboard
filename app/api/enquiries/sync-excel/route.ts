@@ -25,6 +25,10 @@ export async function GET(request: Request) {
       } catch (err) {}
     }
 
+    if (!sessionUser) {
+      return NextResponse.json({ success: false, error: 'Authentication required. Please sign in.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const country = searchParams.get('country');
     const course = searchParams.get('course');
@@ -33,7 +37,7 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
 
     const whereClause: any = {};
-    if (sessionUser && sessionUser.role === 'employee') {
+    if (sessionUser.role === 'employee') {
       whereClause.assignedToId = sessionUser.id;
     }
 
@@ -81,6 +85,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('gapanchor_session');
+    let sessionUser: any = null;
+
+    if (sessionCookie && sessionCookie.value) {
+      try {
+        sessionUser = JSON.parse(sessionCookie.value);
+      } catch (err) {}
+    }
+
+    if (sessionUser && sessionUser.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Only administrators can perform Outlook & Excel sync operations.' },
+        { status: 403 }
+      );
+    }
+
     let filePath = DEFAULT_EXCEL_PATH;
     let scriptOutput = '';
 
@@ -102,12 +123,12 @@ export async function POST(request: Request) {
       }
     } else {
       // Direct 1-Click Sync: Run python extractor script locally if present
-      const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
       const localScriptPath = path.join(process.cwd(), 'scripts', 'extract_outlook_enquiries.py');
-      const scriptToRun = fs.existsSync(userScriptPath)
-        ? userScriptPath
-        : fs.existsSync(localScriptPath)
+      const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
+      const scriptToRun = fs.existsSync(localScriptPath)
         ? localScriptPath
+        : fs.existsSync(userScriptPath)
+        ? userScriptPath
         : null;
 
       if (scriptToRun) {
@@ -142,18 +163,23 @@ export async function POST(request: Request) {
     }
 
     if (isExcelParsed && enquiries.length > 0) {
-      // Fast in-memory lookup map
+      // Fast in-memory lookup map using email + trainingType + timestamp composite keys
       const existingEnquiries = await prisma.enquiry.findMany();
-      const emailMap = new Map<string, (typeof existingEnquiries)[0]>();
-      const nameMap = new Map<string, (typeof existingEnquiries)[0]>();
+      const recordMap = new Map<string, (typeof existingEnquiries)[0]>();
 
       existingEnquiries.forEach(e => {
-        if (e.email && e.email.trim() !== '') {
-          emailMap.set(e.email.trim().toLowerCase(), e);
+        const eEmail = e.email ? e.email.trim().toLowerCase() : '';
+        const eName = e.participantName ? e.participantName.trim().toLowerCase() : '';
+        const eTraining = (e.trainingType || e.topic || '').trim().toLowerCase();
+        const eTs = e.messageTimestamp ? new Date(e.messageTimestamp).getTime() : 0;
+
+        if (eEmail) {
+          recordMap.set(`${eEmail}___${eTraining}`, e);
+          if (eTs) recordMap.set(`${eEmail}___${eTraining}___${eTs}`, e);
         }
-        if (e.participantName && e.messageTimestamp) {
-          const key = `${e.participantName.trim().toLowerCase()}_${new Date(e.messageTimestamp).getTime()}`;
-          nameMap.set(key, e);
+        if (eName) {
+          recordMap.set(`${eName}___${eTraining}`, e);
+          if (eTs) recordMap.set(`${eName}___${eTraining}___${eTs}`, e);
         }
       });
 
@@ -161,24 +187,31 @@ export async function POST(request: Request) {
 
       for (const item of enquiries) {
         const emailKey = item.email ? item.email.trim().toLowerCase() : '';
-        const nameKey = `${item.participantName.trim().toLowerCase()}_${item.messageTimestamp ? new Date(item.messageTimestamp).getTime() : 0}`;
+        const nameKey = item.participantName ? item.participantName.trim().toLowerCase() : '';
+        const trainingKey = (item.trainingType || item.topic || '').trim().toLowerCase();
+        const tsKey = item.messageTimestamp ? new Date(item.messageTimestamp).getTime() : 0;
 
-        const existing = (emailKey && emailMap.get(emailKey)) || nameMap.get(nameKey);
+        const existing =
+          (emailKey && recordMap.get(`${emailKey}___${trainingKey}___${tsKey}`)) ||
+          (nameKey && recordMap.get(`${nameKey}___${trainingKey}___${tsKey}`)) ||
+          (emailKey && recordMap.get(`${emailKey}___${trainingKey}`)) ||
+          (nameKey && recordMap.get(`${nameKey}___${trainingKey}`));
 
         if (existing) {
           txOperations.push(
             prisma.enquiry.update({
               where: { id: existing.id },
               data: {
+                participantName: item.participantName || existing.participantName,
                 phone: item.phone || existing.phone,
                 country: item.country || existing.country,
                 serviceType: item.serviceType || existing.serviceType,
-                trainingType: item.trainingType,
-                topic: item.topic || item.trainingType,
+                trainingType: item.trainingType || existing.trainingType,
+                topic: item.topic || item.trainingType || existing.topic,
                 lastMessage: item.lastMessage || existing.lastMessage,
                 dateSubmitted: item.dateSubmitted || existing.dateSubmitted,
                 receivedDate: item.receivedDate || existing.receivedDate,
-                messageTimestamp: item.messageTimestamp,
+                messageTimestamp: item.messageTimestamp || existing.messageTimestamp,
               },
             })
           );
@@ -188,19 +221,19 @@ export async function POST(request: Request) {
             prisma.enquiry.create({
               data: {
                 participantName: item.participantName,
-                email: item.email,
-                phone: item.phone,
-                country: item.country,
-                serviceType: item.serviceType,
-                trainingType: item.trainingType,
-                topic: item.topic,
-                lastMessage: item.lastMessage,
+                email: item.email || null,
+                phone: item.phone || '',
+                country: item.country || 'India',
+                serviceType: item.serviceType || 'Training',
+                trainingType: item.trainingType || 'General Training',
+                topic: item.topic || item.trainingType || 'General Training',
+                lastMessage: item.lastMessage || item.trainingType,
                 dateSubmitted: item.dateSubmitted,
                 receivedDate: item.receivedDate,
-                messageTimestamp: item.messageTimestamp,
+                messageTimestamp: item.messageTimestamp || new Date(),
                 source: 'excel',
                 status: 'Open',
-                leadQuality: 'Unrated',
+                leadQuality: item.trainingType?.toLowerCase().includes('proactive') ? 'High' : 'Unrated',
                 contactStatus: 'Pending',
               },
             })

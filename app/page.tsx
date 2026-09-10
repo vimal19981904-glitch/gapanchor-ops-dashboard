@@ -12,6 +12,7 @@ import DevProgressCard from '@/components/DevProgressCard';
 import DevModal from '@/components/DevModal';
 import SetupModal from '@/components/SetupModal';
 import EnquiryModal from '@/components/EnquiryModal';
+import CalendarWidget from '@/components/CalendarWidget';
 import { SkeletonKPI } from '@/components/ui/Skeleton';
 import { formatCurrency } from '@/lib/utils';
 import { DollarSign, Calendar, MessageSquare, Code2 } from 'lucide-react';
@@ -177,6 +178,11 @@ export default function Dashboard() {
             onOpenModal={() => setIsDevModalOpen(true)}
             loading={loading}
           />
+        </div>
+
+        {/* Google Calendar Upcoming Events Widget */}
+        <div className="xl:col-span-2">
+          <CalendarWidget />
         </div>
       </div>
 

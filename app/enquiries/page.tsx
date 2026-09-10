@@ -7,10 +7,12 @@ import {
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
   Send, Calendar, ArrowUpDown, ArrowLeft, Building2, User, Eye, FileText,
   ExternalLink, Upload, ChevronLeft, ChevronRight, Clock, PhoneCall, XCircle,
-  Zap, ShieldAlert, Circle
+  Zap, ShieldAlert, Circle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AssignLeadModal from '@/components/AssignLeadModal';
+import UserNav from '@/components/UserNav';
+import MobileLeadCards from '@/components/MobileLeadCards';
 
 interface Enquiry {
   id: string;
@@ -163,6 +165,12 @@ export default function EnquiriesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [summary, setSummary] = useState<any>(null);
 
+  // Mobile accordion state
+  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
+  const handleToggleExpand = (id: string) => setExpandedLeadId(prev => (prev === id ? null : id));
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const toggleRow = (id: string) => setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+
   // Filters
   const [search, setSearch] = useState('');
   const [countryFilter, setCountryFilter] = useState('ALL');
@@ -173,7 +181,7 @@ export default function EnquiriesPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(30);
+  const [pageSize, setPageSize] = useState(10);
 
   // Reset to page 1 when search or filters change
   useEffect(() => {
@@ -187,6 +195,18 @@ export default function EnquiriesPage() {
   const [selectedDetailEnquiry, setSelectedDetailEnquiry] = useState<Enquiry | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTargetEnquiry, setAssignTargetEnquiry] = useState<Enquiry | null>(null);
+
+  // User Session
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user) setCurrentUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
 
   const openAssignModal = (enquiry: Enquiry) => {
     setAssignTargetEnquiry(enquiry);
@@ -234,7 +254,7 @@ export default function EnquiriesPage() {
       }
       const json = await res.json();
       if (json.success) {
-        toast.success(json.message || 'Outlook & Excel synced successfully!');
+        toast.success(json.message || 'Outlook synced successfully!');
         setEnquiries(json.enquiries || []);
         if (json.summary) setSummary(json.summary);
         setLastSynced(new Date().toISOString());
@@ -346,76 +366,82 @@ export default function EnquiriesPage() {
 
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans" style={{backgroundImage:'radial-gradient(ellipse at 20% 0%, rgba(6,182,212,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)'}}>
-      <div className="w-full max-w-full px-4 md:px-8 py-6 space-y-5 flex-1 flex flex-col">
+      <div className="w-full max-w-full px-2 sm:px-4 md:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5 flex-1 flex flex-col">
 
         {/* ── Top Navigation Bar ── */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl">
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="group flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shadow-inner">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-full overflow-hidden">
+          <div className="flex items-start md:items-center space-x-4 w-full xl:w-auto">
+            <Link href="/" className="group flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shadow-inner shrink-0">
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="text-xs font-semibold hidden sm:inline">Dashboard</span>
+              <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
             </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl md:text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-lg md:text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent truncate">
                   Enquiry Intelligence
                 </h1>
-                <span className="hidden sm:inline px-2.5 py-0.5 text-[10px] font-bold tracking-widest rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 uppercase">
+                <span className="hidden sm:inline px-2.5 py-0.5 text-[10px] font-bold tracking-widest rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 uppercase shrink-0">
                   Live CRM
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1">
+              <p className="text-[10px] md:text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                  Supabase PostgreSQL • Real-time DB Persistence
+                  Supabase PostgreSQL
                 </span>
-                {lastSynced && <span className="text-slate-600">• Synced {new Date(lastSynced).toLocaleTimeString()}</span>}
+                <span className="hidden md:inline text-slate-600 shrink-0">• Real-time DB Persistence</span>
+                {lastSynced && <span className="text-slate-600 shrink-0">• Synced {new Date(lastSynced).toLocaleTimeString()}</span>}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-            <button
-              onClick={() => handleSyncExcel()}
-              disabled={syncing}
-              className="group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer"
-            >
-              <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Extracting & Syncing…' : 'Sync Outlook & Excel'}</span>
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={syncing}
-              title="Upload custom Excel file"
-              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2 w-full xl:w-auto justify-between xl:justify-end overflow-x-auto pb-1 xl:pb-0 scrollbar-hide">
+            <div className="shrink-0"><UserNav /></div>
+            {currentUser?.role === 'admin' && (
+              <div className="flex items-center gap-2 shrink-0">
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+                <button
+                  onClick={() => handleSyncExcel()}
+                  disabled={syncing}
+                  className="group relative flex items-center gap-2 px-3 md:px-5 py-2.5 rounded-xl text-[11px] md:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap"
+                >
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                  <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  <span>{syncing ? 'Extracting & Syncing…' : 'Sync Outlook'}</span>
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={syncing}
+                  title="Upload custom data file"
+                  className="p-2 md:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* ── KPI Metric Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: 'Total Enquiries', value: totalCount, icon: MessageSquare, color: 'cyan', iconBg: 'bg-cyan-500/10', iconColor: 'text-cyan-400', glow: 'shadow-cyan-500/20', border: 'border-cyan-500/15' },
             { label: 'Countries Reached', value: uniqueCountries.length, icon: Globe, color: 'emerald', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20', border: 'border-emerald-500/15' },
             { label: 'High Quality Leads', value: highQualityCount, icon: Star, color: 'amber', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400', glow: 'shadow-amber-500/20', border: 'border-amber-500/15', suffix: highQualityCount > 0 ? '🔥' : '' },
             { label: 'Talked / In Touch', value: talkedCount, icon: UserCheck, color: 'violet', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-400', glow: 'shadow-violet-500/20', border: 'border-violet-500/15', sub: `${pendingCount} pending` },
           ].map((card) => (
-            <div key={card.label} className={`relative overflow-hidden p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border ${card.border} shadow-lg ${card.glow} transition-all hover:scale-[1.02]`}>
+            <div key={card.label} className={`relative overflow-hidden p-3.5 sm:p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border ${card.border} shadow-lg ${card.glow} transition-all hover:scale-[1.02]`}>
               <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${card.iconBg} blur-2xl opacity-60`} />
               <div className="flex items-center justify-between relative">
                 <div>
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{card.label}</p>
-                  <p className="text-3xl font-black text-white mt-1.5 tracking-tight">
-                    {card.value}{card.suffix && <span className="ml-1 text-xl">{card.suffix}</span>}
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-widest truncate max-w-[100px] sm:max-w-none">{card.label}</p>
+                  <p className="text-xl sm:text-3xl font-black text-white mt-1 tracking-tight">
+                    {card.value}{card.suffix && <span className="ml-1 text-sm sm:text-xl">{card.suffix}</span>}
                   </p>
-                  {card.sub && <p className="text-[11px] text-slate-500 mt-0.5">{card.sub}</p>}
+                  {card.sub && <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">{card.sub}</p>}
                 </div>
-                <div className={`p-3.5 rounded-2xl ${card.iconBg} border ${card.border} shadow-inner`}>
-                  <card.icon className={`w-6 h-6 ${card.iconColor}`} />
+                <div className={`p-2.5 sm:p-3.5 rounded-2xl ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
+                  <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${card.iconColor}`} />
                 </div>
               </div>
             </div>
@@ -449,7 +475,7 @@ export default function EnquiriesPage() {
         </div>
 
         {/* ── Filters & Search ── */}
-        <div className="p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl">
+        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl w-full max-w-full overflow-hidden">
           <div className="flex flex-col md:flex-row gap-3 items-center">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -461,7 +487,7 @@ export default function EnquiriesPage() {
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto">
               {[
                 { value: courseFilter, onChange: setCourseFilter, options: [['ALL','All Courses'], ...uniqueCourses.map(c => [c, c])] },
                 { value: countryFilter, onChange: setCountryFilter, options: [['ALL',`All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
@@ -472,14 +498,14 @@ export default function EnquiriesPage() {
                   key={i}
                   value={sel.value}
                   onChange={e => sel.onChange(e.target.value)}
-                  className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer hover:border-slate-600 transition-colors"
+                  className="w-full sm:w-auto bg-slate-950/80 border border-slate-700/50 rounded-xl px-2.5 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer hover:border-slate-600 transition-colors truncate"
                 >
                   {sel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
               <button
                 onClick={() => { if (sortBy === 'date_desc') setSortBy('quality'); else if (sortBy === 'quality') setSortBy('date_asc'); else setSortBy('date_desc'); }}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/50 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer"
+                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/50 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer"
               >
                 <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{sortBy === 'date_desc' ? 'Newest First' : sortBy === 'date_asc' ? 'Oldest First' : 'High Quality First'}</span>
@@ -489,7 +515,7 @@ export default function EnquiriesPage() {
         </div>
 
         {/* ── Main Table ── */}
-        <div className="flex-1 overflow-hidden bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl shadow-2xl flex flex-col">
+        <div className="flex-1 overflow-hidden md:bg-slate-900/60 md:backdrop-blur-md md:border md:border-slate-700/40 md:rounded-2xl md:shadow-2xl flex flex-col">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 text-slate-500 space-y-4">
               <div className="relative">
@@ -505,147 +531,173 @@ export default function EnquiriesPage() {
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-slate-300">No enquiries found</p>
-                <p className="text-xs text-slate-500 mt-1">Try adjusting your filters or upload an Excel file to sync data</p>
+                <p className="text-xs text-slate-500 mt-1">Try adjusting your filters or upload a data file to sync data</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setSearch(''); setCountryFilter('ALL'); setCourseFilter('ALL'); setStatusFilter('ALL'); setQualityFilter('ALL'); }} className="text-xs px-4 py-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 cursor-pointer transition-colors">
                   Clear Filters
                 </button>
                 <button onClick={() => fileInputRef.current?.click()} className="text-xs px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer transition-colors flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" /> Upload Excel
+                  <Upload className="w-3.5 h-3.5" /> Upload File
                 </button>
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-950/70 text-slate-500 uppercase tracking-widest font-semibold border-b border-slate-800/80 sticky top-0 backdrop-blur-xl z-10">
-                  <tr>
-                    <th className="py-4 px-5 text-[10px]">Lead & Contact</th>
-                    <th className="py-4 px-4 text-[10px]">Country</th>
-                    <th className="py-4 px-4 text-[10px]">Course / Service</th>
-                    <th className="py-4 px-4 text-[10px]">Date</th>
-                    <th className="py-4 px-4 text-[10px]">Contact Status</th>
-                    <th className="py-4 px-4 text-[10px]">Lead Quality</th>
-                    <th className="py-4 px-4 text-[10px]">Call Notes</th>
-                    <th className="py-4 px-5 text-[10px] text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/40">
-                  {paginatedEnquiries.map(enquiry => (
-                    <tr key={enquiry.id} className="group hover:bg-slate-800/40 transition-all duration-150">
+            <div className="flex-1 flex flex-col min-h-0">
 
-                      {/* Lead & Contact */}
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 flex items-center justify-center flex-shrink-0 text-cyan-400 font-bold text-xs">
-                            {enquiry.participantName.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-white group-hover:text-cyan-300 transition-colors">{enquiry.participantName}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {enquiry.email && (
-                                <a href={`mailto:${enquiry.email}`} className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors truncate max-w-[160px]">
-                                  <Mail className="w-3 h-3 flex-shrink-0" />{enquiry.email}
-                                </a>
-                              )}
-                              {enquiry.phone && (
-                                <span className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                                  <Phone className="w-3 h-3" />{enquiry.phone}
-                                </span>
-                              )}
+              {/* ── Mobile View Cards (< md) ── */}
+              <div className="md:hidden overflow-y-auto flex-1">
+                <MobileLeadCards
+                  leads={paginatedEnquiries}
+                  expandedLeadId={expandedLeadId}
+                  onToggleExpand={handleToggleExpand}
+                  onUpdateStatus={handleUpdateStatus}
+                  onAddNotes={(enquiry) => {
+                    setEditingEnquiry(enquiry);
+                    setNoteText(enquiry.processedNotes || '');
+                  }}
+                  onViewDetail={(enquiry) => {
+                    setSelectedDetailEnquiry(enquiry);
+                    setNoteText(enquiry.processedNotes || '');
+                  }}
+                  onAssign={openAssignModal}
+                  isAdmin={currentUser?.role === 'admin'}
+                />
+              </div>
+
+              {/* ── Desktop Table (>= md) ── */}
+              <div className="hidden md:block overflow-x-auto flex-1">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-950/70 text-slate-500 uppercase tracking-widest font-semibold border-b border-slate-800/80 sticky top-0 backdrop-blur-xl z-10">
+                    <tr>
+                      <th className="py-4 px-5 text-[10px]">Lead & Contact</th>
+                      <th className="py-4 px-4 text-[10px]">Country</th>
+                      <th className="py-4 px-4 text-[10px]">Course / Service</th>
+                      <th className="py-4 px-4 text-[10px]">Date</th>
+                      <th className="py-4 px-4 text-[10px]">Contact Status</th>
+                      <th className="py-4 px-4 text-[10px]">Lead Quality</th>
+                      <th className="py-4 px-4 text-[10px]">Call Notes</th>
+                      <th className="py-4 px-5 text-[10px] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/40">
+                    {paginatedEnquiries.map(enquiry => (
+                      <tr key={enquiry.id} className="group hover:bg-slate-800/40 transition-all duration-150">
+
+                        {/* Lead & Contact */}
+                        <td className="py-4 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 flex items-center justify-center flex-shrink-0 text-cyan-400 font-bold text-xs">
+                              {enquiry.participantName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white group-hover:text-cyan-300 transition-colors text-sm truncate">{enquiry.participantName}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {enquiry.email && (
+                                  <a href={`mailto:${enquiry.email}`} className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors truncate max-w-[160px]">
+                                    <Mail className="w-3 h-3 flex-shrink-0" />{enquiry.email}
+                                  </a>
+                                )}
+                                {enquiry.phone && (
+                                  <span className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
+                                    <Phone className="w-3 h-3" />{enquiry.phone}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Country */}
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-300 text-xs">
-                          <Globe className="w-3 h-3 text-cyan-400" />
-                          {enquiry.country || 'India'}
-                        </span>
-                      </td>
+                        {/* Country */}
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-300 text-xs">
+                            <Globe className="w-3 h-3 text-cyan-400" />
+                            {enquiry.country || 'India'}
+                          </span>
+                        </td>
 
-                      {/* Course */}
-                      <td className="py-4 px-4">
-                        <p className="font-medium text-slate-200 text-xs leading-tight">{enquiry.trainingType || enquiry.topic || 'Training'}</p>
-                        {enquiry.serviceType && <p className="text-[10px] text-slate-600 mt-0.5">{enquiry.serviceType}</p>}
-                      </td>
+                        {/* Course */}
+                        <td className="py-4 px-4">
+                          <p className="font-medium text-slate-200 text-xs leading-tight">{enquiry.trainingType || enquiry.topic || 'Training'}</p>
+                          {enquiry.serviceType && <p className="text-[10px] text-slate-600 mt-0.5">{enquiry.serviceType}</p>}
+                        </td>
 
-                      {/* Date */}
-                      <td className="py-4 px-4 whitespace-nowrap text-slate-500 text-[11px]">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {(enquiry.dateSubmitted ? new Date(enquiry.dateSubmitted) : new Date(enquiry.messageTimestamp)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </div>
-                      </td>
+                        {/* Date */}
+                        <td className="py-4 px-4 whitespace-nowrap text-slate-500 text-[11px]">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {(enquiry.dateSubmitted ? new Date(enquiry.dateSubmitted) : new Date(enquiry.messageTimestamp)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </td>
 
-                      {/* Contact Status */}
-                      <td className="py-4 px-4">
-                        <StatusBadgeSelect
-                          value={enquiry.contactStatus || 'Pending'}
-                          onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
-                        />
-                      </td>
+                        {/* Contact Status */}
+                        <td className="py-4 px-4">
+                          <StatusBadgeSelect
+                            value={enquiry.contactStatus || 'Pending'}
+                            onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
+                          />
+                        </td>
 
-                      {/* Lead Quality */}
-                      <td className="py-4 px-4">
-                        <QualityBadgeSelect
-                          value={enquiry.leadQuality || 'Unrated'}
-                          onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
-                        />
-                      </td>
+                        {/* Lead Quality */}
+                        <td className="py-4 px-4">
+                          <QualityBadgeSelect
+                            value={enquiry.leadQuality || 'Unrated'}
+                            onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
+                          />
+                        </td>
 
-                      {/* Notes */}
-                      <td className="py-4 px-4 max-w-[200px]">
-                        {enquiry.processedNotes ? (
-                          <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
-                            💬 {enquiry.processedNotes}
-                          </button>
-                        ) : (
-                          <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note">
-                            <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors" />
-                            Add notes
-                          </button>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-4 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => { setSelectedDetailEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">View</span>
-                          </button>
-
-                          <button
-                            onClick={() => openAssignModal(enquiry)}
-                            className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
-                            title="Assign to Employee"
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                          </button>
-
-                          {enquiry.phone && (
-                            <a href={`https://wa.me/${enquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer" title="WhatsApp">
-                              <MessageSquare className="w-3.5 h-3.5" />
-                            </a>
+                        {/* Notes */}
+                        <td className="py-4 px-4 max-w-[200px]">
+                          {enquiry.processedNotes ? (
+                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
+                              💬 {enquiry.processedNotes}
+                            </button>
+                          ) : (
+                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note">
+                              <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors" />
+                              Add notes
+                            </button>
                           )}
-                          {enquiry.email && (
-                            <a href={`mailto:${enquiry.email}?subject=Regarding your ${enquiry.trainingType || 'GapAnchor Training'} enquiry`} className="p-1.5 rounded-xl bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20 transition-all cursor-pointer" title="Send Email">
-                              <Mail className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => { setSelectedDetailEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">View</span>
+                            </button>
+
+                            {currentUser?.role === 'admin' && (
+                              <button
+                                onClick={() => openAssignModal(enquiry)}
+                                className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
+                                title="Assign to Employee"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {enquiry.phone && (
+                              <a href={`https://wa.me/${enquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer" title="WhatsApp">
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            {enquiry.email && (
+                              <a href={`mailto:${enquiry.email}?subject=Regarding your ${enquiry.trainingType || 'GapAnchor Training'} enquiry`} className="p-1.5 rounded-xl bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20 transition-all cursor-pointer" title="Send Email">
+                                <Mail className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -663,6 +715,7 @@ export default function EnquiriesPage() {
                   onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
                   className="bg-slate-900 border border-slate-700/60 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none cursor-pointer hover:border-slate-500 transition-colors"
                 >
+                  <option value={10}>10</option>
                   <option value={15}>15</option>
                   <option value={30}>30</option>
                   <option value={50}>50</option>
@@ -754,7 +807,7 @@ export default function EnquiriesPage() {
                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">Client</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Source: <strong className="text-slate-300 capitalize">{selectedDetailEnquiry.source || 'Excel'}</strong>
+                    Source: <strong className="text-slate-300 capitalize">{selectedDetailEnquiry.source?.replace(/Excel/i, 'Outlook') || 'Outlook'}</strong>
                     <span className="ml-2 font-mono text-slate-600">#{selectedDetailEnquiry.id.slice(-8)}</span>
                   </p>
                 </div>
@@ -763,34 +816,38 @@ export default function EnquiriesPage() {
             </div>
 
             {/* Quick Action Bar */}
-            <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
-              <div className="flex gap-2 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
+              <div className="flex gap-2 w-full sm:w-auto">
                 {selectedDetailEnquiry.phone && (
-                  <a href={`https://wa.me/${selectedDetailEnquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold transition-all">
+                  <a href={`https://wa.me/${selectedDetailEnquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold transition-all">
                     <MessageSquare className="w-4 h-4" /> WhatsApp
                   </a>
                 )}
                 {selectedDetailEnquiry.email && (
-                  <a href={`mailto:${selectedDetailEnquiry.email}?subject=Regarding ${selectedDetailEnquiry.trainingType || 'GapAnchor'} enquiry`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold transition-all">
+                  <a href={`mailto:${selectedDetailEnquiry.email}?subject=Regarding ${selectedDetailEnquiry.trainingType || 'GapAnchor'} enquiry`} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold transition-all">
                     <Mail className="w-4 h-4" /> Email
                   </a>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <StatusBadgeSelect
-                  value={selectedDetailEnquiry.contactStatus || 'Pending'}
-                  onChange={async val => {
-                    await handleUpdateStatus(selectedDetailEnquiry.id, { contactStatus: val });
-                    setSelectedDetailEnquiry(p => p ? { ...p, contactStatus: val } : null);
-                  }}
-                />
-                <QualityBadgeSelect
-                  value={selectedDetailEnquiry.leadQuality || 'Unrated'}
-                  onChange={async val => {
-                    await handleUpdateStatus(selectedDetailEnquiry.id, { leadQuality: val });
-                    setSelectedDetailEnquiry(p => p ? { ...p, leadQuality: val } : null);
-                  }}
-                />
+              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
+                <div className="flex-1 sm:flex-none [&>div>button]:w-full [&>div>button]:justify-center">
+                  <StatusBadgeSelect
+                    value={selectedDetailEnquiry.contactStatus || 'Pending'}
+                    onChange={async val => {
+                      await handleUpdateStatus(selectedDetailEnquiry.id, { contactStatus: val });
+                      setSelectedDetailEnquiry(p => p ? { ...p, contactStatus: val } : null);
+                    }}
+                  />
+                </div>
+                <div className="flex-1 sm:flex-none [&>div>button]:w-full [&>div>button]:justify-center">
+                  <QualityBadgeSelect
+                    value={selectedDetailEnquiry.leadQuality || 'Unrated'}
+                    onChange={async val => {
+                      await handleUpdateStatus(selectedDetailEnquiry.id, { leadQuality: val });
+                      setSelectedDetailEnquiry(p => p ? { ...p, leadQuality: val } : null);
+                    }}
+                  />
+                </div>
               </div>
             </div>
 

@@ -92,9 +92,9 @@ export default function FinanceCard({ financeData, onOpenModal, loading }: Props
       </div>
 
       {activeTab === 'charts' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-5">
           {/* Liquid Gradient Area chart */}
-          <div className="lg:col-span-2 rounded-2xl p-5 border border-border/80" style={{ background: 'var(--surface-2)' }}>
+          <div className="lg:col-span-2 rounded-2xl p-3 sm:p-5 border border-border/80" style={{ background: 'var(--surface-2)' }}>
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-emerald-400" />
@@ -105,7 +105,7 @@ export default function FinanceCard({ financeData, onOpenModal, loading }: Props
               </div>
             </div>
 
-            <div className="h-64">
+            <div className="h-44 sm:h-64 mt-2 sm:mt-0">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={quarterlyTrends}>
                   <defs>
@@ -135,7 +135,7 @@ export default function FinanceCard({ financeData, onOpenModal, loading }: Props
           {/* Donut & Category breakdowns */}
           <div className="space-y-4">
             {/* Income by source */}
-            <div className="rounded-2xl p-4 border border-border/80" style={{ background: 'var(--surface-2)' }}>
+            <div className="rounded-2xl p-3 sm:p-4 border border-border/80" style={{ background: 'var(--surface-2)' }}>
               <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Income by Source</span>
               <div className="h-32 mt-2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -161,7 +161,7 @@ export default function FinanceCard({ financeData, onOpenModal, loading }: Props
             </div>
 
             {/* Expense breakdown */}
-            <div className="rounded-2xl p-4 border border-border/80" style={{ background: 'var(--surface-2)' }}>
+            <div className="rounded-2xl p-3 sm:p-4 border border-border/80" style={{ background: 'var(--surface-2)' }}>
               <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Expense Breakdown</span>
               <div className="space-y-2.5 mt-3">
                 {expensePieData.map((item, i) => {

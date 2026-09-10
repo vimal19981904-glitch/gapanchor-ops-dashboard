@@ -7,23 +7,12 @@ export async function GET() {
     const sessionCookie = cookieStore.get('gapanchor_session');
 
     if (sessionCookie && sessionCookie.value) {
-      const user = JSON.parse(sessionCookie.value);
-      return NextResponse.json({ success: true, user });
-    }
-
-    // Default Master Admin session when running locally without explicit login cookie
-    const isVercel = process.env.VERCEL === '1';
-    if (!isVercel) {
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: 'admin_local',
-          name: 'Arul Xavier (Master Admin)',
-          email: 'admin@gapanchor.com',
-          role: 'admin',
-          assignedCourse: 'All Platforms',
-        },
-      });
+      try {
+        const user = JSON.parse(sessionCookie.value);
+        return NextResponse.json({ success: true, user });
+      } catch (e) {
+        // Invalid session cookie
+      }
     }
 
     return NextResponse.json({ success: false, user: null }, { status: 401 });

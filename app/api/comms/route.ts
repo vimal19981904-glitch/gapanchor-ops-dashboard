@@ -14,8 +14,12 @@ export async function GET(request: Request) {
       } catch (err) {}
     }
 
+    if (!sessionUser) {
+      return NextResponse.json({ success: false, error: 'Authentication required. Please sign in.' }, { status: 401 });
+    }
+
     const whereClause: any = {};
-    if (sessionUser && sessionUser.role === 'employee') {
+    if (sessionUser.role === 'employee') {
       whereClause.assignedToId = sessionUser.id;
     }
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Activity, Mail, MessageSquare, ShieldCheck, RefreshCw, Sun, Moon, Settings } from 'lucide-react';
+import UserNav from '@/components/UserNav';
 import { useTheme } from '@/components/ui/ThemeProvider';
 
 interface Props {
@@ -82,14 +83,8 @@ export default function DashboardHeader({ onRefresh, isRefreshing, graphStatus, 
             <span>OAuth2</span>
           </div>
 
-          {/* Employee Login / Auth Link */}
-          <a
-            href="/login"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold border border-brand-500/40 bg-brand-500/15 text-brand-300 hover:bg-brand-500/25 transition-all no-underline"
-            title="Employee Login Portal"
-          >
-            <span>Team Portal</span>
-          </a>
+          {/* User Session & Sign Out */}
+          <UserNav />
 
           {/* API Setup button */}
           <button
