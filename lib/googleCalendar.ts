@@ -10,6 +10,7 @@ export interface CalendarEventItem {
   id: string;
   title: string;
   description: string;
+  cleanDescription?: string;
   location: string;
   start: string;
   end: string;
@@ -21,6 +22,12 @@ export interface CalendarEventItem {
   attendees: { email: string; name?: string; responseStatus?: string }[];
   htmlLink?: string;
   isDemo?: boolean;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  scmProgram?: string;
+  meetingId?: string;
+  passcode?: string;
 }
 
 export interface CalendarStatus {
@@ -104,7 +111,7 @@ export async function saveTokens(tokens: any, email?: string): Promise<void> {
       connected: true,
       metadata: JSON.stringify({
         encryptedTokens: encrypted,
-        email: email || 'xavierarul40@gmail.com',
+        email: email || 'admin@gapanchor.com',
         type: 'oauth',
         connectedAt: new Date().toISOString(),
       }),
@@ -115,7 +122,7 @@ export async function saveTokens(tokens: any, email?: string): Promise<void> {
       connected: true,
       metadata: JSON.stringify({
         encryptedTokens: encrypted,
-        email: email || 'xavierarul40@gmail.com',
+        email: email || 'admin@gapanchor.com',
         type: 'oauth',
         connectedAt: new Date().toISOString(),
       }),
@@ -131,7 +138,7 @@ export async function saveIcalFeed(feedUrl: string, email?: string): Promise<voi
       connected: true,
       metadata: JSON.stringify({
         feedUrl,
-        email: email || 'xavierarul40@gmail.com',
+        email: email || 'admin@gapanchor.com',
         type: 'ical',
         connectedAt: new Date().toISOString(),
       }),
@@ -142,7 +149,7 @@ export async function saveIcalFeed(feedUrl: string, email?: string): Promise<voi
       connected: true,
       metadata: JSON.stringify({
         feedUrl,
-        email: email || 'xavierarul40@gmail.com',
+        email: email || 'admin@gapanchor.com',
         type: 'ical',
         connectedAt: new Date().toISOString(),
       }),
@@ -154,7 +161,7 @@ export async function saveIcalFeed(feedUrl: string, email?: string): Promise<voi
 export async function getIcalFeedConfig(): Promise<{ url: string; email?: string } | null> {
   const envUrl = process.env.GOOGLE_CALENDAR_ICAL_URL;
   if (envUrl) {
-    return { url: envUrl, email: process.env.GOOGLE_CALENDAR_EMAIL || 'xavierarul40@gmail.com' };
+    return { url: envUrl, email: process.env.GOOGLE_CALENDAR_EMAIL || 'admin@gapanchor.com' };
   }
 
   try {
@@ -165,7 +172,7 @@ export async function getIcalFeedConfig(): Promise<{ url: string; email?: string
     if (config?.connected && config.metadata) {
       const meta = JSON.parse(config.metadata);
       if (meta.feedUrl) {
-        return { url: meta.feedUrl, email: meta.email || 'xavierarul40@gmail.com' };
+        return { url: meta.feedUrl, email: meta.email || 'admin@gapanchor.com' };
       }
     }
   } catch (err) {
@@ -221,7 +228,7 @@ export async function getCalendarStatus(): Promise<CalendarStatus> {
   const icalFeed = await getIcalFeedConfig();
 
   const isConnected = Boolean(creds?.tokens || icalFeed?.url);
-  const email = creds?.email || icalFeed?.email || (isConnected ? 'xavierarul40@gmail.com' : null);
+  const email = creds?.email || icalFeed?.email || (isConnected ? 'admin@gapanchor.com' : null);
   const connectionType = creds?.tokens ? 'oauth' : icalFeed?.url ? 'ical' : null;
 
   return {
@@ -334,16 +341,86 @@ export function formatDuration(startIso: string, endIso: string, isAllDay: boole
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
+export interface ExtractedBookingInfo {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  serviceName?: string;
+  scmProgram?: string;
+  meetingId?: string;
+  passcode?: string;
+  cleanDescription: string;
+}
+
+export function parseOutlookBookingBody(rawBody: string): ExtractedBookingInfo {
+  if (!rawBody) return { cleanDescription: '' };
+
+  // Decode HTML entities
+  let text = rawBody
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+
+  // Strip HTML & CSS tags
+  text = text.replace(/<style[\s\S]*?<\/style>/gi, '');
+  text = text.replace(/<script[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<[^>]+>/g, '\n');
+
+  // Match fields from Outlook Bookings / Teams meeting payload
+  const nameMatch = text.match(/Name:\s*([^\r\n]+)/i);
+  const emailMatch = text.match(/Email:\s*([^\r\n]+)/i);
+  const phoneMatch = text.match(/Phone(?:\s*Number)?:\s*([^\r\n]+)/i);
+  const serviceMatch = text.match(/Service\s*(?:name|Type):\s*([^\r\n]+)/i);
+  const answerMatch = text.match(/Answer\s*-\s*([^\r\n]+)/i);
+  const meetingIdMatch = text.match(/Meeting ID:\s*([0-9\s]+)/i);
+  const passcodeMatch = text.match(/Passcode:\s*([A-Za-z0-9]+)/i);
+
+  const customerName = nameMatch ? nameMatch[1].trim() : undefined;
+  const customerEmail = emailMatch ? emailMatch[1].trim() : undefined;
+  const customerPhone = phoneMatch ? phoneMatch[1].trim() : undefined;
+  const serviceName = serviceMatch ? serviceMatch[1].trim() : undefined;
+  const scmProgram = answerMatch ? answerMatch[1].trim() : undefined;
+  const meetingId = meetingIdMatch ? meetingIdMatch[1].trim() : undefined;
+  const passcode = passcodeMatch ? passcodeMatch[1].trim() : undefined;
+
+  // Build clean concise summary string without boilerplate clutter
+  const parts: string[] = [];
+  if (customerName) parts.push(`👤 Customer: ${customerName}`);
+  if (customerEmail) parts.push(`✉️ ${customerEmail}`);
+  if (customerPhone) parts.push(`📞 ${customerPhone}`);
+  if (scmProgram) parts.push(`📦 Program: ${scmProgram}`);
+  else if (serviceName) parts.push(`🎓 Service: ${serviceName}`);
+  if (meetingId) parts.push(`🔑 Meeting ID: ${meetingId}`);
+  if (passcode) parts.push(`🔒 Passcode: ${passcode}`);
+
+  const cleanDescription = parts.length > 0 ? parts.join(' • ') : text.replace(/\n+/g, ' ').trim().slice(0, 300);
+
+  return {
+    customerName,
+    customerEmail,
+    customerPhone,
+    serviceName,
+    scmProgram,
+    meetingId,
+    passcode,
+    cleanDescription,
+  };
+}
+
 export function formatCalendarEvent(event: any): CalendarEventItem {
   const isAllDay = Boolean(event.start?.date && !event.start?.dateTime);
   const start = event.start?.dateTime || event.start?.date || new Date().toISOString();
   const end = event.end?.dateTime || event.end?.date || start;
   const meetingInfo = extractMeetingInfo(event);
+  const bookingInfo = parseOutlookBookingBody(event.description || '');
 
   return {
     id: event.id || `evt-${Math.random().toString(36).substring(2, 9)}`,
-    title: event.summary || '(No title)',
+    title: event.summary || (bookingInfo.customerName ? `${bookingInfo.serviceName || 'Session'} - ${bookingInfo.customerName}` : '(No title)'),
     description: event.description || '',
+    cleanDescription: bookingInfo.cleanDescription || event.description || '',
     location: event.location || '',
     start,
     end,
@@ -352,6 +429,12 @@ export function formatCalendarEvent(event: any): CalendarEventItem {
     platform: meetingInfo.platform,
     platformName: meetingInfo.platformName,
     joinUrl: meetingInfo.joinUrl,
+    customerName: bookingInfo.customerName,
+    customerEmail: bookingInfo.customerEmail,
+    customerPhone: bookingInfo.customerPhone,
+    scmProgram: bookingInfo.scmProgram,
+    meetingId: bookingInfo.meetingId,
+    passcode: bookingInfo.passcode,
     attendees: (event.attendees || []).map((a: any) => ({
       email: a.email || '',
       name: a.displayName || a.email || '',
@@ -364,7 +447,7 @@ export function formatCalendarEvent(event: any): CalendarEventItem {
 // ─── ICAL REAL-TIME FEED PARSER ────────────────────────────────────────
 export async function fetchIcalEvents(
   feedUrl: string,
-  options: { search?: string; maxResults?: number } = {}
+  options: { search?: string; maxResults?: number; timeMin?: string; timeMax?: string } = {}
 ): Promise<CalendarEventItem[]> {
   const normalizedUrl = feedUrl.replace(/^webcal:\/\//i, 'https://');
   const parsedData = await ical.async.fromURL(normalizedUrl);
@@ -383,11 +466,13 @@ export async function fetchIcalEvents(
       location: ev.location || '',
       hangoutLink: ev.url || null,
     });
+    const bookingInfo = parseOutlookBookingBody(ev.description || '');
 
     items.push({
       id: ev.uid || `ical-${k}`,
-      title: ev.summary || '(No title)',
+      title: ev.summary || (bookingInfo.customerName ? `${bookingInfo.serviceName || 'Session'} - ${bookingInfo.customerName}` : '(No title)'),
       description: ev.description || '',
+      cleanDescription: bookingInfo.cleanDescription || ev.description || '',
       location: ev.location || '',
       start,
       end,
@@ -396,6 +481,12 @@ export async function fetchIcalEvents(
       platform: meetingInfo.platform,
       platformName: meetingInfo.platformName,
       joinUrl: meetingInfo.joinUrl,
+      customerName: bookingInfo.customerName,
+      customerEmail: bookingInfo.customerEmail,
+      customerPhone: bookingInfo.customerPhone,
+      scmProgram: bookingInfo.scmProgram,
+      meetingId: bookingInfo.meetingId,
+      passcode: bookingInfo.passcode,
       attendees: Array.isArray(ev.attendee)
         ? ev.attendee.map((a: any) => ({
             email: typeof a === 'string' ? a.replace(/^mailto:/i, '') : a.val ? a.val.replace(/^mailto:/i, '') : '',
@@ -405,20 +496,34 @@ export async function fetchIcalEvents(
     });
   }
 
+  // 1. Optional time range filtering
+  let filteredItems = items;
+
+  if (options.timeMin) {
+    const minTimeMs = new Date(options.timeMin).getTime();
+    filteredItems = filteredItems.filter((e) => new Date(e.end || e.start).getTime() >= minTimeMs);
+  }
+
+  if (options.timeMax) {
+    const maxTimeMs = new Date(options.timeMax).getTime();
+    filteredItems = filteredItems.filter((e) => new Date(e.start).getTime() <= maxTimeMs);
+  }
+
   // Sort ascending by start time
-  items.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  filteredItems.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-  // Filter search
-  const filtered = options.search
-    ? items.filter(
-        (e) =>
-          e.title.toLowerCase().includes(options.search!.toLowerCase()) ||
-          e.description.toLowerCase().includes(options.search!.toLowerCase()) ||
-          e.location.toLowerCase().includes(options.search!.toLowerCase())
-      )
-    : items;
+  // 2. Filter search query
+  if (options.search) {
+    const q = options.search.toLowerCase();
+    filteredItems = filteredItems.filter(
+      (e) =>
+        e.title.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.location.toLowerCase().includes(q)
+    );
+  }
 
-  return options.maxResults ? filtered.slice(0, options.maxResults) : filtered;
+  return options.maxResults ? filteredItems.slice(0, options.maxResults) : filteredItems;
 }
 
 // ─── API OPERATIONS: LIST & CREATE ────────────────────────────────────
@@ -428,29 +533,16 @@ export async function listCalendarEvents(options: {
   maxResults?: number;
   search?: string;
 }): Promise<{ events: CalendarEventItem[]; connected: boolean; isDemo: boolean }> {
-  // 1. Check if an iCal feed is configured
-  const icalFeed = await getIcalFeedConfig();
-  if (icalFeed?.url) {
-    try {
-      const events = await fetchIcalEvents(icalFeed.url, options);
-      return { events, connected: true, isDemo: false };
-    } catch (err: any) {
-      console.error('Error fetching iCal feed:', err);
-    }
-  }
-
-  // 2. Check if OAuth client is authenticated
+  // 1. Check if OAuth client is authenticated (fetches live Google Calendar API with singleEvents expansion)
   const authClient = await getAuthenticatedClient();
   if (authClient) {
     try {
       const calendar = google.calendar({ version: 'v3', auth: authClient });
-      const nowIso = new Date().toISOString();
-      const thirtyDaysAhead = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await calendar.events.list({
         calendarId: 'primary',
-        timeMin: options.timeMin || nowIso,
-        timeMax: options.timeMax || thirtyDaysAhead,
+        timeMin: options.timeMin || undefined,
+        timeMax: options.timeMax || undefined,
         maxResults: options.maxResults || 250,
         singleEvents: true,
         orderBy: 'startTime',
@@ -463,6 +555,17 @@ export async function listCalendarEvents(options: {
       return { events: formatted, connected: true, isDemo: false };
     } catch (err: any) {
       console.error('Google Calendar list events error:', err?.message || err);
+    }
+  }
+
+  // 2. Check if an iCal feed is configured
+  const icalFeed = await getIcalFeedConfig();
+  if (icalFeed?.url) {
+    try {
+      const events = await fetchIcalEvents(icalFeed.url, options);
+      return { events, connected: true, isDemo: false };
+    } catch (err: any) {
+      console.error('Error fetching iCal feed:', err);
     }
   }
 

@@ -60,15 +60,15 @@ export default function UserNav() {
   }
 
   return (
-    <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700/60 rounded-full pl-2 pr-1.5 py-1 shadow-lg backdrop-blur-md">
+    <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900/90 border border-slate-700/60 rounded-full pl-2 pr-1.5 py-1 shadow-lg backdrop-blur-md shrink-0">
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-extrabold shrink-0 shadow-sm">
         {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
       </div>
       <div className="flex flex-col leading-tight">
-        <span className="text-xs font-bold text-slate-100 truncate max-w-[120px]">
+        <span className="text-xs font-bold text-slate-100 truncate max-w-[70px] sm:max-w-[120px]">
           {user.name}
         </span>
-        <span className="text-[10px] text-slate-400 font-medium truncate max-w-[120px]">
+        <span className="text-[10px] text-slate-400 font-medium truncate max-w-[70px] sm:max-w-[120px] hidden sm:inline">
           {user.role === 'admin' ? 'Master Admin' : user.assignedCourse || user.role || 'Team Member'}
         </span>
       </div>
@@ -76,10 +76,10 @@ export default function UserNav() {
         onClick={handleLogout}
         disabled={loggingOut}
         title={`Sign out (${user.email})`}
-        className="flex items-center gap-1.5 ml-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
+        className="flex items-center gap-1 sm:gap-1.5 ml-0.5 sm:ml-1 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
       >
-        <LogOut size={13} className={loggingOut ? 'animate-spin' : ''} />
-        <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
+        <LogOut size={12} className={`sm:w-3.5 sm:h-3.5 ${loggingOut ? 'animate-spin' : ''}`} />
+        <span className="hidden sm:inline">{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
       </button>
     </div>
   );

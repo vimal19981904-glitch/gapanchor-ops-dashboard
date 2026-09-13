@@ -35,8 +35,13 @@
   }
 }
 
-/* Apple Liquid Glass Card System */
+/* ═══════════════════════════════════════════════════════════════
+   APPLE LIQUID GLASS DESIGN SYSTEM — Premium Dashboard Theme
+   ═══════════════════════════════════════════════════════════════ */
+
 @layer components {
+
+  /* ─── Glass Card System ─────────────────────────────────────── */
   .glass-card {
     @apply rounded-3xl p-6 transition-all duration-300 relative overflow-hidden;
     background: var(--surface-1);
@@ -60,7 +65,7 @@
     box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.5);
   }
 
-  /* Skeleton shimmer */
+  /* ─── Skeleton Shimmer ──────────────────────────────────────── */
   .skeleton {
     @apply rounded-xl animate-shimmer;
     background: linear-gradient(
@@ -72,9 +77,10 @@
     background-size: 200% 100%;
   }
 
-  /* Badges */
+  /* ─── Badge System ──────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide transition-all;
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide transition-all duration-200;
+    letter-spacing: 0.03em;
   }
   .badge-income { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
   .badge-expense { @apply bg-rose-500/15 text-rose-400 border border-rose-500/30; }
@@ -90,22 +96,42 @@
   .badge-processed { @apply bg-cyan-500/15 text-cyan-400 border border-cyan-500/30; }
   .badge-open { @apply bg-blue-500/15 text-blue-400 border border-blue-500/30; }
 
-  /* Apple Style Glossy Pill Buttons */
+  /* ─── Apple Style Glossy Pill Buttons ───────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
     color: var(--text-primary);
     background: var(--surface-1);
     backdrop-filter: blur(12px);
   }
   .btn-process {
-    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ─── Payment Status Indicator Dots ─────────────────────────── */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full shrink-0;
+  }
+  .status-dot-paid {
+    @apply bg-emerald-400;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  }
+  .status-dot-partial {
+    @apply bg-amber-400;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+  }
+  .status-dot-pending {
+    @apply bg-rose-400;
+    box-shadow: 0 0 6px rgba(251, 113, 133, 0.5);
   }
 }
 
-/* Background gradient for Apple liquid vibe */
+/* ═══════════════════════════════════════════════════════════════
+   BACKGROUND — Apple Liquid Ambient Gradient
+   ═══════════════════════════════════════════════════════════════ */
+
 .dark body {
   background-color: #060911;
   background-image: 
@@ -113,6 +139,202 @@
     radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
     radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
   background-attachment: fixed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM TYPOGRAPHY & HIERARCHY
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Heading refinements inside glass cards */
+.glass-card h2 {
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.glass-card h4 {
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+/* Large value emphasis (KPI numbers, metric values) */
+.glass-card .text-2xl {
+  letter-spacing: -0.035em;
+  font-feature-settings: 'tnum' 1;
+}
+
+.glass-card .text-xl {
+  letter-spacing: -0.025em;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Monospace numbers for tabular alignment */
+.font-mono {
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLE & DATA DISPLAY POLISH
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Table header refinement */
+.glass-card table thead th {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Table row hover accent */
+.glass-card table tbody tr {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.glass-card table tbody tr:hover {
+  background-color: rgba(99, 102, 241, 0.04) !important;
+}
+
+.dark .glass-card table tbody tr:hover {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Table cell breathing room */
+.glass-card table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Alternating row backgrounds for readability */
+.glass-card table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+.dark .glass-card table tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM SCROLLBAR — Dark Glass Aesthetic
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Webkit scrollbar (Chrome, Edge, Safari) */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+/* Firefox scrollbar */
+.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+
+/* Table overflow containers — horizontal scroll indicator */
+.glass-card .overflow-x-auto {
+  scrollbar-width: thin;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOCUS & ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Visible focus ring for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Rounded focus for pill buttons */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-process:focus-visible {
+  outline-offset: 3px;
+  border-radius: 9999px;
+}
+
+/* Rounded focus for badges */
+.badge:focus-visible {
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
+/* Input focus refinement */
+.glass-card input:focus-visible,
+.glass-card select:focus-visible,
+.glass-card textarea:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.4);
+  outline-offset: 0;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATION REFINEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Staggered entrance for grid children */
+.glass-card:nth-child(1) { animation-delay: 0ms; }
+.glass-card:nth-child(2) { animation-delay: 60ms; }
+.glass-card:nth-child(3) { animation-delay: 120ms; }
+.glass-card:nth-child(4) { animation-delay: 180ms; }
+
+/* Subtle hover lift for inner cards/containers */
+.glass-card [class*="rounded-2xl"][class*="border"]:not(table):not(thead):not(tbody):not(tr) {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Smoother badge hover */
+.badge:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   METRIC / KPI CARD ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* KPI stat card value emphasis */
+.glass-card .text-2xl.font-extrabold {
+  font-size: 1.65rem;
+  line-height: 1.2;
+}
+
+/* Trend badge polish */
+.glass-card .inline-flex.items-center.rounded-full.font-bold {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION SPACING SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Better visual separation between major module cards */
+.glass-card + .glass-card {
+  margin-top: 2px;
+}
+
+/* Inner section dividers — more prominent */
+.glass-card .border-t {
+  border-color: var(--border-primary);
+}
+
+.glass-card .border-b {
+  border-color: var(--border-primary);
 }
 
 /* ─────────────────────────────────────────────────────────────

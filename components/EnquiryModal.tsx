@@ -66,7 +66,7 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         <span>{current.label}</span>
@@ -118,7 +118,7 @@ function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         <span>{current.label}</span>

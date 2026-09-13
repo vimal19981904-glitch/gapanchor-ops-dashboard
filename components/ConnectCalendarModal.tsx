@@ -13,7 +13,7 @@ interface Props {
 
 export default function ConnectCalendarModal({ isOpen, onClose, onConnected, defaultEmail }: Props) {
   const [feedUrl, setFeedUrl] = useState('');
-  const [email, setEmail] = useState(defaultEmail || 'xavierarul40@gmail.com');
+  const [email, setEmail] = useState(defaultEmail || 'admin@gapanchor.com');
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -50,42 +50,41 @@ export default function ConnectCalendarModal({ isOpen, onClose, onConnected, def
 
   return (
     <div
-      className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-3xl border border-border/80 p-5 sm:p-7 shadow-2xl animate-slide-up"
-        style={{ background: 'var(--surface-1)' }}
+        className="w-full max-w-lg rounded-3xl border border-cyan-500/40 bg-[#0b1329] p-5 sm:p-7 shadow-2xl shadow-cyan-950/80 animate-slide-up text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b border-border/50">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
               <Calendar size={20} />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-base sm:text-lg font-bold text-white">
                 Connect Live Google Calendar
               </h3>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-xs text-slate-400">
                 Sync real-time meetings directly into your dashboard
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
             <X size={18} />
           </button>
         </div>
 
         {/* Instructions */}
-        <div className="p-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-500/8 mb-4 space-y-2 text-xs">
+        <div className="p-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 mb-4 space-y-2 text-xs">
           <p className="font-bold text-cyan-300 flex items-center gap-1.5">
             <Sparkles size={14} /> How to get your Secret iCal URL (Takes 20 seconds):
           </p>
           <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed pl-1">
-            <li>Open Google Calendar (<a href="https://calendar.google.com" target="_blank" rel="noreferrer" className="text-cyan-400 underline">calendar.google.com</a>)</li>
-            <li>Click <strong>Settings ⚙️ → Settings</strong></li>
+            <li>Open Google Calendar (<a href="https://calendar.google.com" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">calendar.google.com</a>)</li>
+            <li>Click <strong>Settings (gear icon) → Settings</strong></li>
             <li>On the left under <strong>&ldquo;Settings for my calendars&rdquo;</strong>, click your calendar</li>
             <li>Scroll down to <strong>&ldquo;Secret address in iCal format&rdquo;</strong></li>
             <li>Copy that private link and paste it below:</li>
@@ -95,20 +94,19 @@ export default function ConnectCalendarModal({ isOpen, onClose, onConnected, def
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Calendar Account Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-xs outline-none focus:border-cyan-500"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-2.5 text-xs text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Secret Address in iCal format *
             </label>
             <input
@@ -117,8 +115,7 @@ export default function ConnectCalendarModal({ isOpen, onClose, onConnected, def
               placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
               value={feedUrl}
               onChange={(e) => setFeedUrl(e.target.value)}
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-xs outline-none focus:border-cyan-500 font-mono"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 font-mono"
             />
             <p className="text-[10px] text-slate-400 mt-1">
               Works seamlessly in both local development and production.
@@ -126,11 +123,11 @@ export default function ConnectCalendarModal({ isOpen, onClose, onConnected, def
           </div>
 
           {/* Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-700/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold rounded-xl hover:bg-white/5 text-slate-400 hover:text-white"
+              className="px-4 py-2.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
             >
               Cancel
             </button>

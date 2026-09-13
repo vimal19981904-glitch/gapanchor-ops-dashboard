@@ -25,21 +25,42 @@ model Transaction {
   updatedAt       DateTime @updatedAt
 }
 
-// ─── Training Ops ───────────────────────────────────
+// ─── Training & Finance Tracking ────────────────────
 model Session {
-  id               String   @id @default(cuid())
-  title            String
-  platform         String   // Manhattan WMS, Blue Yonder, Kinaxis, SAP S/4HANA
-  trainer          String   @default("Arul Xavier")
-  participantsCount Int     @default(0)
-  date             DateTime
-  time             String?
-  status           String   @default("Scheduled") // Scheduled, In Progress, Completed
-  quarter          String
-  location         String?
-  calendarEventId  String?  // Outlook calendar event ID
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                     String               @id @default(cuid())
+  title                  String
+  platform               String               // Manhattan WMS, Blue Yonder, Kinaxis, SAP S/4HANA
+  trainer                String               @default("Arul Xavier")
+  participantsCount      Int                  @default(0)
+  currentlyParticipating Int                  @default(0)
+  date                   DateTime
+  time                   String?
+  status                 String               @default("Scheduled") // Scheduled, In Progress, Completed
+  quarter                String               @default("Q3")
+  location               String?
+  calendarEventId        String?              // Outlook calendar event ID
+  trainerTotalCost       Float                @default(0) // Trainer Overall Amount (manual entry, e.g. ₹100,000)
+  trainerAmountPaid      Float                @default(0) // Trainer Paid Amount (e.g. ₹50,000)
+  trainerAmountDue       Float                @default(0) // Trainer Due / Payable Amount (Auto-calculated: trainerTotalCost - trainerAmountPaid)
+  participants           SessionParticipant[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+}
+
+model SessionParticipant {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantName String
+  amountDue       Float    @default(0)
+  amountPaid      Float    @default(0)
+  paymentStatus   String   @default("PENDING") // PAID, PARTIAL, PENDING
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([paymentStatus])
 }
 
 // ─── WhatsApp Comms / Enquiries ─────────────────────
@@ -68,9 +89,42 @@ model Enquiry {
   assignedTo        User?     @relation("AssignedEnquiries", fields: [assignedToId], references: [id])
   source            String    @default("whatsapp") // whatsapp, manual, outlook, excel
   whatsappMessageId String?   // WhatsApp Cloud API or Outlook message ID
+  monitoringAudit   LeadMonitoringAudit?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
+
+// ─── Lead Status Monitoring & Alert Cron Models ──────
+model LeadMonitoringAudit {
+  id               String    @id @default(cuid())
+  enquiryId        String    @unique
+  enquiry          Enquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  pendingStartTime DateTime
+  firstAlertSentAt DateTime?
+  lastAlertSentAt  DateTime?
+  alertCount       Int       @default(0)
+  statusChangedAt  DateTime?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([pendingStartTime])
+}
+
+model CronExecutionLog {
+  id                         String   @id @default(cuid())
+  executionTimestamp         DateTime @default(now())
+  leadsCheckedCount          Int      @default(0)
+  firstAlertsSentCount       Int      @default(0)
+  recurringAlertsSentCount   Int      @default(0)
+  statusChangesDetectedCount Int      @default(0)
+  errorsEncountered          String?  // JSON string array of error messages
+  executionDurationMs        Int      @default(0)
+  nextExecutionTime          DateTime?
+}
+
+// ─── Users / Employee Access ────────────────────────
 
 // ─── Users / Employee Access ────────────────────────
 model User {

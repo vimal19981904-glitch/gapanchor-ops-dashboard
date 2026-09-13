@@ -43,22 +43,9 @@ async function main() {
   });
 
   // ─── Finance Transactions ─────────────────────────
-  const transactions = [
-    { date: new Date('2026-07-28'), type: 'income', sourceOrCategory: 'Training Fees', platform: 'Manhattan WMS', amount: 450000, paymentMethod: 'UPI', notes: 'Corporate Batch #14 WMS Deep Dive', quarter: 'Q3', year: 2026, origin: 'manual' },
-    { date: new Date('2026-07-25'), type: 'income', sourceOrCategory: 'Consulting', platform: 'Kinaxis', amount: 280000, paymentMethod: 'Bank Transfer', notes: 'Supply Chain Alignment Audit - Milestone 1', quarter: 'Q3', year: 2026, origin: 'manual' },
-    { date: new Date('2026-07-20'), type: 'expense', sourceOrCategory: 'Infrastructure', amount: 45000, paymentMethod: 'Credit Card', notes: 'AWS Lab Sandbox Instances & Cloud Lab', quarter: 'Q3', year: 2026, origin: 'outlook_email' },
-    { date: new Date('2026-07-15'), type: 'income', sourceOrCategory: 'Training Fees', platform: 'Blue Yonder', amount: 320000, paymentMethod: 'UPI', notes: 'Advanced Demand Planning Bootcamp', quarter: 'Q3', year: 2026, origin: 'manual' },
-    { date: new Date('2026-07-10'), type: 'expense', sourceOrCategory: 'Marketing', amount: 65000, paymentMethod: 'UPI', notes: 'LinkedIn Ads for Q3 Executive Cohorts', quarter: 'Q3', year: 2026, origin: 'manual' },
-    { date: new Date('2026-07-02'), type: 'expense', sourceOrCategory: 'Software', amount: 18500, paymentMethod: 'Credit Card', notes: 'Zoom Enterprise & WhatsApp Cloud API usage', quarter: 'Q3', year: 2026, origin: 'outlook_email' },
-    { date: new Date('2026-06-25'), type: 'income', sourceOrCategory: 'Training Fees', platform: 'SAP S/4HANA', amount: 510000, paymentMethod: 'Bank Transfer', notes: 'SAP MM/WM Enterprise Training Cohort', quarter: 'Q2', year: 2026, origin: 'manual' },
-    { date: new Date('2026-06-18'), type: 'expense', sourceOrCategory: 'Ops', amount: 55000, paymentMethod: 'Cash', notes: 'Training Materials, Badges & Venue Logistics', quarter: 'Q2', year: 2026, origin: 'manual' },
-    { date: new Date('2026-05-12'), type: 'income', sourceOrCategory: 'Consulting', platform: 'Manhattan WMS', amount: 375000, paymentMethod: 'Bank Transfer', notes: 'WMS Process Audit & Optimization Milestone 2', quarter: 'Q2', year: 2026, origin: 'manual' },
-    { date: new Date('2026-04-05'), type: 'income', sourceOrCategory: 'Training Fees', platform: 'Blue Yonder', amount: 290000, paymentMethod: 'UPI', notes: 'BY Luminate Planning Weekend Cohort', quarter: 'Q2', year: 2026, origin: 'manual' },
-  ];
+  // Note: All finance transactions are imported dynamically from Account_Statement.xlsx (127 rows).
+  // No hardcoded or dummy transactions are seeded.
 
-  for (const tx of transactions) {
-    await prisma.transaction.create({ data: tx });
-  }
 
   // ─── Training Sessions ────────────────────────────
   const sessions = [

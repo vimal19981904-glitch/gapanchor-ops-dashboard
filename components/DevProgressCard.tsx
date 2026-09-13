@@ -22,29 +22,29 @@ export default function DevProgressCard({ devData, onOpenModal, loading }: Props
   const { updates = [] } = devData || {};
 
   return (
-    <div className="glass-card animate-slide-up">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
-            <Code2 size={20} />
+    <div className="glass-card animate-slide-up !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl">
+      <div className="flex items-center justify-between mb-3 sm:mb-5">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+            <Code2 size={16} className="sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Dev Progress & Shipped Features</h2>
-            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Quarterly Timeline • GitHub + Manual Tracking</p>
+            <h2 className="text-base sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Dev Progress & Shipped Features</h2>
+            <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>Quarterly Timeline • GitHub + Manual Tracking</p>
           </div>
         </div>
-        <button onClick={onOpenModal} className="btn-secondary !py-1.5 !px-3 !text-xs">
+        <button onClick={onOpenModal} className="btn-secondary !py-1.5 !px-2.5 sm:!px-3 !text-xs">
           <PlusCircle size={13} />
-          Log Feature
+          <span>Log Feature</span>
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {updates.map((item: any) => {
           const cfg = typeConfig[item.type] || typeConfig.feature;
           const IconComp = cfg.icon;
           return (
-            <div key={item.id} className="rounded-xl border border-border p-4 transition-colors hover:border-border-secondary" style={{ background: 'var(--surface-2)' }}>
+            <div key={item.id} className="rounded-xl sm:rounded-2xl border border-border p-3 sm:p-4 transition-colors hover:border-border-secondary" style={{ background: 'var(--surface-2)' }}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className={`badge ${cfg.badgeClass}`}>

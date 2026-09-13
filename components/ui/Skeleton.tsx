@@ -30,15 +30,15 @@ export function SkeletonCard() {
 
 export function SkeletonKPI() {
   return (
-    <div className="glass-card space-y-3" style={{ padding: '20px' }}>
+    <div className="glass-card space-y-2 sm:space-y-3 !p-2.5 sm:!p-5 rounded-2xl sm:rounded-3xl">
       <div className="flex justify-between">
         <div className="space-y-2">
-          <SkeletonBlock className="h-3 w-24" />
-          <SkeletonBlock className="h-7 w-32" />
+          <SkeletonBlock className="h-3 w-20 sm:w-24" />
+          <SkeletonBlock className="h-5 sm:h-7 w-24 sm:w-32" />
         </div>
-        <SkeletonBlock className="h-10 w-10 rounded-xl" />
+        <SkeletonBlock className="h-7 w-7 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl" />
       </div>
-      <SkeletonBlock className="h-3 w-40" />
+      <SkeletonBlock className="h-2.5 sm:h-3 w-32 sm:w-40" />
     </div>
   );
 }

@@ -37,3 +37,10 @@ prisma/dev.db
 
 .vercel
 .env*
+
+# local scratch scripts and temporary data
+scratch/*.ts
+scratch/*.js
+scratch/*.py
+Account_Statement.xlsx
+.agents/

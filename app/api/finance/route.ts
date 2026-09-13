@@ -92,3 +92,83 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id || body.transactionId;
+      } catch (e) {
+        // ignore JSON parse error if no body
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Transaction ID is required for deletion.' }, { status: 400 });
+    }
+
+    // 1. Fetch existing transaction for purge log archive
+    const existing = await prisma.transaction.findUnique({
+      where: { id },
+    });
+
+    if (existing) {
+      try {
+        const auditLog = await prisma.integrationConfig.findUnique({
+          where: { service: 'finance_purge_log' },
+        });
+        const currentLogs = auditLog?.metadata ? JSON.parse(auditLog.metadata) : [];
+        currentLogs.unshift({
+          id: existing.id,
+          date: existing.date,
+          type: existing.type,
+          sourceOrCategory: existing.sourceOrCategory,
+          platform: existing.platform,
+          amount: existing.amount,
+          paymentMethod: existing.paymentMethod,
+          notes: existing.notes,
+          origin: existing.origin,
+          deletedAt: new Date().toISOString(),
+        });
+
+        await prisma.integrationConfig.upsert({
+          where: { service: 'finance_purge_log' },
+          update: {
+            metadata: JSON.stringify(currentLogs.slice(0, 500)),
+            lastSynced: new Date(),
+          },
+          create: {
+            service: 'finance_purge_log',
+            connected: true,
+            metadata: JSON.stringify(currentLogs.slice(0, 500)),
+            lastSynced: new Date(),
+          },
+        });
+      } catch (logErr) {
+        console.error('Finance purge audit log error:', logErr);
+      }
+
+      // 2. Perform actual deletion from Transaction table
+      await prisma.transaction.delete({
+        where: { id },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Transaction record has been permanently deleted and archived to purge logs.`,
+      transactionId: id,
+    });
+  } catch (error: any) {
+    console.error('Error deleting transaction record:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to delete transaction' },
+      { status: 500 }
+    );
+  }
+}
+

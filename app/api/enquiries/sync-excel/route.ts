@@ -163,39 +163,40 @@ export async function POST(request: Request) {
     }
 
     if (isExcelParsed && enquiries.length > 0) {
-      // Fast in-memory lookup map using email + trainingType + timestamp composite keys
       const existingEnquiries = await prisma.enquiry.findMany();
-      const recordMap = new Map<string, (typeof existingEnquiries)[0]>();
-
-      existingEnquiries.forEach(e => {
-        const eEmail = e.email ? e.email.trim().toLowerCase() : '';
-        const eName = e.participantName ? e.participantName.trim().toLowerCase() : '';
-        const eTraining = (e.trainingType || e.topic || '').trim().toLowerCase();
-        const eTs = e.messageTimestamp ? new Date(e.messageTimestamp).getTime() : 0;
-
-        if (eEmail) {
-          recordMap.set(`${eEmail}___${eTraining}`, e);
-          if (eTs) recordMap.set(`${eEmail}___${eTraining}___${eTs}`, e);
-        }
-        if (eName) {
-          recordMap.set(`${eName}___${eTraining}`, e);
-          if (eTs) recordMap.set(`${eName}___${eTraining}___${eTs}`, e);
-        }
-      });
 
       const txOperations: any[] = [];
 
       for (const item of enquiries) {
-        const emailKey = item.email ? item.email.trim().toLowerCase() : '';
-        const nameKey = item.participantName ? item.participantName.trim().toLowerCase() : '';
-        const trainingKey = (item.trainingType || item.topic || '').trim().toLowerCase();
-        const tsKey = item.messageTimestamp ? new Date(item.messageTimestamp).getTime() : 0;
+        const itemEmail = (item.email || '').trim().toLowerCase();
+        const itemName = (item.participantName || '').trim().toLowerCase();
+        const itemPhone = (item.phone || '').trim().toLowerCase();
+        const itemTraining = (item.trainingType || item.topic || '').trim().toLowerCase();
+        const itemDate = item.messageTimestamp ? new Date(item.messageTimestamp) : null;
 
-        const existing =
-          (emailKey && recordMap.get(`${emailKey}___${trainingKey}___${tsKey}`)) ||
-          (nameKey && recordMap.get(`${nameKey}___${trainingKey}___${tsKey}`)) ||
-          (emailKey && recordMap.get(`${emailKey}___${trainingKey}`)) ||
-          (nameKey && recordMap.get(`${nameKey}___${trainingKey}`));
+        // Find existing record matching participant identity + course/topic + 24h date window
+        const existing = existingEnquiries.find(e => {
+          const eEmail = (e.email || '').trim().toLowerCase();
+          const eName = (e.participantName || '').trim().toLowerCase();
+          const ePhone = (e.phone || '').trim().toLowerCase();
+          const eTraining = (e.trainingType || e.topic || '').trim().toLowerCase();
+          const eDate = e.messageTimestamp ? new Date(e.messageTimestamp) : null;
+
+          const identityMatch = (itemEmail && eEmail && itemEmail === eEmail) ||
+                                (itemName && eName && itemName === eName) ||
+                                (itemPhone && ePhone && itemPhone.length > 5 && itemPhone === ePhone);
+          if (!identityMatch) return false;
+
+          const topicMatch = itemTraining === eTraining || 
+                             (itemTraining.includes('manhattan') && eTraining.includes('manhattan') && itemTraining.includes('proactive') === eTraining.includes('proactive'));
+          if (!topicMatch) return false;
+
+          if (itemDate && eDate) {
+            const timeDiffHours = Math.abs(itemDate.getTime() - eDate.getTime()) / (1000 * 60 * 60);
+            return timeDiffHours <= 24;
+          }
+          return true;
+        });
 
         if (existing) {
           txOperations.push(

@@ -88,7 +88,7 @@ export default function AssignLeadModal({
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`✅ Lead assigned to ${chosenEmployee?.name}`, {
+        toast.success(`Lead assigned to ${chosenEmployee?.name}`, {
           description: `Updated in database & synced for employee portal`,
         });
         onSuccess();

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import AssignLeadModal from '@/components/AssignLeadModal';
 import UserNav from '@/components/UserNav';
 import MobileLeadCards from '@/components/MobileLeadCards';
+import DeleteRecordAction from '@/components/DeleteRecordAction';
 
 interface Enquiry {
   id: string;
@@ -74,7 +75,7 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         <span>{current.label}</span>
@@ -126,7 +127,7 @@ function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         <span>{current.label}</span>
@@ -156,9 +157,124 @@ function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val
   );
 }
 
+
+interface DonutSegment {
+  label: string;
+  value: number;
+  color: string;
+}
+
+function MiniDonutChart({
+  data,
+  total,
+  title,
+  isOpenControlled,
+  onToggle,
+}: {
+  data: DonutSegment[];
+  total: number;
+  title: string;
+  isOpenControlled?: boolean;
+  onToggle?: () => void;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isCurrentlyOpen = isOpenControlled !== undefined ? isOpenControlled : internalOpen;
+
+  const size = 48;
+  const strokeWidth = 7;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  let accumulatedPct = 0;
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onToggle) {
+          onToggle();
+        } else {
+          setInternalOpen((prev) => !prev);
+        }
+      }}
+      className="sm:relative group/donut cursor-pointer shrink-0 select-none"
+    >
+      {/* Pure Donut Chart Container */}
+      <div className="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-300 ease-out transform group-hover/donut:scale-[1.18] sm:group-hover/donut:scale-[1.8] group-hover/donut:z-40 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+        <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
+          {total === 0 ? (
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="#334155"
+              strokeWidth={strokeWidth}
+            />
+          ) : (
+            data.map((seg, i) => {
+              const pct = seg.value / total;
+              if (pct <= 0) return null;
+              const strokeDasharray = `${pct * circumference} ${circumference}`;
+              const strokeDashoffset = -accumulatedPct * circumference;
+              accumulatedPct += pct;
+
+              return (
+                <circle
+                  key={i}
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  className="transition-all duration-500"
+                />
+              );
+            })
+          )}
+        </svg>
+      </div>
+
+      {/* Breakdown Tooltip (Mobile: anchored to card boundaries | Desktop: 192px floating dropdown) */}
+      <div
+        className={`absolute top-full mt-1.5 sm:mt-2 left-0 right-0 sm:left-auto sm:right-0 sm:w-48 p-2.5 rounded-xl bg-[#090e1a] border border-slate-700/90 shadow-[0_12px_36px_rgba(0,0,0,0.95)] z-50 text-[9.5px] sm:text-[11px] space-y-1 sm:space-y-1.5 ${
+          isCurrentlyOpen
+            ? 'opacity-100 pointer-events-auto translate-y-0 scale-100'
+            : 'opacity-0 pointer-events-none translate-y-1 scale-95 group-hover/donut:opacity-100 group-hover/donut:pointer-events-auto group-hover/donut:translate-y-0 group-hover/donut:scale-100'
+        }`}
+      >
+        <div className="text-[8.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 flex justify-between items-center gap-1">
+          <span className="text-cyan-400 font-semibold truncate">{title}</span>
+          <span className="text-slate-500 font-normal shrink-0">{total} total</span>
+        </div>
+        <div className="space-y-1">
+          {data.map((seg, i) => {
+            const pct = total > 0 ? Math.round((seg.value / total) * 100) : 0;
+            return (
+              <div key={i} className="flex items-center justify-between gap-1 text-slate-200">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                  <span className="truncate text-[8.5px] sm:text-[10px] text-slate-300">{seg.label}</span>
+                </div>
+                <span className="font-mono font-bold text-[8.5px] sm:text-[10px] text-slate-200 shrink-0">
+                  {seg.value} <span className="text-[7.5px] sm:text-[9px] text-slate-500 font-normal">({pct}%)</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EnquiriesPage() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeDonut, setActiveDonut] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -364,6 +480,23 @@ export default function EnquiriesPage() {
   const talkedCount = enquiries.filter(e => e.contactStatus === 'Talked' || e.contactStatus === 'In Touch' || e.contactStatus === 'Converted').length;
   const pendingCount = enquiries.filter(e => e.contactStatus === 'Pending' || !e.contactStatus).length;
 
+  // Mini Donut Data Calculations
+  const manhattanWmsCount = enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('manhattan wms')).length;
+  const manhattanProActiveCount = enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('proactive')).length;
+  const blueYonderCount = enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('blue yonder') || (e.trainingType || '').toLowerCase().includes('jda')).length;
+  const otherCoursesCount = Math.max(0, totalCount - (manhattanWmsCount + manhattanProActiveCount + blueYonderCount));
+
+  const indiaCount = enquiries.filter(e => (e.country || '').toLowerCase().includes('india')).length;
+  const usaCount = enquiries.filter(e => (e.country || '').toLowerCase().includes('usa') || (e.country || '').toLowerCase().includes('united states')).length;
+
+  const mediumQualityCount = enquiries.filter(e => e.leadQuality === 'Medium').length;
+  const lowQualityCount = enquiries.filter(e => e.leadQuality === 'Low').length;
+  const unratedQualityCount = enquiries.filter(e => !e.leadQuality || e.leadQuality === 'Unrated').length;
+
+  const pureTalkedCount = enquiries.filter(e => e.contactStatus === 'Talked' || e.contactStatus === 'In Touch').length;
+  const convertedCount = enquiries.filter(e => e.contactStatus === 'Converted').length;
+  const lostCount = enquiries.filter(e => e.contactStatus === 'Lost' || e.contactStatus === 'Not Interested').length;
+
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans" style={{backgroundImage:'radial-gradient(ellipse at 20% 0%, rgba(6,182,212,0.07) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)'}}>
       <div className="w-full max-w-full px-2 sm:px-4 md:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5 flex-1 flex flex-col">
@@ -395,27 +528,27 @@ export default function EnquiriesPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full xl:w-auto justify-between xl:justify-end overflow-x-auto pb-1 xl:pb-0 scrollbar-hide">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-between xl:justify-end overflow-visible">
             <div className="shrink-0"><UserNav /></div>
             {currentUser?.role === 'admin' && (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
                 <button
                   onClick={() => handleSyncExcel()}
                   disabled={syncing}
-                  className="group relative flex items-center gap-2 px-3 md:px-5 py-2.5 rounded-xl text-[11px] md:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap"
+                  className="group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-                  <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  <span>{syncing ? 'Extracting & Syncing…' : 'Sync Outlook'}</span>
+                  <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
+                  <span>{syncing ? 'Syncing…' : 'Sync Outlook'}</span>
                 </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={syncing}
                   title="Upload custom data file"
-                  className="p-2 md:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+                  className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             )}
@@ -425,27 +558,121 @@ export default function EnquiriesPage() {
         {/* ── KPI Metric Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
-            { label: 'Total Enquiries', value: totalCount, icon: MessageSquare, color: 'cyan', iconBg: 'bg-cyan-500/10', iconColor: 'text-cyan-400', glow: 'shadow-cyan-500/20', border: 'border-cyan-500/15' },
-            { label: 'Countries Reached', value: uniqueCountries.length, icon: Globe, color: 'emerald', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400', glow: 'shadow-emerald-500/20', border: 'border-emerald-500/15' },
-            { label: 'High Quality Leads', value: highQualityCount, icon: Star, color: 'amber', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400', glow: 'shadow-amber-500/20', border: 'border-amber-500/15', suffix: highQualityCount > 0 ? '🔥' : '' },
-            { label: 'Talked / In Touch', value: talkedCount, icon: UserCheck, color: 'violet', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-400', glow: 'shadow-violet-500/20', border: 'border-violet-500/15', sub: `${pendingCount} pending` },
-          ].map((card) => (
-            <div key={card.label} className={`relative overflow-hidden p-3.5 sm:p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border ${card.border} shadow-lg ${card.glow} transition-all hover:scale-[1.02]`}>
-              <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${card.iconBg} blur-2xl opacity-60`} />
-              <div className="flex items-center justify-between relative">
-                <div>
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-widest truncate max-w-[100px] sm:max-w-none">{card.label}</p>
-                  <p className="text-xl sm:text-3xl font-black text-white mt-1 tracking-tight">
-                    {card.value}{card.suffix && <span className="ml-1 text-sm sm:text-xl">{card.suffix}</span>}
+            {
+              label: 'Total Enquiries',
+              value: totalCount,
+              icon: MessageSquare,
+              color: 'cyan',
+              iconBg: 'bg-cyan-500/10',
+              iconColor: 'text-cyan-400',
+              glow: 'shadow-cyan-500/20',
+              border: 'border-cyan-500/15',
+              donutTotal: totalCount,
+              donutData: [
+                { label: 'Manhattan WMS', value: manhattanWmsCount, color: '#06b6d4' },
+                { label: 'ProActive', value: manhattanProActiveCount, color: '#6366f1' },
+                { label: 'Blue Yonder', value: blueYonderCount, color: '#a855f7' },
+                { label: 'Other Courses', value: otherCoursesCount, color: '#64748b' },
+              ]
+            },
+            {
+              label: 'Countries Reached',
+              value: uniqueCountries.length,
+              icon: Globe,
+              color: 'emerald',
+              iconBg: 'bg-emerald-500/10',
+              iconColor: 'text-emerald-400',
+              glow: 'shadow-emerald-500/20',
+              border: 'border-emerald-500/15',
+              donutTotal: totalCount,
+              donutData: [
+                { label: 'India', value: indiaCount, color: '#10b981' },
+                { label: 'USA', value: usaCount, color: '#3b82f6' },
+                { label: 'Other Countries', value: Math.max(0, enquiries.length - indiaCount - usaCount), color: '#06b6d4' },
+              ]
+            },
+            {
+              label: 'High Quality Leads',
+              value: highQualityCount,
+              icon: Star,
+              color: 'amber',
+              iconBg: 'bg-amber-500/10',
+              iconColor: 'text-amber-400',
+              glow: 'shadow-amber-500/20',
+              border: 'border-amber-500/15',
+              suffix: highQualityCount > 0 ? '🔥' : '',
+              donutTotal: totalCount,
+              donutData: [
+                { label: 'High Quality', value: highQualityCount, color: '#f59e0b' },
+                { label: 'Medium Quality', value: mediumQualityCount, color: '#06b6d4' },
+                { label: 'Low Quality', value: lowQualityCount, color: '#64748b' },
+                { label: 'Unrated', value: unratedQualityCount, color: '#334155' },
+              ]
+            },
+            {
+              label: 'Talked / In Touch',
+              value: talkedCount,
+              icon: UserCheck,
+              color: 'violet',
+              iconBg: 'bg-violet-500/10',
+              iconColor: 'text-violet-400',
+              glow: 'shadow-violet-500/20',
+              border: 'border-violet-500/15',
+              sub: `${pendingCount} pending`,
+              donutTotal: totalCount,
+              donutData: [
+                { label: 'Talked / Touch', value: pureTalkedCount, color: '#8b5cf6' },
+                { label: 'Converted', value: convertedCount, color: '#10b981' },
+                { label: 'Pending', value: pendingCount, color: '#f59e0b' },
+                { label: 'Lost / Closed', value: lostCount, color: '#f43f5e' },
+              ]
+            },
+          ].map((card) => {
+            const isCardActive = activeDonut === card.label;
+            return (
+              <div
+                key={card.label}
+                className={`relative p-3.5 sm:p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border ${card.border} shadow-lg ${card.glow} min-h-[110px] sm:min-h-0 flex flex-col justify-between transition-all ${
+                  isCardActive ? 'z-40 ring-1 ring-cyan-500/40' : 'z-10 hover:z-30'
+                }`}
+              >
+                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${card.iconBg} blur-2xl opacity-60 pointer-events-none rounded-2xl overflow-hidden`} />
+
+                {/* Mobile-only Top Row: Full-width Label + Compact Icon */}
+                <div className="flex sm:hidden items-center justify-between w-full mb-1">
+                  <p className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider truncate max-w-[125px]">
+                    {card.label}
                   </p>
-                  {card.sub && <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">{card.sub}</p>}
+                  <div className={`p-1 rounded-lg ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
+                    <card.icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
+                  </div>
                 </div>
-                <div className={`p-2.5 sm:p-3.5 rounded-2xl ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
-                  <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${card.iconColor}`} />
+
+                {/* Main row: Desktop has Label + Value + Donut + Icon | Mobile has Value + Donut */}
+                <div className="flex items-center justify-between relative gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="hidden sm:block text-[10px] font-semibold text-slate-500 uppercase tracking-widest truncate">{card.label}</p>
+                    <p className="text-xl sm:text-3xl font-black text-white sm:mt-1 tracking-tight">
+                      {card.value}{card.suffix && <span className="ml-1 text-sm sm:text-xl">{card.suffix}</span>}
+                    </p>
+                    {card.sub && <p className="text-[9px] sm:text-[11px] text-slate-500 mt-0.5">{card.sub}</p>}
+                  </div>
+                  <div className="flex items-center justify-center shrink-0 px-0.5">
+                    <MiniDonutChart
+                      data={card.donutData}
+                      total={card.donutTotal}
+                      title={card.label}
+                      isOpenControlled={isCardActive}
+                      onToggle={() => setActiveDonut(prev => prev === card.label ? null : card.label)}
+                    />
+                  </div>
+                  <div className={`hidden sm:flex p-2.5 sm:p-3.5 rounded-2xl ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
+                    <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${card.iconColor}`} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── Course Category Tabs ── */}
@@ -561,6 +788,7 @@ export default function EnquiriesPage() {
                     setNoteText(enquiry.processedNotes || '');
                   }}
                   onAssign={openAssignModal}
+                  onDeleteRecord={(id) => setEnquiries((prev) => prev.filter((e) => e.id !== id))}
                   isAdmin={currentUser?.role === 'admin'}
                 />
               </div>
@@ -891,9 +1119,19 @@ export default function EnquiriesPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-              <span className="text-[10px] text-slate-600">Persisted in Supabase PostgreSQL</span>
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+              {/* Delete button integrated inside View Modal */}
+              <DeleteRecordAction
+                recordId={selectedDetailEnquiry.id}
+                recordName={selectedDetailEnquiry.participantName}
+                buttonStyle="full"
+                onDeleteSuccess={(id) => {
+                  setEnquiries((prev) => prev.filter((e) => e.id !== id));
+                  setSelectedDetailEnquiry(null);
+                }}
+              />
+
+              <div className="flex gap-2 items-center">
                 <button onClick={() => setSelectedDetailEnquiry(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 cursor-pointer">Close</button>
                 <button onClick={async () => { setSavingNote(true); try { await handleUpdateStatus(selectedDetailEnquiry.id, { notes: noteText, status: 'Processed' }); setSelectedDetailEnquiry(null); } finally { setSavingNote(false); } }} disabled={savingNote} className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs text-white font-bold shadow-lg shadow-cyan-500/15 cursor-pointer disabled:opacity-60">
                   {savingNote ? 'Saving…' : 'Save to DB'}

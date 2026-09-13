@@ -53,9 +53,10 @@ export default function CalendarWidget() {
   const fetchCalendarData = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
     try {
+      const nowIso = new Date().toISOString();
       const [statusRes, eventsRes] = await Promise.all([
         fetch('/api/calendar/status'),
-        fetch('/api/calendar/events?maxResults=4'),
+        fetch(`/api/calendar/events?maxResults=4&timeMin=${encodeURIComponent(nowIso)}`),
       ]);
 
       const [statusJson, eventsJson] = await Promise.all([
@@ -173,42 +174,42 @@ export default function CalendarWidget() {
   };
 
   return (
-    <div className="glass-card animate-slide-up w-full mt-6 p-4 sm:p-6 transition-all duration-300">
+    <div className="glass-card animate-slide-up w-full max-w-full overflow-hidden !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl transition-all duration-300">
       {/* Widget Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-border/50">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-border/50">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
             <CalendarIcon size={20} />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                 Upcoming Events
               </h2>
               {status.connected ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Google Calendar ({status.email || 'Synced'})
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 max-w-[200px] sm:max-w-none truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="truncate">Google Calendar ({status.email || 'Synced'})</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                  Scheduled Feed (4 Upcoming)
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                  Scheduled Feed
                 </span>
               )}
             </div>
-            <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-[10px] sm:text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
               Next schedule batches, client syncs & corporate training sessions
             </p>
           </div>
         </div>
 
         {/* Top Header Actions */}
-        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap mt-1 sm:mt-0">
           {!status.connected && (
             <button
               onClick={handleConnectGoogle}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-all cursor-pointer"
               title="Connect real Google Calendar via OAuth2"
             >
               <Sparkles size={13} />
@@ -218,7 +219,7 @@ export default function CalendarWidget() {
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-border/80 bg-surface-2 hover:bg-surface-3 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold border border-border/80 bg-surface-2 hover:bg-surface-3 transition-colors cursor-pointer"
             style={{ color: 'var(--text-primary)' }}
           >
             <Plus size={13} className="text-cyan-400" />
@@ -237,9 +238,9 @@ export default function CalendarWidget() {
 
           <Link
             href="/calendar"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all no-underline"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all no-underline"
           >
-            <span>View All Events</span>
+            <span>View All</span>
             <ChevronRight size={13} />
           </Link>
         </div>
@@ -279,7 +280,7 @@ export default function CalendarWidget() {
         </div>
       ) : (
         /* 4 Events Compact Cards Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0 w-full">
           {events.map((event) => {
             const dateBadge = formatEventDate(event.start);
             const timeRange = formatTimeRange(event.start, event.end, event.isAllDay);
@@ -288,12 +289,12 @@ export default function CalendarWidget() {
             return (
               <div
                 key={event.id}
-                className="group relative rounded-2xl border border-border/80 p-3.5 sm:p-4 transition-all duration-200 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/5 flex flex-col justify-between gap-2.5"
+                className="group relative rounded-2xl border border-border/80 p-3 sm:p-4 transition-all duration-200 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/5 flex flex-col justify-between gap-2.5 min-w-0 w-full overflow-hidden"
                 style={{ background: 'var(--surface-2)' }}
               >
                 {/* Event Title & Time (Line 1) */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5 min-w-0">
+                <div className="flex items-start justify-between gap-2.5 min-w-0 w-full">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border"
                       style={{
@@ -304,7 +305,7 @@ export default function CalendarWidget() {
                     >
                       <Video size={16} />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h4
                         className="text-xs sm:text-sm font-bold truncate group-hover:text-cyan-400 transition-colors"
                         style={{ color: 'var(--text-primary)' }}
@@ -312,13 +313,13 @@ export default function CalendarWidget() {
                       >
                         {event.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[10px] sm:text-[11px] font-medium truncate" style={{ color: 'var(--text-tertiary)' }}>
                         <Clock size={12} className="shrink-0" />
-                        <span>{timeRange}</span>
+                        <span className="truncate">{timeRange}</span>
                         {event.durationText && (
                           <>
-                            <span>•</span>
-                            <span>{event.durationText}</span>
+                            <span className="shrink-0">•</span>
+                            <span className="shrink-0">{event.durationText}</span>
                           </>
                         )}
                       </div>
@@ -327,13 +328,13 @@ export default function CalendarWidget() {
                 </div>
 
                 {/* Sub-row: Date | Platform Badge | Join Button */}
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/40">
-                  <div className="flex items-center gap-2 flex-wrap text-[10px] font-semibold">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-3 border border-border" style={{ color: 'var(--text-secondary)' }}>
-                      📅 {dateBadge}
+                <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/40 min-w-0 w-full">
+                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-semibold min-w-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-3 border border-border shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                      <CalendarIcon size={11} className="shrink-0" /> {dateBadge}
                     </span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-bold ${platformBadge.badgeClass}`}>
-                      🔗 {platformBadge.label}
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-bold shrink-0 ${platformBadge.badgeClass}`}>
+                      <Layers size={11} className="shrink-0" /> {platformBadge.label}
                     </span>
                   </div>
 
@@ -342,14 +343,14 @@ export default function CalendarWidget() {
                       href={event.joinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 hover:text-white shadow-sm transition-all no-underline shrink-0"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 hover:text-white shadow-sm transition-all no-underline shrink-0 ml-auto"
                       title={`Join ${platformBadge.label} Meeting`}
                     >
                       <span>JOIN</span>
                       <ExternalLink size={11} />
                     </a>
                   ) : (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-lg text-slate-500 bg-slate-800/40 border border-slate-700/50 shrink-0">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-lg text-slate-500 bg-slate-800/40 border border-slate-700/50 shrink-0 ml-auto">
                       In-Person
                     </span>
                   )}
@@ -361,13 +362,13 @@ export default function CalendarWidget() {
       )}
 
       {/* Expand / View All Footer Bar */}
-      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs">
-        <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="mt-4 pt-3 border-t border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs w-full min-w-0">
+        <span className="text-[10px] sm:text-[11px] truncate" style={{ color: 'var(--text-tertiary)' }}>
           Showing 4 upcoming sessions • Auto-refreshes every 5 mins
         </span>
         <Link
           href="/calendar"
-          className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 transition-colors no-underline text-xs"
+          className="inline-flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 transition-colors no-underline text-xs shrink-0 self-end sm:self-auto"
         >
           <span>Expand Full Calendar View</span>
           <ChevronRight size={14} />
@@ -388,7 +389,7 @@ export default function CalendarWidget() {
         onConnected={(email) => {
           fetchCalendarData();
         }}
-        defaultEmail={status.email || 'xavierarul40@gmail.com'}
+        defaultEmail={status.email || 'admin@gapanchor.com'}
       />
     </div>
   );

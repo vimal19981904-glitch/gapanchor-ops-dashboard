@@ -28,12 +28,23 @@ export default function Dashboard() {
   // Modals
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<any | null>(null);
   const [isDevModalOpen, setIsDevModalOpen] = useState(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
 
   // Setup Modal
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [setupInitialTab, setSetupInitialTab] = useState<'meta' | 'microsoft'>('meta');
+
+  const handleOpenAddSession = () => {
+    setEditingSession(null);
+    setIsOpsModalOpen(true);
+  };
+
+  const handleOpenEditSession = (session: any) => {
+    setEditingSession(session);
+    setIsOpsModalOpen(true);
+  };
 
   const fetchAllData = async () => {
     try {
@@ -87,7 +98,7 @@ export default function Dashboard() {
   const devCount = devData?.updates?.length || 0;
 
   return (
-    <div className="w-full max-w-full px-4 md:px-8 py-6">
+    <div className="w-full max-w-full overflow-x-hidden px-2.5 sm:px-6 md:px-8 py-2.5 sm:py-6">
       <DashboardHeader
         onRefresh={handleRefresh}
         isRefreshing={refreshing}
@@ -97,7 +108,7 @@ export default function Dashboard() {
       />
 
       {/* Top KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-7">
+      <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-5 mb-3 sm:mb-7">
         {loading ? (
           <>
             <SkeletonKPI />
@@ -108,36 +119,36 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              title="Net Revenue (Running)"
+              title="Net Revenue"
               value={formatCurrency(netProfit)}
-              subtext={`Income: ${formatCurrency(totalIncome)} • Expense: ${formatCurrency(totalExpense)}`}
+              subtext={`Inc: ${formatCurrency(totalIncome)} • Exp: ${formatCurrency(totalExpense)}`}
               icon={DollarSign}
               trend="up"
-              trendValue="+18.4% Q3"
+              trendValue="+18.4%"
               color="emerald"
             />
             <StatCard
-              title="Training Operations"
+              title="Training Ops"
               value={`${totalSessions} Sessions`}
-              subtext={`${totalParticipants} Participants Across Platforms`}
+              subtext={`${totalParticipants} Participants Across SCM`}
               icon={Calendar}
               trend="up"
-              trendValue="Manhattan/BY/Kinaxis/SAP"
+              trendValue="Manhattan/BY"
               color="indigo"
             />
             <StatCard
-              title="WhatsApp Enquiries"
+              title="WhatsApp Leads"
               value={`${enquiryTotal} Total`}
-              subtext={actionCount > 0 ? `⚠️ ${actionCount} pending action` : 'All enquiries processed'}
+              subtext={actionCount > 0 ? `${actionCount} pending action` : 'All processed'}
               icon={MessageSquare}
               trend={actionCount > 0 ? 'down' : 'up'}
-              trendValue={actionCount > 0 ? `${actionCount} Action Req` : '✓ All clear'}
+              trendValue={actionCount > 0 ? `${actionCount} Action` : '✓ All clear'}
               color={actionCount > 0 ? 'amber' : 'cyan'}
             />
             <StatCard
               title="Dev Progress"
               value={`${devCount} Shipped`}
-              subtext="Features, Fixes & Infrastructure"
+              subtext="Features, Fixes & Infra"
               icon={Code2}
               trend="up"
               trendValue="Q3 Active"
@@ -148,18 +159,20 @@ export default function Dashboard() {
       </div>
 
       {/* Main Module Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-6">
         {/* Finance Module (Full Width) */}
         <FinanceCard
           financeData={financeData}
           onOpenModal={() => setIsFinanceModalOpen(true)}
+          onRefresh={fetchAllData}
           loading={loading}
         />
 
-        {/* Training Ops */}
+        {/* Training and Finance Tracking */}
         <OpsCard
           opsData={opsData}
-          onOpenModal={() => setIsOpsModalOpen(true)}
+          onOpenModal={handleOpenAddSession}
+          onEditSession={handleOpenEditSession}
           loading={loading}
         />
 
@@ -188,7 +201,16 @@ export default function Dashboard() {
 
       {/* Modals & Setup Drawer */}
       <FinanceModal isOpen={isFinanceModalOpen} onClose={() => setIsFinanceModalOpen(false)} onRefresh={fetchAllData} />
-      <OpsModal isOpen={isOpsModalOpen} onClose={() => setIsOpsModalOpen(false)} onRefresh={fetchAllData} />
+      <OpsModal
+        isOpen={isOpsModalOpen}
+        onClose={() => {
+          setIsOpsModalOpen(false);
+          setEditingSession(null);
+        }}
+        onRefresh={fetchAllData}
+        sessionToEdit={editingSession}
+        masterParticipantsList={opsData?.masterParticipants}
+      />
       <DevModal isOpen={isDevModalOpen} onClose={() => setIsDevModalOpen(false)} onRefresh={fetchAllData} />
       <EnquiryModal isOpen={isEnquiryModalOpen} onClose={() => setIsEnquiryModalOpen(false)} onRefreshParent={fetchAllData} />
       <SetupModal

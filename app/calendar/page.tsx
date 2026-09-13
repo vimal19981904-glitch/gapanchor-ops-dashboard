@@ -55,6 +55,7 @@ interface CalendarEvent {
   id: string;
   title: string;
   description: string;
+  cleanDescription?: string;
   location: string;
   start: string;
   end: string;
@@ -65,6 +66,12 @@ interface CalendarEvent {
   joinUrl: string | null;
   attendees: { email: string; name?: string }[];
   isDemo?: boolean;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  scmProgram?: string;
+  meetingId?: string;
+  passcode?: string;
 }
 
 interface CalendarStatusData {
@@ -317,78 +324,79 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen w-full px-4 md:px-8 py-6 max-w-full space-y-6">
+    <div className="min-h-screen w-full px-1 sm:px-4 md:px-8 py-2 sm:py-6 max-w-full space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* ──── TOP HEADER & TOOLBAR ────────────────────────────────────── */}
-      <header className="glass-card animate-fade-in p-4 sm:p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <header className="glass-card animate-fade-in p-2.5 sm:p-6 rounded-2xl sm:rounded-3xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           {/* Brand & Back Navigation */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/"
-              className="w-10 h-10 rounded-2xl bg-surface-2 hover:bg-surface-3 border border-border flex items-center justify-center transition-colors shrink-0 text-slate-300 hover:text-white"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-surface-2 hover:bg-surface-3 border border-border flex items-center justify-center transition-colors shrink-0 text-slate-300 hover:text-white"
               title="Return to Dashboard"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} className="sm:w-4 sm:h-4" />
             </Link>
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                  Calendar & Events Hub
+                <h1 className="text-base sm:text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  <span className="sm:hidden">Calendar Hub</span>
+                  <span className="hidden sm:inline">Calendar & Events Hub</span>
                 </h1>
                 {status.connected ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                    Google Calendar ({status.email})
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 max-w-[180px] sm:max-w-none truncate">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0" />
+                    <span className="truncate">Google Calendar</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    Interactive Sandbox Feed
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 shrink-0" />
+                    Sandbox
                   </span>
                 )}
               </div>
-              <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-[10px] sm:text-xs font-medium truncate hidden sm:block" style={{ color: 'var(--text-tertiary)' }}>
                 Training batches, client consultations, mock interviews & operational reviews
               </p>
             </div>
           </div>
 
           {/* Action Bar */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end w-full sm:w-auto">
             {/* View Switcher */}
-            <div className="flex items-center rounded-xl p-1 border border-border" style={{ background: 'var(--surface-2)' }}>
+            <div className="flex items-center rounded-xl p-0.5 sm:p-1 border border-border" style={{ background: 'var(--surface-2)' }}>
               <button
                 onClick={() => setViewMode('month')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                   viewMode === 'month'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <CalendarDays size={14} />
+                <CalendarDays size={13} />
                 <span>Month</span>
               </button>
               <button
                 onClick={() => setViewMode('week')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                   viewMode === 'week'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <CalendarRange size={14} />
+                <CalendarRange size={13} />
                 <span>Week</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                   viewMode === 'list'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <ListFilter size={14} />
+                <ListFilter size={13} />
                 <span>Agenda</span>
               </button>
             </div>
@@ -397,66 +405,67 @@ export default function CalendarPage() {
             <button
               onClick={() => fetchCalendarData(true)}
               disabled={refreshing}
-              className="p-2 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 transition-colors text-slate-300 hover:text-white cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 transition-colors text-slate-300 hover:text-white cursor-pointer"
               title="Refresh Calendar"
             >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin text-cyan-400' : ''} />
+              <RefreshCw size={15} className={refreshing ? 'animate-spin text-cyan-400' : ''} />
             </button>
 
             {/* Create Event Button */}
             <button
               onClick={() => handleOpenCreateForDate(new Date())}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:opacity-95 text-white shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:opacity-95 text-white shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
             >
-              <Plus size={15} />
-              <span>Create New Event</span>
+              <Plus size={14} />
+              <span className="sm:hidden">New Event</span>
+              <span className="hidden sm:inline">Create New Event</span>
             </button>
           </div>
         </div>
 
         {/* Search & Navigation Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-5 pt-4 border-t border-border/50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mt-3 sm:mt-5 pt-3 sm:pt-4 border-t border-border/50">
           {/* Navigation Month Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-1">
               <button
                 onClick={handlePrev}
                 className="p-1.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 transition-colors text-slate-300 hover:text-white"
                 title="Previous"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
               <button
                 onClick={handleNext}
                 className="p-1.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 transition-colors text-slate-300 hover:text-white"
                 title="Next"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
             </div>
 
-            <h2 className="text-lg sm:text-xl font-bold min-w-[180px]" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="text-base sm:text-xl font-black min-w-[140px] sm:min-w-[180px]" style={{ color: 'var(--text-primary)' }}>
               {format(currentDate, viewMode === 'week' ? 'MMMM yyyy' : 'MMMM yyyy')}
             </h2>
 
             <button
               onClick={handleToday}
-              className="px-3 py-1 text-xs font-bold rounded-lg border border-border hover:border-cyan-500/40 bg-surface-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="px-2.5 py-1 text-[11px] sm:text-xs font-bold rounded-lg border border-border hover:border-cyan-500/40 bg-surface-2 text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               Today
             </button>
           </div>
 
           {/* Search & Filters */}
-          <div className="flex items-center gap-2.5 flex-1 max-w-md">
-            <div className="relative flex-1">
+          <div className="flex items-center gap-2.5 flex-1 max-w-md w-full">
+            <div className="relative flex-1 w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search events, topics, attendees..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-border text-xs outline-none focus:border-cyan-500 transition-colors"
+                className="w-full pl-9 pr-8 py-1.5 rounded-xl border border-border text-[11px] sm:text-xs outline-none focus:border-cyan-500 transition-colors"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
               />
               {searchQuery && (
@@ -472,172 +481,25 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {/* ──── MAIN 3-COLUMN LAYOUT ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ──── LEFT SIDEBAR: MINI CALENDAR & FILTERS (Col 1-3) ──────── */}
-        <aside className="lg:col-span-3 space-y-5">
-          {/* Mini Calendar Card */}
-          <div className="glass-card p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
-                {format(currentDate, 'MMMM yyyy')}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentDate((prev) => subMonths(prev, 1))}
-                  className="p-1 rounded-lg hover:bg-surface-3 text-slate-400 hover:text-slate-200"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <button
-                  onClick={() => setCurrentDate((prev) => addMonths(prev, 1))}
-                  className="p-1 rounded-lg hover:bg-surface-3 text-slate-400 hover:text-slate-200"
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Mini Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 text-center mb-1">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                <div key={idx} className="text-[10px] font-bold text-slate-500 py-1">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {monthDays.map((day, i) => {
-                const dayEvents = getEventsForDay(day);
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isSelected = isSameDay(day, selectedDate);
-                const isTodayDate = isToday(day);
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedDate(day);
-                      if (!isCurrentMonth) setCurrentDate(day);
-                    }}
-                    className={`h-7 w-7 sm:h-8 sm:w-8 mx-auto rounded-lg text-[11px] font-medium flex flex-col items-center justify-center relative transition-all ${
-                      isSelected
-                        ? 'bg-cyan-500 text-white font-bold shadow-md shadow-cyan-500/30'
-                        : isTodayDate
-                        ? 'border border-cyan-400 text-cyan-400 font-bold'
-                        : isCurrentMonth
-                        ? 'text-slate-200 hover:bg-surface-3'
-                        : 'text-slate-600 hover:bg-surface-2'
-                    }`}
-                  >
-                    <span>{format(day, 'd')}</span>
-                    {dayEvents.length > 0 && !isSelected && (
-                      <span className="w-1 h-1 rounded-full bg-cyan-400 absolute bottom-1" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Platform Filters Card */}
-          <div className="glass-card p-4 sm:p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>
-              Filter By Platform
-            </h3>
-            <div className="space-y-1.5">
-              {[
-                { id: 'all', label: 'All Sessions', count: platformCounts.all, color: 'text-slate-300' },
-                { id: 'google_meet', label: 'Google Meet', count: platformCounts.google_meet, color: 'text-emerald-400' },
-                { id: 'teams', label: 'Microsoft Teams', count: platformCounts.teams, color: 'text-blue-400' },
-                { id: 'zoom', label: 'Zoom', count: platformCounts.zoom, color: 'text-sky-400' },
-                { id: 'in_person', label: 'In-Person', count: platformCounts.in_person, color: 'text-purple-400' },
-              ].map((p) => {
-                const active = platformFilter === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setPlatformFilter(p.id as any)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                      active
-                        ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300'
-                        : 'border border-transparent hover:bg-surface-2 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${p.color.replace('text-', 'bg-')}`} />
-                      <span>{p.label}</span>
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-3 border border-border/50 text-slate-300">
-                      {p.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Account Status / Connect Card */}
-          <div className="glass-card p-4 sm:p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: 'var(--text-tertiary)' }}>
-              Google Calendar Account
-            </h3>
-            {status.connected ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10">
-                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-1">
-                    <CheckCircle2 size={14} />
-                    <span>Connected & Synced</span>
-                  </div>
-                  <p className="text-[11px] font-mono text-slate-300 truncate">{status.email}</p>
-                </div>
-                <button
-                  onClick={handleDisconnect}
-                  className="w-full py-1.5 text-xs font-bold rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
-                >
-                  Disconnect Account
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl border border-border" style={{ background: 'var(--surface-2)' }}>
-                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Sandbox Active
-                  </p>
-                  <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                    Connect your Google account to sync real personal/work calendar events.
-                  </p>
-                </div>
-                <button
-                  onClick={handleConnectGoogle}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 transition-all cursor-pointer shadow-md shadow-cyan-500/10"
-                >
-                  <Sparkles size={14} />
-                  <span>Connect Google Calendar</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* ──── CENTER: MAIN CALENDAR AREA (Col 4-8 or 9) ────────────── */}
-        <main className="lg:col-span-6 space-y-4">
-          {/* Month View Grid */}
+      {/* ──── MAIN 2-COLUMN LAYOUT ───────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 w-full max-w-full">
+        {/* ──── MAIN CALENDAR GRID AREA (Col 1-9) ────────────── */}
+        <main className="lg:col-span-8 xl:col-span-9 space-y-3 sm:space-y-4 w-full max-w-full">
+          {/* Month View Grid (Apple iOS Calendar Design - Matching Image 2) */}
           {viewMode === 'month' && (
-            <div className="glass-card p-3 sm:p-5">
-              {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+            <div className="glass-card p-1 sm:p-5 rounded-2xl sm:rounded-3xl w-full max-w-full">
+              {/* Day Headers (S M T W T F S) */}
+              <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-2 text-center border-b border-border/40 pb-2">
                 {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, idx) => (
-                  <div key={idx} className="text-xs font-bold text-slate-400 uppercase tracking-wider py-1.5">
+                  <div key={idx} className="text-[11px] sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
                     <span className="hidden sm:inline">{day.slice(0, 3)}</span>
-                    <span className="sm:hidden">{day.slice(0, 1)}</span>
+                    <span className="sm:hidden text-slate-300 font-extrabold">{day.slice(0, 1)}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Day Cells Grid */}
-              <div className="grid grid-cols-7 gap-1.5">
+              {/* Day Cells Grid (Apple iOS Calendar Seamless Design) */}
+              <div className="grid grid-cols-7 gap-0.5 sm:gap-2 w-full">
                 {monthDays.map((day, i) => {
                   const dayEvents = getEventsForDay(day);
                   const isCurrentMonth = isSameMonth(day, currentDate);
@@ -649,41 +511,46 @@ export default function CalendarPage() {
                       key={i}
                       onClick={() => setSelectedDate(day)}
                       onDoubleClick={() => handleOpenCreateForDate(day)}
-                      className={`min-h-[90px] sm:min-h-[110px] p-1.5 sm:p-2 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                      className={`min-h-[64px] sm:min-h-[140px] p-1 sm:p-1.5 rounded-xl transition-all cursor-pointer flex flex-col justify-start gap-0.5 sm:gap-1 ${
                         isSelected
-                          ? 'border-cyan-500/60 bg-cyan-500/5 shadow-lg shadow-cyan-500/10'
+                          ? 'bg-cyan-500/10 ring-1 ring-cyan-400/50 shadow-md'
                           : isCurrentMonth
-                          ? 'border-border/70 hover:border-border hover:bg-surface-2'
-                          : 'border-border/30 opacity-40 hover:opacity-75'
+                          ? 'hover:bg-surface-2/60'
+                          : 'opacity-30 hover:opacity-60'
                       }`}
-                      style={!isSelected && isCurrentMonth ? { background: 'var(--surface-1)' } : {}}
                     >
-                      {/* Day Number Header */}
-                      <div className="flex items-center justify-between mb-1">
+                      {/* Day Number Header (Apple Calendar style: Solid Red circle for Today, clean number for others) */}
+                      <div className="flex items-center justify-center sm:justify-start w-full mb-0.5 sm:mb-1">
                         <span
-                          className={`text-xs font-bold inline-flex items-center justify-center w-6 h-6 rounded-lg ${
+                          className={`text-xs sm:text-sm font-bold inline-flex items-center justify-center ${
                             isTodayDate
-                              ? 'bg-cyan-500 text-white shadow-sm'
+                              ? 'w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-red-500 text-white font-black shadow-lg shadow-red-500/50 text-[11px] sm:text-sm'
                               : isSelected
-                              ? 'text-cyan-400 font-extrabold'
-                              : 'text-slate-300'
+                              ? 'w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-cyan-500 text-white font-bold text-[11px] sm:text-sm shadow-md shadow-cyan-500/30'
+                              : isCurrentMonth
+                              ? 'text-slate-200 px-0.5 sm:px-1'
+                              : 'text-slate-500 px-0.5 sm:px-1'
                           }`}
                         >
                           {format(day, 'd')}
                         </span>
+                      </div>
 
-                        {dayEvents.length > 2 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-surface-3 text-cyan-400 border border-cyan-500/20">
-                            +{dayEvents.length - 2}
-                          </span>
+                      {/* Mobile Event Dots (Apple iOS Calendar style) */}
+                      <div className="flex sm:hidden items-center justify-center gap-0.5 mt-0.5 flex-wrap">
+                        {dayEvents.slice(0, 3).map((ev) => (
+                          <span key={ev.id} className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_3px_#22d3ee]" />
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <span className="text-[7px] font-bold text-slate-400">+{dayEvents.length - 3}</span>
                         )}
                       </div>
 
-                      {/* Event Chips */}
-                      <div className="space-y-1 flex-1 overflow-hidden">
-                        {dayEvents.slice(0, 2).map((ev) => {
-                          const style = getPlatformStyle(ev.platform);
+                      {/* Event Chips (Apple iOS Calendar Stacked Blue Pill Style - Desktop & Tablet) */}
+                      <div className="hidden sm:block space-y-1.5 w-full flex-1 overflow-y-auto max-h-[140px] pr-0.5 custom-scrollbar">
+                        {dayEvents.map((ev) => {
                           const isCurrentSelected = selectedEvent?.id === ev.id;
+                          const timeFormatted = formatTimeSlot(ev.start);
 
                           return (
                             <div
@@ -693,38 +560,147 @@ export default function CalendarPage() {
                                 setSelectedEvent(ev);
                                 setSelectedDate(day);
                               }}
-                              className={`px-1.5 py-1 rounded-lg text-[10px] font-semibold truncate border transition-all ${
+                              className={`w-full px-1.5 py-1 rounded-md sm:rounded-lg text-left transition-all cursor-pointer border ${
                                 isCurrentSelected
-                                  ? `${style.badge} ring-1 ring-cyan-400 font-bold`
-                                  : `${style.badge} hover:brightness-110`
+                                  ? 'bg-sky-500 text-white font-bold border-sky-300 shadow-md ring-1 ring-sky-300'
+                                  : 'bg-sky-500/25 hover:bg-sky-500/40 border-sky-400/30 text-sky-100'
                               }`}
                               title={`${ev.title} (${ev.durationText})`}
                             >
-                              <div className="flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
-                                <span className="truncate">{ev.title}</span>
+                              <div className="text-[10px] sm:text-xs font-bold text-sky-100 truncate leading-snug">
+                                {ev.title}
+                              </div>
+                              <div className="text-[9px] sm:text-[10px] font-semibold text-sky-300 truncate mt-0.5">
+                                {timeFormatted || 'All Day'}
                               </div>
                             </div>
                           );
                         })}
                       </div>
-
-                      {/* Quick Add icon on hover */}
-                      <div className="opacity-0 hover:opacity-100 transition-opacity flex justify-end pt-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenCreateForDate(day);
-                          }}
-                          className="p-1 rounded-md bg-surface-3 hover:bg-cyan-500 hover:text-white text-slate-400 transition-colors"
-                          title="Create event on this day"
-                        >
-                          <Plus size={10} />
-                        </button>
-                      </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Selected Day Agenda (Visible beneath Month Grid for Instant Access) */}
+              <div className="mt-4 pt-4 border-t border-border/60">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-black text-xs shrink-0">
+                      {format(selectedDate, 'd')}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                        <span className="truncate">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+                        {isToday(selectedDate) && (
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
+                            Today
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 truncate">
+                        {getEventsForDay(selectedDate).length === 0
+                          ? 'No meetings scheduled'
+                          : `${getEventsForDay(selectedDate).length} session${getEventsForDay(selectedDate).length > 1 ? 's' : ''} on this day`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenCreateForDate(selectedDate)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition-all shrink-0 cursor-pointer"
+                  >
+                    <Plus size={13} />
+                    <span>Add Event</span>
+                  </button>
+                </div>
+
+                {getEventsForDay(selectedDate).length === 0 ? (
+                  <div className="p-4 rounded-2xl border border-dashed border-border/80 bg-surface-1/40 text-center">
+                    <p className="text-xs text-slate-400 font-medium">
+                      No meetings on {format(selectedDate, 'MMMM d')}.
+                    </p>
+                    <button
+                      onClick={() => handleOpenCreateForDate(selectedDate)}
+                      className="mt-1.5 text-xs font-bold text-cyan-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus size={12} /> Schedule New Event
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getEventsForDay(selectedDate).map((ev) => {
+                      const style = getPlatformStyle(ev.platform);
+                      const isCurrentSelected = selectedEvent?.id === ev.id;
+                      const timeFormatted = formatTimeSlot(ev.start);
+
+                      return (
+                        <div
+                          key={ev.id}
+                          onClick={() => setSelectedEvent(ev)}
+                          className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+                            isCurrentSelected
+                              ? 'border-cyan-500/60 bg-cyan-500/15 shadow-md ring-1 ring-cyan-400/40'
+                              : 'border-border/80 bg-surface-2 hover:border-cyan-500/30'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <div className="p-2 rounded-xl bg-surface-3 border border-border text-cyan-400 shrink-0 mt-0.5">
+                              <Video size={14} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-bold text-white truncate">
+                                  {ev.title}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border shrink-0 ${style.badge}`}>
+                                  {style.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                                <Clock size={11} className="shrink-0" />
+                                <span>{timeFormatted || 'All Day'}</span>
+                                <span>•</span>
+                                <span>{ev.durationText}</span>
+                                {ev.location && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate max-w-[150px]">{ev.location}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                            {ev.joinUrl && (
+                              <a
+                                href={ev.joinUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold bg-gradient-to-r ${style.btnClass} transition-all no-underline shadow-sm`}
+                              >
+                                <span>JOIN</span>
+                                <ExternalLink size={11} />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(ev);
+                              }}
+                              className="px-2.5 py-1 rounded-xl text-[11px] font-semibold border border-border bg-surface-3 hover:bg-surface-2 text-slate-300 transition-colors"
+                            >
+                              Details
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -753,7 +729,7 @@ export default function CalendarPage() {
                         <p className="text-[11px] font-bold text-slate-400">{format(day, 'EEE')}</p>
                         <p
                           className={`text-sm font-black mx-auto w-7 h-7 rounded-full flex items-center justify-center mt-1 ${
-                            isTodayDate ? 'bg-cyan-500 text-white' : 'text-slate-200'
+                            isTodayDate ? 'bg-red-500 text-white' : 'text-slate-200'
                           }`}
                         >
                           {format(day, 'd')}
@@ -761,9 +737,8 @@ export default function CalendarPage() {
                       </div>
 
                       {/* Events List */}
-                      <div className="space-y-2 mt-2 flex-1">
+                      <div className="space-y-2 mt-2 flex-1 overflow-y-auto">
                         {dayEvents.map((ev) => {
-                          const style = getPlatformStyle(ev.platform);
                           const isCurrentSelected = selectedEvent?.id === ev.id;
 
                           return (
@@ -775,8 +750,8 @@ export default function CalendarPage() {
                               }}
                               className={`p-2 rounded-xl text-xs border cursor-pointer transition-all ${
                                 isCurrentSelected
-                                  ? `${style.badge} ring-2 ring-cyan-400 font-bold shadow-md`
-                                  : `${style.badge} hover:shadow`
+                                  ? 'bg-sky-500/40 border-sky-400 text-white font-bold shadow-md ring-1 ring-sky-300'
+                                  : 'bg-sky-500/20 hover:bg-sky-500/35 border-sky-500/40 text-sky-200'
                               }`}
                             >
                               <p className="font-bold truncate">{ev.title}</p>
@@ -882,8 +857,9 @@ export default function CalendarPage() {
           )}
         </main>
 
-        {/* ──── RIGHT SIDEBAR: SELECTED EVENT DETAILS PANEL (Col 9-12) ─── */}
-        <aside className="lg:col-span-3 space-y-5">
+        {/* ──── RIGHT SIDEBAR: CONTROLS & SELECTED EVENT DETAILS (Col 10-12) ─── */}
+        <aside className="lg:col-span-4 xl:col-span-3 space-y-5">
+          {/* Selected Event Details Panel (When selected) */}
           {selectedEvent ? (
             <div className="glass-card p-5 sm:p-6 space-y-5 animate-slide-up sticky top-6">
               {/* Header: Platform & Close */}
@@ -898,7 +874,7 @@ export default function CalendarPage() {
                 </span>
 
                 <div className="flex items-center gap-1">
-                  <span className="text-[11px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <span className="text-[11px] font-medium text-slate-400">
                     Event Details
                   </span>
                 </div>
@@ -975,14 +951,21 @@ export default function CalendarPage() {
                 )}
               </div>
 
-              {/* Description / Agenda */}
-              {selectedEvent.description && (
+              {/* Description / Agenda & Extracted Booking Info */}
+              {(selectedEvent.cleanDescription || selectedEvent.description) && (
                 <div className="pt-3 border-t border-border/50">
                   <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5 text-slate-400">
-                    Agenda & Objectives
+                    Agenda & Customer Details
                   </label>
-                  <div className="text-xs leading-relaxed text-slate-300 p-3 rounded-xl bg-surface-2 border border-border">
-                    {selectedEvent.description}
+                  <div className="text-xs leading-relaxed text-slate-300 p-3 rounded-xl bg-surface-2 border border-border space-y-2">
+                    {selectedEvent.scmProgram && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
+                        <span>📦 Program: {selectedEvent.scmProgram}</span>
+                      </div>
+                    )}
+                    <p className="whitespace-pre-line text-xs font-medium">
+                      {selectedEvent.cleanDescription || selectedEvent.description}
+                    </p>
                   </div>
                 </div>
               )}
@@ -1011,16 +994,86 @@ export default function CalendarPage() {
                 </div>
               )}
             </div>
-          ) : (
-            /* Fallback state when no event is selected */
-            <div className="glass-card p-6 text-center text-slate-400 space-y-3">
-              <CalendarIcon size={36} className="mx-auto text-cyan-400 opacity-60" />
-              <h4 className="text-sm font-bold text-slate-200">No Event Selected</h4>
-              <p className="text-xs text-slate-400">
-                Click on any event pill on the calendar to preview full details and one-click join links.
-              </p>
+          ) : null}
+
+          {/* Platform Filters Card */}
+          <div className="glass-card p-4 sm:p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-tertiary)' }}>
+              Filter By Platform
+            </h3>
+            <div className="space-y-1.5">
+              {[
+                { id: 'all', label: 'All Sessions', count: platformCounts.all, color: 'text-slate-300' },
+                { id: 'google_meet', label: 'Google Meet', count: platformCounts.google_meet, color: 'text-emerald-400' },
+                { id: 'teams', label: 'Microsoft Teams', count: platformCounts.teams, color: 'text-blue-400' },
+                { id: 'zoom', label: 'Zoom', count: platformCounts.zoom, color: 'text-sky-400' },
+                { id: 'in_person', label: 'In-Person', count: platformCounts.in_person, color: 'text-purple-400' },
+              ].map((p) => {
+                const active = platformFilter === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setPlatformFilter(p.id as any)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      active
+                        ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300'
+                        : 'border border-transparent hover:bg-surface-2 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${p.color.replace('text-', 'bg-')}`} />
+                      <span>{p.label}</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-3 border border-border/50 text-slate-300">
+                      {p.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
+
+          {/* Account Status / Connect Card */}
+          <div className="glass-card p-4 sm:p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: 'var(--text-tertiary)' }}>
+              Google Calendar Account
+            </h3>
+            {status.connected ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10">
+                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-1">
+                    <CheckCircle2 size={14} />
+                    <span>Connected & Synced</span>
+                  </div>
+                  <p className="text-[11px] font-mono text-slate-300 truncate">{status.email}</p>
+                </div>
+                <button
+                  onClick={handleDisconnect}
+                  className="w-full py-1.5 text-xs font-bold rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                >
+                  Disconnect Account
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-border" style={{ background: 'var(--surface-2)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                    Sandbox Active
+                  </p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                    Connect your Google account to sync real personal/work calendar events.
+                  </p>
+                </div>
+                <button
+                  onClick={handleConnectGoogle}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 transition-all cursor-pointer shadow-md shadow-cyan-500/10"
+                >
+                  <Sparkles size={14} />
+                  <span>Connect Google Calendar</span>
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
       </div>
 
@@ -1037,7 +1090,7 @@ export default function CalendarPage() {
         isOpen={isConnectModalOpen}
         onClose={() => setIsConnectModalOpen(false)}
         onConnected={() => fetchCalendarData()}
-        defaultEmail="xavierarul40@gmail.com"
+        defaultEmail="admin@gapanchor.com"
       />
     </div>
   );

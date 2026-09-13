@@ -13,6 +13,8 @@ import {
   Phone,
 } from 'lucide-react';
 
+import DeleteRecordAction from './DeleteRecordAction';
+
 export interface MobileLeadItem {
   id: string;
   participantName: string;
@@ -43,6 +45,7 @@ interface MobileLeadCardsProps {
   onAddNotes?: (lead: MobileLeadItem) => void;
   onViewDetail?: (lead: MobileLeadItem) => void;
   onAssign?: (lead: MobileLeadItem) => void;
+  onDeleteRecord?: (id: string) => void;
   isAdmin?: boolean;
 }
 
@@ -135,8 +138,8 @@ export default function MobileLeadCards({
                       {lead.participantName}
                     </span>
                     {lead.assignedToName && (
-                      <span className="px-1.5 py-0.2 text-[8px] font-bold rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 shrink-0">
-                        {lead.assignedToName.split(' ')[0]}
+                      <span className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 max-w-[100px] truncate">
+                        {lead.assignedToName.replace(/\s*\(.*?\)/, '')}
                       </span>
                     )}
                   </div>
@@ -183,7 +186,7 @@ export default function MobileLeadCards({
                         onClick={(e) => e.stopPropagation()}
                         className="font-mono text-xs font-semibold text-cyan-300 hover:text-cyan-200 hover:underline truncate"
                       >
-                        📱 {lead.phone}
+                        <Phone size={12} className="inline shrink-0" /> {lead.phone}
                       </a>
                     ) : (
                       <span className="text-xs text-slate-500 italic">None</span>
@@ -202,7 +205,7 @@ export default function MobileLeadCards({
                         className="text-xs text-slate-300 hover:text-cyan-300 hover:underline truncate max-w-[200px]"
                         title={lead.email}
                       >
-                        ✉️ {lead.email}
+                        <Mail size={12} className="inline shrink-0" /> {lead.email}
                       </a>
                     ) : (
                       <span className="text-xs text-slate-500 italic">None</span>

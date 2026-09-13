@@ -117,33 +117,31 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl border border-border/80 p-5 sm:p-7 shadow-2xl animate-slide-up"
-        style={{ background: 'var(--surface-1)' }}
+        className="w-full max-w-xl max-h-[88vh] overflow-y-auto rounded-3xl border border-cyan-500/40 bg-[#0b1329] p-5 sm:p-7 shadow-2xl shadow-cyan-950/80 animate-slide-up text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5 pb-3 border-b border-border/50">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-700/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/30 shrink-0">
               <Calendar size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-lg font-bold text-white">
                 Create New Event
               </h3>
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-xs text-slate-400">
                 Syncs with Google Calendar and Ops Schedule
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
-            style={{ color: 'var(--text-tertiary)' }}
+            className="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-slate-400 hover:text-white"
           >
             <X size={18} />
           </button>
@@ -153,7 +151,7 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Event Title *
             </label>
             <input
@@ -162,15 +160,14 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Manhattan WMS Architecture & Wave Planning"
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all"
             />
           </div>
 
           {/* Date & Time Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-xs font-bold text-slate-300 mb-1.5 block">
                 Date *
               </label>
               <input
@@ -178,12 +175,11 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-xs font-bold text-slate-300 mb-1.5 block">
                 Start Time
               </label>
               <input
@@ -191,12 +187,11 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                 required
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-xs font-bold text-slate-300 mb-1.5 block">
                 End Time
               </label>
               <input
@@ -204,23 +199,22 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                 required
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
               />
             </div>
           </div>
 
           {/* Meeting Platform Selector */}
           <div>
-            <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-2 block">
               Conferencing & Platform
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { type: 'google_meet', label: 'Google Meet', color: 'emerald', border: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' },
-                { type: 'teams', label: 'Teams', color: 'blue', border: 'border-blue-500/40 bg-blue-500/10 text-blue-400' },
-                { type: 'zoom', label: 'Zoom', color: 'sky', border: 'border-sky-500/40 bg-sky-500/10 text-sky-400' },
-                { type: 'none', label: 'In-Person / None', color: 'purple', border: 'border-purple-500/40 bg-purple-500/10 text-purple-400' },
+                { type: 'google_meet', label: 'Google Meet', border: 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300' },
+                { type: 'teams', label: 'Teams', border: 'border-blue-500/60 bg-blue-500/20 text-blue-300' },
+                { type: 'zoom', label: 'Zoom', border: 'border-sky-500/60 bg-sky-500/20 text-sky-300' },
+                { type: 'none', label: 'In-Person / None', border: 'border-purple-500/60 bg-purple-500/20 text-purple-300' },
               ].map((p) => {
                 const isSelected = conferenceType === p.type;
                 return (
@@ -228,12 +222,11 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                     key={p.type}
                     type="button"
                     onClick={() => setConferenceType(p.type as any)}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold border text-center transition-all ${
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
                       isSelected
-                        ? `${p.border} ring-2 ring-cyan-500/40 font-bold shadow-md`
-                        : 'border-border opacity-70 hover:opacity-100'
+                        ? `${p.border} ring-2 ring-cyan-400/50 shadow-lg`
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                     }`}
-                    style={!isSelected ? { background: 'var(--surface-2)', color: 'var(--text-secondary)' } : {}}
                   >
                     {p.label}
                   </button>
@@ -244,7 +237,7 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
 
           {/* Attendees */}
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Attendees (Optional)
             </label>
             <div className="flex gap-2 mb-2">
@@ -254,13 +247,12 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                 onChange={(e) => setAttendeeInput(e.target.value)}
                 onKeyDown={handleKeyDownAttendee}
                 placeholder="colleague@gapanchor.com"
-                className="flex-1 rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                className="flex-1 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
               />
               <button
                 type="button"
                 onClick={handleAddAttendee}
-                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-surface-3 hover:bg-surface-2 border border-border text-cyan-400 transition-colors"
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-400 transition-colors"
               >
                 Add
               </button>
@@ -270,7 +262,7 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
                 {attendees.map((email) => (
                   <span
                     key={email}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono bg-cyan-500/10 border border-cyan-500/30 text-cyan-300"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono bg-cyan-500/15 border border-cyan-500/40 text-cyan-300"
                   >
                     {email}
                     <button
@@ -288,7 +280,7 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
 
           {/* Location */}
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Location / Room (Optional)
             </label>
             <input
@@ -296,14 +288,13 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Training Lab 2 or Hyderabad Partner Hub"
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-xs font-bold text-slate-300 mb-1.5 block">
               Agenda / Description (Optional)
             </label>
             <textarea
@@ -311,25 +302,23 @@ export default function CreateEventModal({ isOpen, onClose, onEventCreated, init
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Meeting agenda, sandbox prerequisites, and session objectives..."
-              className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-cyan-500 resize-none"
-              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 resize-none"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold rounded-xl hover:bg-white/5 transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
+              className="px-4 py-2.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 hover:opacity-95 text-white shadow-lg shadow-cyan-500/20 disabled:opacity-50 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 text-xs font-black rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 hover:opacity-95 text-white shadow-lg shadow-cyan-500/30 disabled:opacity-50 transition-all cursor-pointer"
             >
               {submitting ? (
                 <>

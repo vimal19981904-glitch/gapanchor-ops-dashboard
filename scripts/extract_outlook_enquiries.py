@@ -102,21 +102,23 @@ def extract_enquiries():
                 sender_name = getattr(email, 'SenderName', '') or ''
                 sender_email = getattr(email, 'SenderEmailAddress', '') or ''
 
-                name_match = re.search(r'Name:\s*(.+?)(?:\r?\n|Email:|$)', body, re.IGNORECASE)
-                email_match = re.search(r'Email:\s*(.+?)(?:\r?\n|Phone:|$)', body, re.IGNORECASE)
-                phone_match = re.search(r'Phone:\s*(.+?)(?:\r?\n|Service\s*Type:|Training\s*Type:|Message:|$)', body, re.IGNORECASE)
-                service_match = re.search(r'Service\s*Type:\s*(.+?)(?:\r?\n|Training\s*Type:|Message:|$)', body, re.IGNORECASE)
-                training_match = re.search(r'Training\s*Type:\s*(.+?)(?:\r?\n|Message:|$)', body, re.IGNORECASE)
-                message_match = re.search(r'Message:\s*(.+?)(?:\s*---|\r?\n|Submitted\s*at:|$)', body, re.IGNORECASE | re.DOTALL)
-                country_match = re.search(r'Country:\s*(.+?)(?:\r?\n|$)', body, re.IGNORECASE)
-                submitted_match = re.search(r'Submitted\s*at:\s*(.+?)(?:\r?\n|$)', body, re.IGNORECASE)
+                name_match = re.search(r'Name:\s*(.+?)(?:\r?\n|<|Email:|$)', body, re.IGNORECASE)
+                email_match = re.search(r'Email:\s*(.+?)(?:\r?\n|<|Phone:|$)', body, re.IGNORECASE)
+                phone_match = re.search(r'Phone(?:\s*Number)?:\s*(.+?)(?:\r?\n|<|Service|Time\s*Zone:|$)', body, re.IGNORECASE)
+                service_match = re.search(r'Service\s*(?:name|Type):\s*(.+?)(?:\r?\n|<|Custom|Training|Message:|$)', body, re.IGNORECASE)
+                answer_match = re.search(r'Answer\s*-\s*(.+?)(?:\r?\n|<|Internal|Additional|Learn\s*more:|$)', body, re.IGNORECASE)
+                training_match = re.search(r'Training\s*Type:\s*(.+?)(?:\r?\n|<|Message:|$)', body, re.IGNORECASE)
+                message_match = re.search(r'Message:\s*(.+?)(?:\s*---|\r?\n|<|Submitted\s*at:|$)', body, re.IGNORECASE | re.DOTALL)
+                country_match = re.search(r'Country:\s*(.+?)(?:\r?\n|<|$)', body, re.IGNORECASE)
+                submitted_match = re.search(r'Submitted\s*at:\s*(.+?)(?:\r?\n|<|$)', body, re.IGNORECASE)
 
                 name = name_match.group(1).strip() if name_match else (sender_name if sender_name else "Unknown")
                 email_addr = email_match.group(1).strip() if email_match else (sender_email if "@" in sender_email else "")
                 phone = phone_match.group(1).strip() if phone_match else ""
-                service_type = service_match.group(1).strip() if service_match else "Training"
-                training_type_raw = training_match.group(1).strip() if training_match else ""
-                message_raw = message_match.group(1).strip() if message_match else ""
+                service_type = service_match.group(1).strip() if service_match else "IT support & Training"
+                scm_answer = answer_match.group(1).strip() if answer_match else ""
+                training_type_raw = scm_answer if scm_answer else (training_match.group(1).strip() if training_match else "")
+                message_raw = message_match.group(1).strip() if message_match else (scm_answer if scm_answer else "")
                 raw_country = country_match.group(1).strip() if country_match else "India"
                 country = normalize_country(phone, raw_country)
                 submitted_at = submitted_match.group(1).strip() if submitted_match else received_str
