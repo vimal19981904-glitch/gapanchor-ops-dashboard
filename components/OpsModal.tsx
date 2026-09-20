@@ -106,7 +106,7 @@ export default function OpsModal({
       a.click();
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Invoice generated & saved to Invoice/GapAnchor_Invoice.pdf for ${row.participantName}!`);
+      toast.success(`Invoice generated & downloaded successfully for ${row.participantName}!`);
     } catch (err: any) {
       toast.error(err.message || 'Error generating invoice');
     } finally {

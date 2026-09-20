@@ -347,13 +347,17 @@ export async function POST(request: Request) {
     const pdfBytes = await pdfDoc.save();
     const pdfBuffer = Buffer.from(pdfBytes);
 
-    // Write directly to C:\Users\ARUL XAVIER\OneDrive - gapanchor\dashboard\Invoice\GapAnchor_Invoice.pdf
-    const targetDir = path.join(process.cwd(), 'Invoice');
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
+    // Attempt to persist local copy if filesystem is writable; catch gracefully on read-only serverless platforms (Vercel)
+    try {
+      const targetDir = path.join(process.cwd(), 'Invoice');
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      const targetFilePath = path.join(targetDir, 'GapAnchor_Invoice.pdf');
+      fs.writeFileSync(targetFilePath, pdfBuffer);
+    } catch (fsErr) {
+      console.warn('Skipped writing invoice file to disk (read-only filesystem):', fsErr);
     }
-    const targetFilePath = path.join(targetDir, 'GapAnchor_Invoice.pdf');
-    fs.writeFileSync(targetFilePath, pdfBuffer);
 
     // Return response with PDF binary stream
     return new NextResponse(pdfBuffer, {
