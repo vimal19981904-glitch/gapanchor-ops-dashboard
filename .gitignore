@@ -39,8 +39,11 @@ prisma/dev.db
 .env*
 
 # local scratch scripts and temporary data
-scratch/*.ts
-scratch/*.js
-scratch/*.py
+scratch/
 Account_Statement.xlsx
+Account_Statement02.xlsx
 .agents/
+.gemini/
+.antigravity/
+.code-crawler/
+

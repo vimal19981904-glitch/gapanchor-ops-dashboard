@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { DollarSign, PlusCircle, Filter, Download, TrendingUp, Eye, Trash2, X, AlertTriangle, Loader2, Info, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DollarSign, PlusCircle, Filter, Download, TrendingUp, Eye, Trash2, X, AlertTriangle, Loader2, Info, Maximize2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -20,7 +20,9 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
   const [activeTab, setActiveTab] = useState<'charts' | 'transactions'>('charts');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [breakdownView, setBreakdownView] = useState<'combined' | 'income' | 'expense'>('combined');
+  const [activeSlice, setActiveSlice] = useState<{ name: string; value: number; type: 'income' | 'expense'; color: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 10;
   
   // Transaction Detail & Delete Modal State
@@ -36,6 +38,25 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
 
   const expensePieData = Object.entries(expenseByCategory).map(([name, value]) => ({ name, value: value as number }));
   const incomePieData = Object.entries(incomeBySource).map(([name, value]) => ({ name, value: value as number }));
+
+  const CATEGORY_COLORS: Record<string, { solid: string; glow: string }> = {
+    'Training Fees': { solid: '#10b981', glow: 'rgba(16, 185, 129, 0.5)' },
+    'Other Revenue': { solid: '#06b6d4', glow: 'rgba(6, 182, 212, 0.5)' },
+    'Salary': { solid: '#6366f1', glow: 'rgba(99, 102, 241, 0.5)' },
+    'Ops & Venue Logistics': { solid: '#8b5cf6', glow: 'rgba(139, 92, 246, 0.5)' },
+    'Operation Cost': { solid: '#14b8a6', glow: 'rgba(20, 184, 166, 0.5)' },
+    'Infrastructure': { solid: '#3b82f6', glow: 'rgba(59, 130, 246, 0.5)' },
+    'Marketing': { solid: '#f59e0b', glow: 'rgba(245, 158, 11, 0.5)' },
+    'Software': { solid: '#ec4899', glow: 'rgba(236, 72, 153, 0.5)' },
+  };
+
+  const getSliceColor = (name: string, type: 'income' | 'expense', index: number) => {
+    if (CATEGORY_COLORS[name]) return CATEGORY_COLORS[name];
+    const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+    const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+    const solid = type === 'income' ? fallbackInc[index % fallbackInc.length] : fallbackExp[index % fallbackExp.length];
+    return { solid, glow: 'rgba(16, 185, 129, 0.4)' };
+  };
 
   const handleFilterChange = (f: 'all' | 'income' | 'expense') => {
     setFilterType(f);
@@ -106,7 +127,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
   };
 
   return (
-    <div className="glass-card xl:col-span-2 animate-slide-up !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl w-full max-w-full overflow-hidden">
+    <div className="glass-card xl:col-span-2 animate-slide-up !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl w-full max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-6">
         <div className="flex items-center gap-2.5 sm:gap-3">
@@ -232,101 +253,196 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <defs>
-                    <linearGradient id="incPieGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#f8fafc" />
-                      <stop offset="50%" stopColor="#cbd5e1" />
-                      <stop offset="100%" stopColor="#94a3b8" />
-                    </linearGradient>
-                    <linearGradient id="expPieGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#475569" />
-                      <stop offset="50%" stopColor="#334155" />
+                    <linearGradient id="matteDark1" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#334155" />
                       <stop offset="100%" stopColor="#1e293b" />
+                    </linearGradient>
+                    <linearGradient id="matteDark2" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#1e293b" />
+                      <stop offset="100%" stopColor="#0f172a" />
+                    </linearGradient>
+                    <linearGradient id="matteDark3" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#475569" />
+                      <stop offset="100%" stopColor="#1e293b" />
+                    </linearGradient>
+                    <linearGradient id="matteDark4" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#273549" />
+                      <stop offset="100%" stopColor="#0f172a" />
+                    </linearGradient>
+                    <linearGradient id="matteDark5" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#3b4252" />
+                      <stop offset="100%" stopColor="#1a2332" />
+                    </linearGradient>
+                    <linearGradient id="matteDark6" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#64748b" />
+                      <stop offset="100%" stopColor="#334155" />
                     </linearGradient>
                   </defs>
                   <Pie
                     data={
                       breakdownView === 'combined'
                         ? [
-                            ...incomePieData.map((item) => ({
+                            ...incomePieData.map((item, i) => ({
                               ...item,
+                              rawName: item.name,
                               name: `${item.name} (Income)`,
-                              fill: 'url(#incPieGrad)',
+                              type: 'income' as const,
+                              color: getSliceColor(item.name, 'income', i).solid,
+                              glow: getSliceColor(item.name, 'income', i).glow,
                             })),
-                            ...expensePieData.map((item) => ({
+                            ...expensePieData.map((item, i) => ({
                               ...item,
+                              rawName: item.name,
                               name: `${item.name} (Expense)`,
-                              fill: 'url(#expPieGrad)',
+                              type: 'expense' as const,
+                              color: getSliceColor(item.name, 'expense', i).solid,
+                              glow: getSliceColor(item.name, 'expense', i).glow,
                             })),
                           ]
                         : breakdownView === 'income'
-                        ? incomePieData.map((item, i) => ({ ...item, fill: ['#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b'][i % 5] }))
-                        : expensePieData.map((item, i) => ({ ...item, fill: ['#64748b', '#475569', '#334155', '#1e293b', '#0f172a'][i % 5] }))
+                        ? incomePieData.map((item, i) => ({
+                            ...item,
+                            rawName: item.name,
+                            name: item.name,
+                            type: 'income' as const,
+                            color: getSliceColor(item.name, 'income', i).solid,
+                            glow: getSliceColor(item.name, 'income', i).glow,
+                          }))
+                        : expensePieData.map((item, i) => ({
+                            ...item,
+                            rawName: item.name,
+                            name: item.name,
+                            type: 'expense' as const,
+                            color: getSliceColor(item.name, 'expense', i).solid,
+                            glow: getSliceColor(item.name, 'expense', i).glow,
+                          }))
                     }
                     cx="50%"
                     cy="50%"
-                    innerRadius={48}
-                    outerRadius={68}
-                    paddingAngle={4}
-                    stroke="rgba(15, 23, 42, 0.9)"
+                    innerRadius={46}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    stroke="rgba(15, 23, 42, 0.95)"
                     strokeWidth={3}
                     dataKey="value"
                     nameKey="name"
+                    isAnimationActive={true}
+                    animationDuration={600}
+                    animationEasing="ease-out"
+                    onMouseEnter={(entry: any) => {
+                      if (entry) {
+                        setActiveSlice({
+                          name: entry.rawName || entry.name,
+                          value: entry.value,
+                          type: entry.type || 'income',
+                          color: entry.color,
+                        });
+                      }
+                    }}
+                    onMouseLeave={() => setActiveSlice(null)}
                   >
                     {(breakdownView === 'combined'
                       ? [
-                          ...incomePieData.map((item) => ({ ...item, fill: 'url(#incPieGrad)' })),
-                          ...expensePieData.map((item) => ({ ...item, fill: 'url(#expPieGrad)' })),
+                          ...incomePieData.map((item, i) => ({
+                            rawName: item.name,
+                            color: getSliceColor(item.name, 'income', i).solid,
+                            glow: getSliceColor(item.name, 'income', i).glow,
+                          })),
+                          ...expensePieData.map((item, i) => ({
+                            rawName: item.name,
+                            color: getSliceColor(item.name, 'expense', i).solid,
+                            glow: getSliceColor(item.name, 'expense', i).glow,
+                          })),
                         ]
                       : breakdownView === 'income'
-                      ? incomePieData.map((item, i) => ({ ...item, fill: ['#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b'][i % 5] }))
-                      : expensePieData.map((item, i) => ({ ...item, fill: ['#64748b', '#475569', '#334155', '#1e293b', '#0f172a'][i % 5] }))
+                      ? incomePieData.map((item, i) => ({
+                          rawName: item.name,
+                          color: getSliceColor(item.name, 'income', i).solid,
+                          glow: getSliceColor(item.name, 'income', i).glow,
+                        }))
+                      : expensePieData.map((item, i) => ({
+                          rawName: item.name,
+                          color: getSliceColor(item.name, 'expense', i).solid,
+                          glow: getSliceColor(item.name, 'expense', i).glow,
+                        }))
                     ).map((entry, i) => (
                       <Cell
-                        key={`cell-${i}`}
-                        fill={entry.fill}
-                        className="transition-all duration-300 hover:opacity-90 hover:scale-105 cursor-pointer outline-none"
+                        key={`cell-${entry.rawName}-${i}`}
+                        fill={`url(#matteDark${(i % 6) + 1})`}
+                        className="cursor-pointer outline-none transition-all duration-200"
+                        style={{
+                          filter: activeSlice?.name === entry.rawName ? 'brightness(1.25) drop-shadow(0 0 10px rgba(148, 163, 184, 0.4))' : 'brightness(1.0)',
+                          opacity: activeSlice && activeSlice.name !== entry.rawName ? 0.4 : 1,
+                          transition: 'all 0.2s ease',
+                        }}
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(v: number) => [formatCurrency(v), '']}
-                    contentStyle={{
-                      background: '#0b1329',
-                      borderColor: '#475569',
-                      borderRadius: '12px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                    }}
-                  />
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Center Net Margin Badge */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2">
-                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Net Profit</span>
-                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
-                  {formatCurrency(netProfit)}
-                </span>
+              {/* Dynamic Center Readout (Zero Collision, Perfectly Aligned) */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2 z-10 select-none">
+                {activeSlice ? (
+                  <div className="flex flex-col items-center animate-fade-in">
+                    <span
+                      className="text-[9px] uppercase font-black tracking-wider truncate max-w-[120px]"
+                      style={{ color: activeSlice.color }}
+                    >
+                      {activeSlice.name}
+                    </span>
+                    <span className="text-xs sm:text-sm font-black font-mono text-white mt-0.5">
+                      {formatCurrency(activeSlice.value)}
+                    </span>
+                    <span className="text-[9px] font-semibold text-slate-400 mt-0.5">
+                      {activeSlice.type === 'income'
+                        ? `${totalIncome > 0 ? Math.round((activeSlice.value / totalIncome) * 100) : 0}% of Income`
+                        : `${totalExpense > 0 ? Math.round((activeSlice.value / totalExpense) * 100) : 0}% of Expense`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center animate-fade-in">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                      Net Profit
+                    </span>
+                    <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
+                      {formatCurrency(netProfit)}
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-400 mt-0.5">
+                      {totalIncome > 0 ? `${((netProfit / totalIncome) * 100).toFixed(1)}% margin` : 'Balanced'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Interactive Legend List */}
+            {/* Interactive Legend List with Matching Vibrant Colors & Bidirectional Hover */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2 border-t border-border/40">
               {(breakdownView === 'combined' || breakdownView === 'income') && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-slate-200 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                  <span className="text-[10px] font-bold uppercase text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     Income ({formatCurrency(totalIncome)})
                   </span>
-                  {incomePieData.map((item) => {
+                  {incomePieData.map((item, i) => {
+                    const col = getSliceColor(item.name, 'income', i);
+                    const isHovered = activeSlice?.name === item.name;
                     const totalVol = totalIncome + totalExpense;
                     const pct = totalVol > 0 ? ((item.value / totalVol) * 100).toFixed(0) : 0;
                     return (
-                      <div key={item.name} className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-surface-1/60 border border-border/40">
+                      <div
+                        key={item.name}
+                        onMouseEnter={() => setActiveSlice({ name: item.name, value: item.value, type: 'income', color: col.solid })}
+                        onMouseLeave={() => setActiveSlice(null)}
+                        className={`flex justify-between items-center text-[11px] p-1.5 rounded-lg border transition-all cursor-pointer ${
+                          isHovered
+                            ? 'bg-surface-3 border-emerald-500/50 shadow-sm'
+                            : 'bg-surface-1/60 border-border/40 hover:bg-surface-2'
+                        }`}
+                      >
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-2 h-2 rounded-full shrink-0 bg-slate-300" />
-                          <span className="truncate text-slate-300">{item.name}</span>
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.solid }} />
+                          <span className="truncate text-slate-300 font-medium">{item.name}</span>
                         </div>
                         <span className="font-bold text-slate-200 shrink-0 font-mono">{formatCurrency(item.value)} ({pct}%)</span>
                       </div>
@@ -337,20 +453,31 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
 
               {(breakdownView === 'combined' || breakdownView === 'expense') && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                  <span className="text-[10px] font-bold uppercase text-rose-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                     Expense ({formatCurrency(totalExpense)})
                   </span>
-                  {expensePieData.map((item) => {
+                  {expensePieData.map((item, i) => {
+                    const col = getSliceColor(item.name, 'expense', i);
+                    const isHovered = activeSlice?.name === item.name;
                     const totalVol = totalIncome + totalExpense;
                     const pct = totalVol > 0 ? ((item.value / totalVol) * 100).toFixed(0) : 0;
                     return (
-                      <div key={item.name} className="flex justify-between items-center text-[11px] p-1.5 rounded-lg bg-surface-1/60 border border-border/40">
+                      <div
+                        key={item.name}
+                        onMouseEnter={() => setActiveSlice({ name: item.name, value: item.value, type: 'expense', color: col.solid })}
+                        onMouseLeave={() => setActiveSlice(null)}
+                        className={`flex justify-between items-center text-[11px] p-1.5 rounded-lg border transition-all cursor-pointer ${
+                          isHovered
+                            ? 'bg-surface-3 border-rose-500/50 shadow-sm'
+                            : 'bg-surface-1/60 border-border/40 hover:bg-surface-2'
+                        }`}
+                      >
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-2 h-2 rounded-full shrink-0 bg-slate-500" />
-                          <span className="truncate text-slate-300">{item.name}</span>
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: col.solid }} />
+                          <span className="truncate text-slate-300 font-medium">{item.name}</span>
                         </div>
-                        <span className="font-bold text-slate-400 shrink-0 font-mono">{formatCurrency(item.value)} ({pct}%)</span>
+                        <span className="font-bold text-slate-300 shrink-0 font-mono">{formatCurrency(item.value)} ({pct}%)</span>
                       </div>
                     );
                   })}
@@ -375,8 +502,95 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
             <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{filteredTx.length} records</span>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-border">
+          {/* Mobile Accordion Card View (< md) */}
+          <div className="block md:hidden space-y-2">
+            {paginatedTx.length === 0 ? (
+              <div className="p-4 text-center text-xs font-semibold rounded-xl border border-dashed border-border" style={{ color: 'var(--text-tertiary)' }}>
+                No transaction records found matching filter.
+              </div>
+            ) : (
+              paginatedTx.map((tx: any) => {
+                const isExpanded = expandedTxId === tx.id;
+
+                return (
+                  <div
+                    key={tx.id}
+                    className="rounded-xl border border-border/80 bg-surface-2/90 p-2.5 transition-all duration-200"
+                  >
+                    {/* Compact Card Header Row */}
+                    <div
+                      onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                      className="flex items-center justify-between gap-2 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={tx.type === 'income' ? 'badge-income badge text-[10px] px-2 py-0.5 shrink-0' : 'badge-expense badge text-[10px] px-2 py-0.5 shrink-0'}>
+                          {tx.type.toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs block truncate" style={{ color: 'var(--text-primary)' }}>
+                            {tx.sourceOrCategory}
+                          </span>
+                          <span className="text-[10px] font-mono block" style={{ color: 'var(--text-tertiary)' }}>
+                            {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`font-extrabold font-mono text-xs ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </span>
+                        <div className="p-1 rounded-md text-slate-400 hover:text-white">
+                          {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Dropdown Details */}
+                    {isExpanded && (
+                      <div className="mt-2.5 pt-2.5 border-t border-border/50 text-xs space-y-2 animate-slide-up">
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div>
+                            <span className="text-[10px] text-tertiary block font-semibold uppercase">Payment Method</span>
+                            <span className={`badge mt-0.5 ${tx.paymentMethod === 'UPI' ? 'badge-upi' : tx.paymentMethod === 'Cash' ? 'badge-cash' : tx.paymentMethod === 'Bank Transfer' ? 'badge-bank' : 'badge-card'}`}>
+                              {tx.paymentMethod}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-tertiary block font-semibold uppercase">Origin / System</span>
+                            <span className="font-mono text-slate-300 block truncate">{tx.origin}</span>
+                          </div>
+                        </div>
+
+                        {tx.notes && (
+                          <div>
+                            <span className="text-[10px] text-tertiary block font-semibold uppercase">Notes</span>
+                            <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800 mt-0.5">
+                              {tx.notes}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(tx)}
+                            className="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Eye size={12} />
+                            <span>Detail View</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto rounded-2xl border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: 'var(--surface-2)' }}>

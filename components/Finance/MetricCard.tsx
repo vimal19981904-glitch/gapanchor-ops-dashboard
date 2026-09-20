@@ -11,9 +11,10 @@ interface MetricCardProps {
   icon?: LucideIcon;
   badge?: string;
   badgeType?: 'emerald' | 'rose' | 'cyan' | 'purple';
+  loading?: boolean;
 }
 
-export default function MetricCard({ label, value, subtext, icon: Icon, badge, badgeType = 'emerald' }: MetricCardProps) {
+export default function MetricCard({ label, value, subtext, icon: Icon, badge, badgeType = 'emerald', loading }: MetricCardProps) {
   const badgeStyles = {
     emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     rose: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
@@ -44,28 +45,38 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
         )}
       </div>
 
-      <div className="flex items-baseline justify-between gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
-        <span
-          className="text-sm sm:text-xl font-extrabold tracking-tight font-mono truncate"
-          style={{ color: expenseDashboardTheme.colors.text.primary }}
-        >
-          {value}
-        </span>
-        {badge && (
-          <span className={`px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-extrabold rounded-full border shrink-0 ${badgeStyles[badgeType]}`}>
-            {badge}
-          </span>
-        )}
-      </div>
+      {loading ? (
+        <div className="space-y-1.5 my-1">
+          <div className="h-6 sm:h-7 w-24 sm:w-28 rounded-lg bg-slate-800 animate-pulse" />
+          <div className="h-3 w-20 rounded bg-slate-800/60 animate-pulse" />
+        </div>
+      ) : (
+        <>
+          <div className="flex items-baseline justify-between gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
+            <span
+              className="text-sm sm:text-xl font-extrabold tracking-tight font-mono truncate"
+              style={{ color: expenseDashboardTheme.colors.text.primary }}
+            >
+              {value}
+            </span>
+            {badge && (
+              <span className={`px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-extrabold rounded-full border shrink-0 ${badgeStyles[badgeType]}`}>
+                {badge}
+              </span>
+            )}
+          </div>
 
-      {subtext && (
-        <p
-          className="text-[11px] mt-1 font-medium truncate"
-          style={{ color: expenseDashboardTheme.colors.text.secondary }}
-        >
-          {subtext}
-        </p>
+          {subtext && (
+            <p
+              className="text-[11px] mt-1 font-medium truncate"
+              style={{ color: expenseDashboardTheme.colors.text.secondary }}
+            >
+              {subtext}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
 }
+

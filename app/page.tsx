@@ -98,7 +98,7 @@ export default function Dashboard() {
   const devCount = devData?.updates?.length || 0;
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden px-2.5 sm:px-6 md:px-8 py-2.5 sm:py-6">
+    <div className="w-full max-w-full overflow-x-hidden px-2 sm:px-6 md:px-8 py-2 sm:py-6">
       <DashboardHeader
         onRefresh={handleRefresh}
         isRefreshing={refreshing}
@@ -108,7 +108,7 @@ export default function Dashboard() {
       />
 
       {/* Top KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-5 mb-3 sm:mb-7">
+      <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-5 mb-3 sm:mb-7">
         {loading ? (
           <>
             <SkeletonKPI />
@@ -137,7 +137,7 @@ export default function Dashboard() {
               color="indigo"
             />
             <StatCard
-              title="WhatsApp Leads"
+              title="Leads"
               value={`${enquiryTotal} Total`}
               subtext={actionCount > 0 ? `${actionCount} pending action` : 'All processed'}
               icon={MessageSquare}
@@ -159,7 +159,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Module Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5 sm:gap-6">
         {/* Finance Module (Full Width) */}
         <FinanceCard
           financeData={financeData}
@@ -168,7 +168,7 @@ export default function Dashboard() {
           loading={loading}
         />
 
-        {/* Training and Finance Tracking */}
+        {/* Training Operations */}
         <OpsCard
           opsData={opsData}
           onOpenModal={handleOpenAddSession}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Calendar, Plus, Trash2, Check, AlertCircle, ShieldAlert } from 'lucide-react';
+import { X, CheckCircle, Calendar, Plus, Trash2, Check, AlertCircle, ShieldAlert, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ParticipantRow {
@@ -66,10 +66,53 @@ export default function OpsModal({
   const [trainerAmountDue, setTrainerAmountDue] = useState<number | ''>(85000);
   const [participantRows, setParticipantRows] = useState<ParticipantRow[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isTableExpanded, setIsTableExpanded] = useState(false);
   const [newParticipantInput, setNewParticipantInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingSession, setDeletingSession] = useState(false);
+  const [expandedMobileRowIndex, setExpandedMobileRowIndex] = useState<number | null>(null);
+  const [generatingInvoiceIndex, setGeneratingInvoiceIndex] = useState<number | null>(null);
+
+  const handleGenerateInvoice = async (row: ParticipantRow, idx: number) => {
+    setGeneratingInvoiceIndex(idx);
+    try {
+      const due = typeof row.amountDue === 'number' ? row.amountDue : 0;
+      const paid = typeof row.amountPaid === 'number' ? row.amountPaid : 0;
+
+      const response = await fetch('/api/finance/generate-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantName: row.participantName,
+          topic: title || `${platform} Training Session`,
+          amountDue: due,
+          amountPaid: paid,
+          invoiceDate: new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to generate invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `GapAnchor_Invoice_${row.participantName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Invoice generated & saved to Invoice/GapAnchor_Invoice.pdf for ${row.participantName}!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Error generating invoice');
+    } finally {
+      setGeneratingInvoiceIndex(null);
+    }
+  };
 
   const availableMasterNames = Array.from(
     new Set([...DEFAULT_MASTER, ...masterParticipantsList])
@@ -202,24 +245,24 @@ export default function OpsModal({
     setTotalParticipants(updated.length);
   };
 
-  // Calculate Status Pill
+  // Calculate Status Pill (Boxy Corners & Neon Styling)
   const getStatusBadge = (dueVal: number | '', paidVal: number | '') => {
     const due = typeof dueVal === 'number' ? dueVal : 0;
     const paid = typeof paidVal === 'number' ? paidVal : 0;
     if (paid >= due && due > 0) {
       return {
         label: 'Paid',
-        bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        bg: 'bg-emerald-950/50 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10',
       };
     } else if (paid > 0 && paid < due) {
       return {
         label: 'Partial',
-        bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        bg: 'bg-amber-950/50 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10',
       };
     } else {
       return {
         label: 'Pending',
-        bg: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        bg: 'bg-rose-950/50 text-rose-300 border-rose-500/40 shadow-sm shadow-rose-500/10',
       };
     }
   };
@@ -305,39 +348,39 @@ export default function OpsModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/75 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 bg-black/75 backdrop-blur-md z-[9999] flex items-center justify-center p-1 sm:p-4 overflow-y-auto animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-3xl border border-border p-5 sm:p-7 animate-slide-up my-auto shadow-2xl overflow-hidden"
+        className="w-full max-w-3xl rounded-2xl sm:rounded-3xl border border-border p-3.5 sm:p-7 animate-slide-up my-auto shadow-2xl overflow-hidden"
         style={{ background: '#0b1329' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 mb-5 border-b border-border/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
-              <Calendar size={20} />
+        <div className="flex items-center justify-between pb-3.5 mb-4 sm:mb-5 border-b border-border/60">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
+              <Calendar size={18} className="sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="text-base sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-sm sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {sessionToEdit ? 'Edit Training & Finance Session' : 'Schedule Training & Finance Session'}
               </h3>
-              <p className="text-[11px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 Manual entry for training enrollment and participant payment status persistence
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="hover:bg-surface-3 p-2 rounded-full transition-colors cursor-pointer"
+            className="hover:bg-surface-3 p-1.5 rounded-lg transition-colors cursor-pointer"
             style={{ color: 'var(--text-tertiary)' }}
           >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {/* 3.1 Session Title */}
           <div>
             <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
@@ -355,7 +398,7 @@ export default function OpsModal({
           </div>
 
           {/* 3.2 Platform Selection & 3.3 Trainer */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
                 Platform <span className="text-rose-400">*</span>
@@ -391,17 +434,17 @@ export default function OpsModal({
 
 
           {/* TRAINER FINANCIALS (MANUAL OVERALL & PAID; AUTO-CALC PAYABLE/DUE) */}
-          <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-3">
+          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2.5 sm:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                👨‍🏫 Trainer Financial Compensation (Manual Entry)
+                👨‍🏫 Trainer Financial Compensation
               </span>
-              <span className="text-[10px] text-indigo-400 font-mono font-bold">
+              <span className="text-[10px] text-indigo-400 font-mono font-bold hidden sm:inline">
                 Session Trainer Tracking
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <div>
                 <label className="text-[11px] font-bold text-slate-300 mb-1 block">
                   Trainer Overall Amount (₹ / $)
@@ -460,12 +503,12 @@ export default function OpsModal({
               className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm text-left flex items-center justify-between cursor-pointer transition-all hover:border-cyan-500/50"
               style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
             >
-              <span className="truncate">
+              <span className="truncate text-slate-300 font-medium">
                 {participantRows.length > 0
-                  ? participantRows.map((r) => r.participantName).join(', ')
+                  ? `${participantRows.length} Participant${participantRows.length > 1 ? 's' : ''} Selected`
                   : 'Click to select participants from master list...'}
               </span>
-              <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold ml-2">
+              <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-md font-bold ml-2 shrink-0">
                 {participantRows.length}
               </span>
             </button>
@@ -488,7 +531,7 @@ export default function OpsModal({
                   <button
                     type="button"
                     onClick={handleAddCustomParticipant}
-                    className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                    className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
                   >
                     Add
                   </button>
@@ -520,7 +563,7 @@ export default function OpsModal({
           </div>
 
           {/* 3.5 Total Participants & 3.6 Currently Participating */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
                 Total Participants
@@ -581,152 +624,280 @@ export default function OpsModal({
             />
           </div>
 
-          {/* 3.9 PAYMENT TRACKING TABLE (CRITICAL REQUIREMENT) */}
+          {/* 3.9 PAYMENT TRACKING TABLE ACCORDION (COLLAPSIBLE DROPDOWN) */}
           <div className="pt-3 border-t border-border/60">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                💳 Payment Tracking For Participants ({participantRows.length})
-              </h4>
-              <span className="text-[10px] text-tertiary">
-                Auto-calculated Balance & Status (Paid / Partial / Pending)
-              </span>
-            </div>
-
-            {participantRows.length === 0 ? (
-              <div
-                className="p-6 text-center text-xs font-semibold rounded-2xl border border-dashed border-border"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                No participants added yet. Use the dropdown above to add participants to track payments.
+            <button
+              type="button"
+              onClick={() => setIsTableExpanded(!isTableExpanded)}
+              className="w-full flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-surface-2 border border-border/80 hover:border-cyan-500/50 transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                  💳 Payment Tracking For Participants ({participantRows.length})
+                </h4>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-500/30">
+                    Paid: {participantRows.filter(r => (typeof r.amountPaid === 'number' ? r.amountPaid : 0) >= (typeof r.amountDue === 'number' ? r.amountDue : 0) && (typeof r.amountDue === 'number' ? r.amountDue : 0) > 0).length}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-950/40 text-rose-300 border border-rose-500/30">
+                    Pending: {participantRows.filter(r => (typeof r.amountPaid === 'number' ? r.amountPaid : 0) < (typeof r.amountDue === 'number' ? r.amountDue : 0)).length}
+                  </span>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border border-border">
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr style={{ background: 'var(--surface-3)' }}>
-                      <th className="px-3 py-2.5 font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Participant
-                      </th>
-                      <th className="px-3 py-2.5 font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Amount Due ($)
-                      </th>
-                      <th className="px-3 py-2.5 font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Amount Paid ($)
-                      </th>
-                      <th className="px-3 py-2.5 font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Balance ($)
-                      </th>
-                      <th className="px-3 py-2.5 font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Status
-                      </th>
-                      <th className="px-2 py-2.5 text-center font-bold uppercase text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participantRows.map((row, idx) => {
-                      const dueNum = typeof row.amountDue === 'number' ? row.amountDue : 0;
-                      const paidNum = typeof row.amountPaid === 'number' ? row.amountPaid : 0;
-                      const balance = Math.max(0, dueNum - paidNum);
-                      const statusBadge = getStatusBadge(row.amountDue, row.amountPaid);
 
-                      return (
-                        <tr
-                          key={idx}
-                          className="border-b border-border/40 hover:bg-surface-2/60 transition-colors"
-                        >
-                          <td className="px-3 py-2 font-bold" style={{ color: 'var(--text-primary)' }}>
-                            {row.participantName}
-                          </td>
+              <div className="p-1 rounded-lg text-cyan-400 hover:bg-cyan-500/10 transition-colors shrink-0">
+                {isTableExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </div>
+            </button>
 
-                          {/* Amount Due */}
-                          <td className="px-3 py-2">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.amountDue === '' ? '' : row.amountDue}
-                              onChange={(e) =>
-                                updateRow(idx, 'amountDue', parseInputNumber(e.target.value))
-                              }
-                              className="w-24 rounded-lg border border-border px-2 py-1 text-xs outline-none focus:border-cyan-500 font-mono"
-                              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
-                            />
-                          </td>
+            {isTableExpanded && (
+              <div className="mt-3 animate-slide-up">
+                {participantRows.length === 0 ? (
+                  <div
+                    className="p-5 text-center text-xs font-semibold rounded-2xl border border-dashed border-border"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    No participants added yet. Use the dropdown above to add participants to track payments.
+                  </div>
+                ) : (
+                  <>
+                    {/* ── 1. Desktop Table View (>= md) ── */}
+                    <div className="hidden md:block overflow-x-auto rounded-xl sm:rounded-2xl border border-border max-w-full">
+                      <table className="w-full min-w-[580px] text-xs text-left">
+                        <thead>
+                          <tr style={{ background: 'var(--surface-3)' }}>
+                            <th className="px-3 py-2.5 font-bold uppercase text-[10px] min-w-[130px]" style={{ color: 'var(--text-tertiary)' }}>
+                              Participant
+                            </th>
+                            <th className="px-2.5 py-2.5 font-bold uppercase text-[10px] w-24" style={{ color: 'var(--text-tertiary)' }}>
+                              Amount Due (₹)
+                            </th>
+                            <th className="px-2.5 py-2.5 font-bold uppercase text-[10px] w-24" style={{ color: 'var(--text-tertiary)' }}>
+                              Amount Paid (₹)
+                            </th>
+                            <th className="px-2.5 py-2.5 font-bold uppercase text-[10px] min-w-[70px]" style={{ color: 'var(--text-tertiary)' }}>
+                              Balance (₹)
+                            </th>
+                            <th className="px-2.5 py-2.5 text-center font-bold uppercase text-[10px] min-w-[85px]" style={{ color: 'var(--text-tertiary)' }}>
+                              Status
+                            </th>
+                            <th className="px-2 py-2.5 text-center font-bold uppercase text-[10px] min-w-[100px]" style={{ color: 'var(--text-tertiary)' }}>
+                              Invoice
+                            </th>
+                            <th className="px-2 py-2.5 text-center font-bold uppercase text-[10px] w-10" style={{ color: 'var(--text-tertiary)' }}>
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {participantRows.map((row, idx) => {
+                            const dueNum = typeof row.amountDue === 'number' ? row.amountDue : 0;
+                            const paidNum = typeof row.amountPaid === 'number' ? row.amountPaid : 0;
+                            const balance = Math.max(0, dueNum - paidNum);
+                            const statusBadge = getStatusBadge(row.amountDue, row.amountPaid);
 
-                          {/* Amount Paid */}
-                          <td className="px-3 py-2">
-                            <input
-                              type="number"
-                              min="0"
-                              max={dueNum}
-                              value={row.amountPaid === '' ? '' : row.amountPaid}
-                              onChange={(e) =>
-                                updateRow(idx, 'amountPaid', parseInputNumber(e.target.value))
-                              }
-                              className="w-24 rounded-lg border border-border px-2 py-1 text-xs outline-none focus:border-cyan-500 font-mono"
-                              style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
-                            />
-                          </td>
+                            return (
+                              <tr
+                                key={idx}
+                                className="border-b border-border/40 hover:bg-surface-2/60 transition-colors"
+                              >
+                                <td className="px-3 py-2.5 font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
+                                  {row.participantName}
+                                </td>
 
-                          {/* Balance */}
-                          <td className="px-3 py-2 font-mono font-bold text-slate-300">
-                            ${balance.toLocaleString()}
-                          </td>
+                                {/* Amount Due */}
+                                <td className="px-2.5 py-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.amountDue === '' ? '' : row.amountDue}
+                                    onChange={(e) =>
+                                      updateRow(idx, 'amountDue', parseInputNumber(e.target.value))
+                                    }
+                                    className="w-20 sm:w-24 rounded-lg border border-border px-2 py-1 text-xs outline-none focus:border-cyan-500 font-mono"
+                                    style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                                  />
+                                </td>
 
-                          {/* Status Badge */}
-                          <td className="px-3 py-2">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${statusBadge.bg}`}
+                                {/* Amount Paid */}
+                                <td className="px-2.5 py-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={dueNum}
+                                    value={row.amountPaid === '' ? '' : row.amountPaid}
+                                    onChange={(e) =>
+                                      updateRow(idx, 'amountPaid', parseInputNumber(e.target.value))
+                                    }
+                                    className="w-20 sm:w-24 rounded-lg border border-border px-2 py-1 text-xs outline-none focus:border-cyan-500 font-mono"
+                                    style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
+                                  />
+                                </td>
+
+                                {/* Balance */}
+                                <td className="px-2.5 py-2 font-mono font-bold text-slate-300">
+                                  ₹{balance.toLocaleString()}
+                                </td>
+
+                                {/* Status Text (Plain, Even Sizing & Clean Alignment) */}
+                                <td className="px-2.5 py-2 text-center">
+                                  <span className="inline-block w-16 text-center text-xs font-semibold text-slate-300">
+                                    {statusBadge.label}
+                                  </span>
+                                </td>
+
+                                {/* Generate Invoice */}
+                                <td className="px-2 py-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleGenerateInvoice(row, idx)}
+                                    disabled={generatingInvoiceIndex === idx}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50 min-w-[76px]"
+                                    title="Generate and download PDF invoice"
+                                  >
+                                    <FileText size={12} className="text-cyan-400 shrink-0" />
+                                    <span>{generatingInvoiceIndex === idx ? 'Generating...' : 'Invoice'}</span>
+                                  </button>
+                                </td>
+
+                                {/* Remove */}
+                                <td className="px-2 py-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRow(idx)}
+                                    className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                    title="Remove participant"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* ── 2. Mobile Dropdown View (< md) ── */}
+                    <div className="md:hidden space-y-2.5">
+                      {participantRows.map((row, idx) => {
+                        const dueNum = typeof row.amountDue === 'number' ? row.amountDue : 0;
+                        const paidNum = typeof row.amountPaid === 'number' ? row.amountPaid : 0;
+                        const balance = Math.max(0, dueNum - paidNum);
+                        const statusBadge = getStatusBadge(row.amountDue, row.amountPaid);
+                        const isMobileExpanded = expandedMobileRowIndex === idx;
+
+                        return (
+                          <div key={`mobile-p-${idx}`} className="rounded-xl border border-border/80 bg-surface-2 p-3 space-y-2 shadow-sm">
+                            {/* Card Header Accordion */}
+                            <div
+                              onClick={() => setExpandedMobileRowIndex(isMobileExpanded ? null : idx)}
+                              className="flex items-center justify-between gap-2 cursor-pointer select-none"
                             >
-                              {statusBadge.label}
-                            </span>
-                          </td>
+                              <div className="min-w-0 flex-1 flex items-center gap-2">
+                                <span className="font-bold text-xs text-white truncate">{row.participantName}</span>
+                                <span className="text-[10px] font-semibold text-slate-300 shrink-0">
+                                  {statusBadge.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-xs font-mono font-bold text-slate-300">₹{balance.toLocaleString()}</span>
+                                <div className="w-6 h-6 rounded-lg text-cyan-400 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20">
+                                  {isMobileExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </div>
+                              </div>
+                            </div>
 
-                          {/* Remove */}
-                          <td className="px-2 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removeRow(idx)}
-                              className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                              title="Remove participant"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            {/* Dropdown Content */}
+                            {isMobileExpanded && (
+                              <div className="pt-2.5 border-t border-border/40 space-y-3 text-xs animate-slide-up">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Amount Due (₹)</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={row.amountDue === '' ? '' : row.amountDue}
+                                      onChange={(e) => updateRow(idx, 'amountDue', parseInputNumber(e.target.value))}
+                                      className="w-full rounded-lg border border-border px-2.5 py-1.5 text-xs outline-none focus:border-cyan-500 font-mono bg-surface-1 text-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Amount Paid (₹)</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={dueNum}
+                                      value={row.amountPaid === '' ? '' : row.amountPaid}
+                                      onChange={(e) => updateRow(idx, 'amountPaid', parseInputNumber(e.target.value))}
+                                      className="w-full rounded-lg border border-border px-2.5 py-1.5 text-xs outline-none focus:border-cyan-500 font-mono bg-surface-1 text-white"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                                  <div className="text-[11px]">
+                                    <span className="text-slate-400">Balance: </span>
+                                    <span className="font-mono font-bold text-cyan-300">${balance.toLocaleString()}</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleGenerateInvoice(row, idx)}
+                                      disabled={generatingInvoiceIndex === idx}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-cyan-500/15 cursor-pointer disabled:opacity-50"
+                                    >
+                                      <FileText size={13} />
+                                      <span>{generatingInvoiceIndex === idx ? 'Generating...' : 'Invoice'}</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => removeRow(idx)}
+                                      className="p-1.5 rounded-xl text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition-colors cursor-pointer"
+                                      title="Remove participant"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
 
-          {/* Modal Footer Actions */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/60">
-            <div>
+          {/* Modal Footer Actions (Single Line Text, Boxy Buttons & Clean Alignment) */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3.5 border-t border-border/60">
+            <div className="w-full sm:w-auto">
               {sessionToEdit ? (
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-400 text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-400 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
                 >
-                  <Trash2 size={14} />
-                  <span>Delete Batch Session</span>
+                  <Trash2 size={14} className="shrink-0" />
+                  <span className="whitespace-nowrap">Delete Batch Session</span>
                 </button>
               ) : (
-                <span className="text-[10px] text-tertiary">
+                <span className="text-[10px] text-tertiary block text-center sm:text-left">
                   * Direct database persistence on save
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 justify-end w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-bold border border-border hover:bg-surface-2 transition-all cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border border-border hover:bg-surface-2 transition-all cursor-pointer whitespace-nowrap text-center"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Cancel
@@ -735,10 +906,10 @@ export default function OpsModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
               >
-                <CheckCircle size={15} />
-                <span>{loading ? 'Saving to Database...' : 'Save Session'}</span>
+                <CheckCircle size={15} className="shrink-0" />
+                <span className="whitespace-nowrap">{loading ? 'Saving...' : 'Save Session'}</span>
               </button>
             </div>
           </div>

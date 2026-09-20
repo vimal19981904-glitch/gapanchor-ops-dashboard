@@ -40,7 +40,7 @@ export default function StatCard({ title, value, subtext, icon: Icon, trend, tre
           <Icon size={14} className="sm:w-5 sm:h-5" />
         </div>
       </div>
-      <div className="flex items-center justify-between text-[10px] sm:text-xs gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[10px] sm:text-xs gap-0.5 sm:gap-1">
         <span className="truncate" style={{ color: 'var(--text-secondary)' }}>{subtext}</span>
         {trend && (
           <span className={cn(

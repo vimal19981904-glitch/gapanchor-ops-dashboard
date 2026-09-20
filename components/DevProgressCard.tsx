@@ -22,7 +22,7 @@ export default function DevProgressCard({ devData, onOpenModal, loading }: Props
   const { updates = [] } = devData || {};
 
   return (
-    <div className="glass-card animate-slide-up !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl">
+    <div className="glass-card animate-slide-up !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl">
       <div className="flex items-center justify-between mb-3 sm:mb-5">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">

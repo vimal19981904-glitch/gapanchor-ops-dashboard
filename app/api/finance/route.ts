@@ -1,9 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getQuarterFromDate } from '@/lib/utils';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { DEMO_FINANCE_ANALYTICS } from '@/lib/mockData';
 
 export async function GET(request: Request) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        summary: {
+          totalIncome: DEMO_FINANCE_ANALYTICS.summary.totalIncome,
+          totalExpense: DEMO_FINANCE_ANALYTICS.summary.totalExpenses,
+          netProfit: DEMO_FINANCE_ANALYTICS.summary.netProfit,
+          incomeBySource: { 'Participant Tuition': 365000, 'Corporate Training': 120000 },
+          expenseByCategory: { 'Trainer Fees': 93000, 'Cloud Servers': 27000, 'Marketing': 15000, 'Operations': 10000 },
+          quarterlyTrends: [
+            { quarter: 'Q1', income: 380000, expense: 110000, net: 270000 },
+            { quarter: 'Q2', income: 420000, expense: 130000, net: 290000 },
+            { quarter: 'Q3', income: 485000, expense: 145000, net: 340000 },
+            { quarter: 'Q4', income: 510000, expense: 150000, net: 360000 },
+          ],
+        },
+        transactions: DEMO_FINANCE_ANALYTICS.recentTransactions,
+        graphApiStatus: { connected: true, outlookEmail: 'demo.showcase@outlook.com' },
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     const quarter = searchParams.get('quarter');
     const year = searchParams.get('year');
@@ -64,6 +87,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (isDemoSession()) {
+      const body = await request.json();
+      return NextResponse.json({
+        success: true,
+        entry: { id: `demo-tx-${Date.now()}`, ...body, date: new Date().toISOString() },
+        message: 'Demo Mode: Transaction created in-memory (database untouched).'
+      });
+    }
+
     const body = await request.json();
     const { type, sourceOrCategory, platform, amount, paymentMethod, notes, date } = body;
 
@@ -95,6 +127,13 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Demo Mode: Transaction deletion simulated (database untouched).'
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
 

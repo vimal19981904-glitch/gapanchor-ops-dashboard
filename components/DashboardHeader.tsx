@@ -17,7 +17,7 @@ export default function DashboardHeader({ onRefresh, isRefreshing, graphStatus, 
   const { theme, toggle } = useTheme();
 
   return (
-    <header className="glass-card !p-3 sm:!p-6 mb-3 sm:mb-6 rounded-2xl sm:rounded-3xl animate-fade-in">
+    <header className="glass-card !p-2.5 sm:!p-6 mb-3 sm:mb-6 rounded-2xl sm:rounded-3xl animate-fade-in">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
         {/* Brand */}
         <div className="flex items-center gap-3 sm:gap-4">
@@ -40,7 +40,7 @@ export default function DashboardHeader({ onRefresh, isRefreshing, graphStatus, 
         </div>
 
         {/* Status Badges & Setup Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap mt-0.5 sm:mt-0">
           {/* Outlook setup trigger badge */}
           <button
             onClick={() => onOpenSetup('microsoft')}

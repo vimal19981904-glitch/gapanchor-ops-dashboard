@@ -53,7 +53,7 @@ const QUALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; c
   'Unrated': { label: 'Unrated', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-900/50', border: 'border-slate-800' },
 };
 
-function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function StatusBadgeSelect({ value, onChange, className = '' }: { value: string; onChange: (val: string) => void; className?: string }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -75,10 +75,10 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm ${className || 'w-[114px]'}`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{current.label}</span>
+        <span className="truncate">{current.label}</span>
       </button>
 
       {open && (
@@ -105,7 +105,7 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
   );
 }
 
-function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function QualityBadgeSelect({ value, onChange, className = '' }: { value: string; onChange: (val: string) => void; className?: string }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -127,10 +127,10 @@ function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm ${className || 'w-[136px]'}`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{current.label}</span>
+        <span className="truncate">{current.label}</span>
       </button>
 
       {open && (
@@ -409,7 +409,7 @@ export default function EnquiriesPage() {
     if (!editingEnquiry) return;
     setSavingNote(true);
     try {
-      await handleUpdateStatus(editingEnquiry.id, { notes: noteText, status: 'Processed' });
+      await handleUpdateStatus(editingEnquiry.id, { notes: noteText });
       setEditingEnquiry(null);
     } finally {
       setSavingNote(false);
@@ -802,8 +802,8 @@ export default function EnquiriesPage() {
                       <th className="py-4 px-4 text-[10px]">Country</th>
                       <th className="py-4 px-4 text-[10px]">Course / Service</th>
                       <th className="py-4 px-4 text-[10px]">Date</th>
-                      <th className="py-4 px-4 text-[10px]">Contact Status</th>
-                      <th className="py-4 px-4 text-[10px]">Lead Quality</th>
+                      <th className="py-4 px-4 text-[10px] w-[138px] min-w-[138px] whitespace-nowrap">Contact Status</th>
+                      <th className="py-4 px-4 text-[10px] w-[160px] min-w-[160px] whitespace-nowrap">Lead Quality</th>
                       <th className="py-4 px-4 text-[10px]">Call Notes</th>
                       <th className="py-4 px-5 text-[10px] text-right">Actions</th>
                     </tr>
@@ -859,7 +859,7 @@ export default function EnquiriesPage() {
                         </td>
 
                         {/* Contact Status */}
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 whitespace-nowrap">
                           <StatusBadgeSelect
                             value={enquiry.contactStatus || 'Pending'}
                             onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
@@ -867,7 +867,7 @@ export default function EnquiriesPage() {
                         </td>
 
                         {/* Lead Quality */}
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-4 whitespace-nowrap">
                           <QualityBadgeSelect
                             value={enquiry.leadQuality || 'Unrated'}
                             onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
@@ -899,15 +899,13 @@ export default function EnquiriesPage() {
                               <span className="hidden sm:inline">View</span>
                             </button>
 
-                            {currentUser?.role === 'admin' && (
-                              <button
-                                onClick={() => openAssignModal(enquiry)}
-                                className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
-                                title="Assign to Employee"
-                              >
-                                <UserCheck className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => openAssignModal(enquiry)}
+                              className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
+                              title={enquiry.assignedToName ? `Currently assigned to ${enquiry.assignedToName}. Click to reassign.` : "Assign to Employee"}
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                            </button>
 
                             {enquiry.phone && (
                               <a href={`https://wa.me/${enquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer" title="WhatsApp">
@@ -1133,7 +1131,7 @@ export default function EnquiriesPage() {
 
               <div className="flex gap-2 items-center">
                 <button onClick={() => setSelectedDetailEnquiry(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 cursor-pointer">Close</button>
-                <button onClick={async () => { setSavingNote(true); try { await handleUpdateStatus(selectedDetailEnquiry.id, { notes: noteText, status: 'Processed' }); setSelectedDetailEnquiry(null); } finally { setSavingNote(false); } }} disabled={savingNote} className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs text-white font-bold shadow-lg shadow-cyan-500/15 cursor-pointer disabled:opacity-60">
+                <button onClick={async () => { setSavingNote(true); try { await handleUpdateStatus(selectedDetailEnquiry.id, { notes: noteText }); setSelectedDetailEnquiry(null); } finally { setSavingNote(false); } }} disabled={savingNote} className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs text-white font-bold shadow-lg shadow-cyan-500/15 cursor-pointer disabled:opacity-60">
                   {savingNote ? 'Saving…' : 'Save to DB'}
                 </button>
               </div>

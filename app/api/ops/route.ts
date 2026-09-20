@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getQuarterFromDate } from '@/lib/utils';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { DEMO_SESSIONS } from '@/lib/mockData';
 
 // Helper to determine payment status
 function computePaymentStatus(due: number, paid: number): 'PAID' | 'PARTIAL' | 'PENDING' {
@@ -8,7 +10,6 @@ function computePaymentStatus(due: number, paid: number): 'PAID' | 'PARTIAL' | '
   if (paid > 0 && paid < due) return 'PARTIAL';
   return 'PENDING';
 }
-
 
 const DEFAULT_TRAINERS: Record<string, string> = {
   'Manhattan WMS': 'Arul Xavier',
@@ -32,6 +33,58 @@ const DEFAULT_MASTER_PARTICIPANTS = [
 
 export async function GET() {
   try {
+    // 100% DB-Free Demo Mode Interceptor
+    if (isDemoSession()) {
+      const platformCounts: Record<string, number> = {};
+      let totalParticipants = 0;
+      let totalCurrentlyParticipating = 0;
+      let grandPaidCount = 0;
+      let grandPartialCount = 0;
+      let grandPendingCount = 0;
+
+      const enrichedSessions = DEMO_SESSIONS.map((s) => {
+        platformCounts[s.platform] = (platformCounts[s.platform] || 0) + 1;
+        totalParticipants += s.participantsCount;
+        totalCurrentlyParticipating += s.currentlyParticipating;
+
+        let paidCount = 0;
+        let partialCount = 0;
+        let pendingCount = 0;
+
+        s.participants.forEach((p) => {
+          if (p.paymentStatus === 'PAID') paidCount++;
+          else if (p.paymentStatus === 'PARTIAL') partialCount++;
+          else pendingCount++;
+        });
+
+        grandPaidCount += paidCount;
+        grandPartialCount += partialCount;
+        grandPendingCount += pendingCount;
+
+        return {
+          ...s,
+          paymentSummary: { paidCount, partialCount, pendingCount },
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        summary: {
+          totalSessions: DEMO_SESSIONS.length,
+          totalParticipants,
+          totalCurrentlyParticipating,
+          platformCounts,
+          paymentSummary: {
+            paidCount: grandPaidCount,
+            partialCount: grandPartialCount,
+            pendingCount: grandPendingCount,
+          },
+        },
+        masterParticipants: DEFAULT_MASTER_PARTICIPANTS,
+        sessions: enrichedSessions,
+      });
+    }
+
     const sessions = await prisma.session.findMany({
       include: {
         participants: {
@@ -109,6 +162,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (isDemoSession()) {
+      const body = await request.json();
+      return NextResponse.json({
+        success: true,
+        session: { id: `demo-created-${Date.now()}`, ...body, createdAt: new Date().toISOString() },
+        message: 'Demo Mode: Session created in-memory (database untouched).'
+      });
+    }
+
     const body = await request.json();
     const {
       title,
@@ -180,6 +242,15 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    if (isDemoSession()) {
+      const body = await request.json();
+      return NextResponse.json({
+        success: true,
+        session: { ...body, updatedAt: new Date().toISOString() },
+        message: 'Demo Mode: Session updated in-memory (database untouched).'
+      });
+    }
+
     const body = await request.json();
     const {
       id,
@@ -258,6 +329,13 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Demo Mode: Session deletion simulated (database untouched).'
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
 

@@ -137,11 +137,13 @@ export default function MobileLeadCards({
                     <span className="font-bold text-white text-xs sm:text-sm truncate">
                       {lead.participantName}
                     </span>
-                    {lead.assignedToName && (
-                      <span className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 max-w-[100px] truncate">
-                        {lead.assignedToName.replace(/\s*\(.*?\)/, '')}
-                      </span>
-                    )}
+                    <span className={`px-1.5 py-0.5 text-[8px] font-bold rounded max-w-[110px] truncate shrink-0 ${
+                      lead.assignedToName
+                        ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700/60'
+                    }`}>
+                      {lead.assignedToName ? lead.assignedToName.replace(/\s*\(.*?\)/, '') : 'Unassigned'}
+                    </span>
                   </div>
                 </div>
 
@@ -330,8 +332,8 @@ export default function MobileLeadCards({
                     </a>
                   ) : null}
 
-                  {/* Admin Assign Button */}
-                  {isAdmin && onAssign && (
+                  {/* Assign Button */}
+                  {onAssign && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -339,7 +341,7 @@ export default function MobileLeadCards({
                         onAssign(lead);
                       }}
                       className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 transition-colors cursor-pointer"
-                      title="Assign Lead"
+                      title={lead.assignedToName ? `Currently assigned to ${lead.assignedToName}. Click to reassign.` : "Assign Lead"}
                     >
                       <UserCheck size={14} />
                     </button>

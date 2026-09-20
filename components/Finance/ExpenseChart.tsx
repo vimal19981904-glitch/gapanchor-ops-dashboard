@@ -5,6 +5,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { expenseDashboardTheme } from '@/config/dashboardTheme';
 import { formatCurrency } from '@/lib/utils';
 import { CategoryData } from '@/hooks/useExpenseData';
+import { Loader2 } from 'lucide-react';
 
 interface ExpenseChartProps {
   data: CategoryData[];
@@ -23,6 +24,20 @@ export default function ExpenseChart({
   onSelectCategory,
   centerTitle = 'Total Expense',
 }: ExpenseChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="relative w-full h-72 sm:h-80 flex flex-col items-center justify-center space-y-3">
+        <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin flex items-center justify-center">
+          <div className="w-32 h-32 rounded-full border-2 border-slate-800 border-b-cyan-400 animate-pulse flex flex-col items-center justify-center text-center p-2">
+            <Loader2 size={22} className="text-cyan-400 animate-spin mb-1" />
+            <span className="text-[10px] font-bold text-slate-400">Loading...</span>
+          </div>
+        </div>
+        <p className="text-xs font-bold text-slate-300 animate-pulse">Calculating {centerTitle} Breakdown...</p>
+      </div>
+    );
+  }
+
   const activeData = data.find((d) => d.name === activeCategory);
   const activeConfig = activeData
     ? (expenseDashboardTheme.colors.categories as Record<string, any>)[activeData.name] ||
@@ -30,7 +45,7 @@ export default function ExpenseChart({
     : null;
 
   return (
-    <div className="relative w-full h-72 sm:h-80 flex items-center justify-center">
+    <div className="relative w-full h-72 sm:h-80 flex items-center justify-center animate-fade-in">
       {/* SVG Gradient definitions for chart slices */}
       <svg className="absolute w-0 h-0 overflow-hidden">
         <defs>
@@ -121,3 +136,4 @@ export default function ExpenseChart({
     </div>
   );
 }
+

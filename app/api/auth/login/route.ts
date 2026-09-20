@@ -10,8 +10,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 100% DB-Free Demo Account Interceptor
+    if (cleanEmail === 'demo@gapanchor.com') {
+      const demoUserData = {
+        id: 'demo-account-001',
+        name: 'Demo Account (Showcase)',
+        email: 'demo@gapanchor.com',
+        role: 'DEMO',
+        accountType: 'demo',
+        isDemo: true,
+        assignedCourse: 'Full Enterprise Showcase',
+      };
+
+      const res = NextResponse.json({ success: true, user: demoUserData });
+      res.cookies.set({
+        name: 'gapanchor_session',
+        value: JSON.stringify(demoUserData),
+        httpOnly: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+      });
+      return res;
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+      where: { email: cleanEmail },
     });
 
     if (!user || user.password !== password) {

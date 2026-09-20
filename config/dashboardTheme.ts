@@ -9,11 +9,11 @@ export const expenseDashboardTheme = {
         borderAlpha: 'rgba(139, 92, 246, 0.35)',
       },
       'Operation Cost': {
-        gradient: 'from-purple-500 to-purple-700',
-        solid: '#8b5cf6',
-        stroke: '#7c3aed',
-        bgAlpha: 'rgba(139, 92, 246, 0.15)',
-        borderAlpha: 'rgba(139, 92, 246, 0.3)',
+        gradient: 'from-emerald-500 to-teal-700',
+        solid: '#10b981',
+        stroke: '#059669',
+        bgAlpha: 'rgba(16, 185, 129, 0.15)',
+        borderAlpha: 'rgba(16, 185, 129, 0.3)',
       },
       'Ops & Venue Logistics': {
         gradient: 'from-purple-500 to-purple-700',

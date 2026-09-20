@@ -14,7 +14,7 @@ import ExpenseChart from './ExpenseChart';
 import CategoryDrillDownModal from './CategoryDrillDownModal';
 import { formatCurrency } from '@/lib/utils';
 
-export default function ExpenseBreakdownDashboard() {
+export default function ExpenseBreakdownDashboard({ refreshTrigger }: { refreshTrigger?: any } = {}) {
   const {
     dateRange,
     setDateRange,
@@ -26,7 +26,7 @@ export default function ExpenseBreakdownDashboard() {
     setActiveCategory,
     drillDownCategory,
     setDrillDownCategory,
-  } = useExpenseData('all');
+  } = useExpenseData('all', refreshTrigger);
 
   const handleLegendClick = (name: string) => {
     const found = categoriesData.find((c) => c.name === name);
@@ -104,6 +104,7 @@ export default function ExpenseBreakdownDashboard() {
           icon={DollarSign}
           badge="Live"
           badgeType="emerald"
+          loading={loading}
         />
         <MetricCard
           label="Highest Category"
@@ -112,6 +113,7 @@ export default function ExpenseBreakdownDashboard() {
           icon={PieChartIcon}
           badge="Dominant"
           badgeType="cyan"
+          loading={loading}
         />
         <MetricCard
           label="Records"
@@ -120,6 +122,7 @@ export default function ExpenseBreakdownDashboard() {
           icon={Layers}
           badge="Verified"
           badgeType="purple"
+          loading={loading}
         />
         <MetricCard
           label="Categories"
@@ -128,6 +131,7 @@ export default function ExpenseBreakdownDashboard() {
           icon={Activity}
           badge="Structured"
           badgeType="emerald"
+          loading={loading}
         />
       </div>
 

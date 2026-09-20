@@ -1,9 +1,41 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { DEMO_ENQUIRIES } from '@/lib/mockData';
 
 export async function GET(request: Request) {
   try {
+    if (isDemoSession()) {
+      const enquiries = DEMO_ENQUIRIES.map((e, idx) => ({
+        id: e.id,
+        participantName: e.participantName,
+        phone: e.phone,
+        topic: `${e.courseInterest} Enquiry`,
+        lastMessage: e.notes,
+        messageTimestamp: e.createdAt,
+        status: e.stage === 'ENROLLED' ? 'Processed' : 'Open',
+        source: e.source,
+        isStale: false,
+        assignedToId: 'demo-account-001',
+        assignedToName: 'Demo Account (Showcase)',
+      }));
+
+      return NextResponse.json({
+        success: true,
+        summary: {
+          total: enquiries.length,
+          staleCount: 0,
+          openCount: 1,
+          processedCount: 1,
+          actionRequiredCount: 0,
+          avgResponseTimeMins: 8,
+        },
+        enquiries,
+        whatsappConfig: { connected: true, phoneNumber: '+91 7598 505 274 (Demo Sandbox)' },
+      });
+    }
+
     const cookieStore = cookies();
     const sessionCookie = cookieStore.get('gapanchor_session');
     let sessionUser: any = null;
@@ -68,6 +100,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Demo Mode: Communication action simulated (database untouched).'
+      });
+    }
+
     const body = await request.json();
     const { action, enquiryId, notes, assignedToId, assignedToName } = body;
 

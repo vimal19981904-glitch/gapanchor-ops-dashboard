@@ -59,17 +59,32 @@ export default function UserNav() {
     );
   }
 
+  const isDemo = user.email?.toLowerCase() === 'demo@gapanchor.com' || user.isDemo || user.accountType === 'demo';
+
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900/90 border border-slate-700/60 rounded-full pl-2 pr-1.5 py-1 shadow-lg backdrop-blur-md shrink-0">
-      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-extrabold shrink-0 shadow-sm">
-        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+    <div className={`flex items-center gap-1.5 sm:gap-2 border rounded-full pl-2 pr-1.5 py-1 shadow-lg backdrop-blur-md shrink-0 ${
+      isDemo
+        ? 'bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border-purple-500/50 ring-1 ring-purple-500/30'
+        : 'bg-slate-900/90 border-slate-700/60'
+    }`}>
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-extrabold shrink-0 shadow-sm ${
+        isDemo ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-brand-500 to-indigo-600'
+      }`}>
+        {user.name ? user.name.charAt(0).toUpperCase() : 'D'}
       </div>
       <div className="flex flex-col leading-tight">
-        <span className="text-xs font-bold text-slate-100 truncate max-w-[70px] sm:max-w-[120px]">
-          {user.name}
-        </span>
-        <span className="text-[10px] text-slate-400 font-medium truncate max-w-[70px] sm:max-w-[120px] hidden sm:inline">
-          {user.role === 'admin' ? 'Master Admin' : user.assignedCourse || user.role || 'Team Member'}
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-bold text-slate-100 truncate max-w-[70px] sm:max-w-[120px]">
+            {user.name}
+          </span>
+          {isDemo && (
+            <span className="px-1.5 py-0.2 text-[8px] font-black rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-widest font-mono">
+              DEMO
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] font-medium truncate max-w-[70px] sm:max-w-[120px] hidden sm:inline text-slate-400">
+          {isDemo ? 'Isolated • 0 DB Queries' : (user.role === 'admin' ? 'Master Admin' : user.assignedCourse || user.role || 'Team Member')}
         </span>
       </div>
       <button

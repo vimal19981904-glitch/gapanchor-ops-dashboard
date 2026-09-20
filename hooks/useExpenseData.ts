@@ -25,19 +25,19 @@ export interface CategoryData {
   transactions: any[];
 }
 
-export function useExpenseData(initialDateRange: string = 'all') {
+export function useExpenseData(initialDateRange: string = 'all', refreshTrigger?: any) {
   const [dateRange, setDateRange] = useState<string>(initialDateRange);
   const [loading, setLoading] = useState<boolean>(true);
   const [metrics, setMetrics] = useState<ExpenseMetric>({
-    totalExpense: 596482.96,
-    highestCategory: { name: 'Ops & Venue Logistics', amount: 596482.96, percentage: 100 },
-    recordsCount: 78,
-    categoriesCount: 5,
-    thisMonthTotal: 148560,
-    lastMonthTotal: 447922.96,
-    momVariance: -299362.96,
-    momPercentage: '-66.8',
-    projectedNextMonth: '₹5.9L',
+    totalExpense: 0,
+    highestCategory: { name: 'Salary', amount: 0, percentage: 0 },
+    recordsCount: 0,
+    categoriesCount: 0,
+    thisMonthTotal: 0,
+    lastMonthTotal: 0,
+    momVariance: 0,
+    momPercentage: '0',
+    projectedNextMonth: '₹0L',
   });
 
   const [categoriesData, setCategoriesData] = useState<CategoryData[]>([]);
@@ -51,20 +51,32 @@ export function useExpenseData(initialDateRange: string = 'all') {
       const res = await fetch(`/api/finance/expenses?dateRange=${dateRange}`);
       const json = await res.json();
       if (json.success) {
-        setMetrics(json.summary);
-        
-        // Structure expense categories according to user specifications (Salary, Operation Cost, Software, Marketing, Infrastructure)
-        const totalVal = json.summary?.totalExpense || 596483;
-        const catMap = json.categories || {};
-        const firstCategoryTx = (Object.values(catMap)[0] as any)?.transactions || [];
+        const totalVal = json.summary?.totalExpense || 0;
+        const catMap: Record<string, { amount: number; count: number; transactions: any[] }> = json.categories || {};
 
-        const cats: CategoryData[] = [
-          { name: 'Salary', amount: Math.round(totalVal * 0.45), count: 28, percentage: 45, transactions: [] },
-          { name: 'Operation Cost', amount: Math.round(totalVal * 0.30), count: 32, percentage: 30, transactions: firstCategoryTx },
-          { name: 'Software', amount: Math.round(totalVal * 0.12), count: 10, percentage: 12, transactions: [] },
-          { name: 'Marketing', amount: Math.round(totalVal * 0.08), count: 5, percentage: 8, transactions: [] },
-          { name: 'Infrastructure', amount: Math.round(totalVal * 0.05), count: 3, percentage: 5, transactions: [] },
-        ];
+        // Compute real dynamic categories from actual transactions in database
+        const cats: CategoryData[] = Object.entries(catMap)
+          .map(([name, data]) => {
+            const amount = data.amount || 0;
+            const pct = totalVal > 0 ? (amount / totalVal) * 100 : 0;
+            return {
+              name,
+              amount: Math.round(amount * 100) / 100,
+              count: data.count || 0,
+              percentage: Math.round(pct),
+              transactions: data.transactions || [],
+            };
+          })
+          .filter((c) => c.amount > 0 || c.count > 0)
+          .sort((a, b) => b.amount - a.amount);
+
+        setMetrics({
+          ...json.summary,
+          categoriesCount: cats.length,
+          highestCategory: cats[0]
+            ? { name: cats[0].name, amount: cats[0].amount, percentage: cats[0].percentage }
+            : (json.summary?.highestCategory || { name: 'None', amount: 0, percentage: 0 }),
+        });
 
         setCategoriesData(cats);
         setTrendLine(json.trendLineData || []);
@@ -78,6 +90,17 @@ export function useExpenseData(initialDateRange: string = 'all') {
 
   useEffect(() => {
     fetchExpenses();
+  }, [fetchExpenses, refreshTrigger]);
+
+  // Listen to global custom event for instant cross-component updates
+  useEffect(() => {
+    const handleGlobalUpdate = () => {
+      fetchExpenses();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('finance-data-updated', handleGlobalUpdate);
+      return () => window.removeEventListener('finance-data-updated', handleGlobalUpdate);
+    }
   }, [fetchExpenses]);
 
   return {

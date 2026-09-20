@@ -1,7 +1,18 @@
 'use client';
 
-import React from 'react';
-import { Calendar, Users, PlusCircle, Clock, MapPin, Layers, Edit3, GraduationCap, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Calendar,
+  Users,
+  PlusCircle,
+  Clock,
+  MapPin,
+  Layers,
+  Edit3,
+  GraduationCap,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 
 interface Props {
@@ -14,10 +25,16 @@ interface Props {
 const platforms = ['Manhattan WMS', 'Blue Yonder', 'Kinaxis', 'SAP S/4HANA'];
 
 export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }: Props) {
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 5;
+
   if (loading) return <SkeletonCard />;
 
   const { summary, sessions = [] } = opsData || {};
   const { platformCounts = {}, paymentSummary = {} } = summary || {};
+
+  const totalPages = Math.ceil(sessions.length / pageSize) || 1;
+  const paginatedSessions = sessions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const statusStyle = (status: string) => {
     switch (status) {
@@ -25,197 +42,243 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
         return 'badge-completed';
       case 'In Progress':
         return 'badge-in-progress';
+      case 'Scheduled':
+        return 'badge-scheduled';
       default:
         return 'badge-scheduled';
     }
   };
 
   return (
-    <div className="glass-card animate-slide-up !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 mb-3 sm:mb-5">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
-            <Calendar size={16} className="sm:w-5 sm:h-5" />
+    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl">
+      <div>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-4 pb-2.5 sm:pb-4 border-b border-border/50">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 text-brand-400 flex items-center justify-center shrink-0">
+              <Calendar size={16} className="sm:w-5 sm:h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Training Operations
+                </h2>
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                  {sessions.length} {sessions.length === 1 ? 'Batch' : 'Batches'}
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                SCM Platform Cohorts • Enrollment • Fee Tracking
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                Training and Finance Tracking
-              </h2>
-              <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                Payment Persistence Active
+
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
+            <button
+              onClick={onOpenModal}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center"
+            >
+              <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
+              <span>Add Session</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+          {[
+            { label: 'Paid', value: paymentSummary.paidCount || 0, sub: 'Completed', color: 'text-emerald-400' },
+            { label: 'Partial', value: paymentSummary.partialCount || 0, sub: 'Due Remaining', color: 'text-amber-400' },
+            { label: 'Pending', value: paymentSummary.pendingCount || 0, sub: 'Awaiting Fee', color: 'text-rose-400' },
+          ].map((m, i) => (
+            <div
+              key={i}
+              className="rounded-lg sm:rounded-xl border border-border p-2 sm:p-3"
+              style={{ background: 'var(--surface-2)' }}
+            >
+              <span className="text-[9px] sm:text-[10px] font-semibold block truncate" style={{ color: 'var(--text-tertiary)' }}>
+                {m.label}
+              </span>
+              <div className={`text-base sm:text-xl font-extrabold mt-0.5 ${m.color}`}>
+                {m.value}
+              </div>
+              <span className="text-[9px] sm:text-[10px] block truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                {m.sub}
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Participant Enrollment • Payment Status Tracking • Database Persistence
-            </p>
-          </div>
+          ))}
         </div>
 
-        <button
-          onClick={onOpenModal}
-          className="btn-primary !py-1.5 sm:!py-2 !px-3 sm:!px-3.5 !text-xs self-start sm:self-auto cursor-pointer"
-        >
-          <PlusCircle size={13} className="sm:w-3.5 sm:h-3.5" />
-          <span>Add Session</span>
-        </button>
-      </div>
-
-      {/* Grand Payment Status Summary Bar */}
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-3 sm:mb-5 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-border/80 bg-surface-2">
-        <div className="text-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <span className="text-[10px] sm:text-xs font-bold text-emerald-400 block truncate">
-            <span className="status-dot status-dot-paid" /> Paid
-          </span>
-          <span className="text-sm sm:text-xl font-black text-emerald-300">
-            {paymentSummary.paidCount || 0}
-          </span>
-        </div>
-
-        <div className="text-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <span className="text-[10px] sm:text-xs font-bold text-amber-400 block truncate">
-            <span className="status-dot status-dot-partial" /> Partial
-          </span>
-          <span className="text-sm sm:text-xl font-black text-amber-300">
-            {paymentSummary.partialCount || 0}
-          </span>
-        </div>
-
-        <div className="text-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-rose-500/10 border border-rose-500/20">
-          <span className="text-[10px] sm:text-xs font-bold text-rose-400 block truncate">
-            <span className="status-dot status-dot-pending" /> Pending
-          </span>
-          <span className="text-sm sm:text-xl font-black text-rose-300">
-            {paymentSummary.pendingCount || 0}
-          </span>
-        </div>
-      </div>
-
-      {/* Platform Pills */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-5">
-        {platforms.map((p) => (
-          <div
-            key={p}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border border-border px-2 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs"
-            style={{ background: 'var(--surface-2)' }}
-          >
-            <Layers size={11} className="text-cyan-400 sm:w-3 sm:h-3" />
-            <span style={{ color: 'var(--text-secondary)' }}>{p}:</span>
-            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>
-              {platformCounts[p] || 0}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Session Cards List */}
-      <div className="space-y-2 sm:space-y-3">
-        {sessions.length === 0 ? (
-          <div
-            className="p-6 sm:p-8 text-center text-xs font-semibold rounded-2xl border border-dashed border-border"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            No sessions scheduled yet. Click "Add Session" to add a training session.
-          </div>
-        ) : (
-          sessions.map((s: any) => {
-            const pSummary = s.paymentSummary || { paidCount: 0, partialCount: 0, pendingCount: 0 };
-
-            return (
-              <div
-                key={s.id}
-                onClick={() => onEditSession && onEditSession(s)}
-                className="group relative rounded-xl sm:rounded-2xl border border-border/80 p-3 sm:p-4 transition-all duration-200 hover:border-cyan-500/40 hover:shadow-lg cursor-pointer"
-                style={{ background: 'var(--surface-2)' }}
+        {/* Platform Overview */}
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1 p-1 rounded-lg border border-border flex-wrap" style={{ background: 'var(--surface-0)' }}>
+            {platforms.map((p) => (
+              <span
+                key={p}
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-semibold"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className={`badge ${statusStyle(s.status)}`}>{s.platform}</span>
-                    <span
-                      className="text-[11px] flex items-center gap-1 font-medium truncate"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      <Clock size={11} className="shrink-0" />
-                      <span>
+                <Layers size={10} className="text-brand-400 shrink-0" />
+                <span>{p}:</span>
+                <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{platformCounts[p] || 0}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Session Cohorts List */}
+        <div className="space-y-2 sm:space-y-3">
+          {sessions.length === 0 ? (
+            <div
+              className="p-8 text-center text-xs font-medium border border-dashed border-border rounded-xl"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              No sessions scheduled yet. Click &quot;Add Session&quot; to add a training session.
+            </div>
+          ) : (
+            paginatedSessions.map((s: any) => {
+              const pSummary = s.paymentSummary || { paidCount: 0, partialCount: 0, pendingCount: 0 };
+
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => onEditSession && onEditSession(s)}
+                  className="rounded-xl border border-border p-2.5 sm:p-3.5 transition-all hover:border-border-secondary cursor-pointer"
+                  style={{ background: 'var(--surface-2)' }}
+                >
+                  {/* Row 1: Platform & Time + Status & Edit */}
+                  <div className="flex items-start sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
+                        {s.platform}
+                      </span>
+                      <span
+                        className="text-[10px] sm:text-xs flex items-center gap-1 shrink-0"
+                        style={{ color: 'var(--text-tertiary)' }}
+                      >
+                        <Clock size={11} className="shrink-0" />
                         {new Date(s.date).toLocaleDateString('en-IN', {
                           day: '2-digit',
                           month: 'short',
                         })}
                         {s.time && ` • ${s.time}`}
                       </span>
-                    </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`badge !text-[10px] !py-0.5 !px-2 ${statusStyle(s.status)}`}>
+                        {s.status}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onEditSession) onEditSession(s);
+                        }}
+                        className="p-1 rounded-lg border border-border text-tertiary hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all shrink-0 cursor-pointer"
+                        title="Edit session"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`badge ${statusStyle(s.status)}`}>{s.status}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onEditSession) onEditSession(s);
-                      }}
-                      className="p-1 rounded-lg border border-border hover:bg-surface-3 hover:text-cyan-300 transition-colors cursor-pointer"
-                      title="Edit session & payment details"
+                  {/* Row 2: Title */}
+                  <h4
+                    className="font-bold text-xs sm:text-sm mt-1.5 truncate"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {s.title}
+                  </h4>
+
+                  {/* Row 3: Trainer & Participants & Location */}
+                  <div
+                    className="flex items-center gap-2 sm:gap-3 flex-wrap mt-1 text-[10px] sm:text-xs"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <span>
+                      Trainer: <strong className="font-semibold text-brand-400">{s.trainer}</strong>
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
+                      style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
                     >
-                      <Edit3 size={13} />
-                    </button>
+                      <Users size={10} className="shrink-0 text-brand-400" />
+                      <span><strong style={{ color: 'var(--text-primary)' }}>{s.participantsCount}</strong> Enrolled</span>
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
+                      style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
+                    >
+                      <GraduationCap size={10} className="shrink-0 text-emerald-400" />
+                      <span><strong style={{ color: 'var(--text-primary)' }}>{s.currentlyParticipating || s.participantsCount}</strong> Active</span>
+                    </span>
+                    {s.location && (
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin size={10} className="shrink-0 opacity-70" /> {s.location}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Row 4: Fee Status Row */}
+                  <div className="pt-2 mt-2 border-t border-border/50 flex items-center justify-between gap-1.5 flex-wrap text-xs">
+                    <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                      Fee Status
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Paid: <strong className="font-bold">{pSummary.paidCount}</strong></span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        <span>Partial: <strong className="font-bold">{pSummary.partialCount}</strong></span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                        <span>Pending: <strong className="font-bold">{pSummary.pendingCount}</strong></span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Session Title */}
-                <h4
-                  className="text-sm sm:text-base font-bold mb-2 group-hover:text-cyan-400 transition-colors"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {s.title}
-                </h4>
-
-                {/* Details Row */}
-                <div
-                  className="flex flex-wrap gap-x-4 gap-y-1 text-xs mb-3 font-medium"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  <span>
-                    Trainer:{' '}
-                    <strong style={{ color: 'var(--text-primary)' }}>{s.trainer}</strong>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users size={12} className="text-cyan-400 shrink-0" />
-                    <strong className="text-cyan-300">{s.participantsCount} Enrolled</strong>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <GraduationCap size={12} className="text-emerald-400 shrink-0" />
-                    <strong className="text-emerald-300">
-                      {s.currentlyParticipating || s.participantsCount} Currently
-                    </strong>
-                  </span>
-                  {s.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin size={12} className="shrink-0" /> {s.location}
-                    </span>
-                  )}
-                </div>
-
-                {/* Requirement 2: Payment Summary Row */}
-                <div className="flex items-center gap-3 pt-2.5 border-t border-border/40 text-[11px] font-bold">
-                  <span className="text-tertiary font-semibold text-[10px]">Payment Status:</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    <span className="status-dot status-dot-paid" /> Paid: {pSummary.paidCount}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                    <span className="status-dot status-dot-partial" /> Partial: {pSummary.partialCount}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                    <span className="status-dot status-dot-pending" /> Pending: {pSummary.pendingCount}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div
+          className="flex flex-col sm:flex-row items-center justify-between border-t border-border/50 mt-3 sm:mt-4 pt-2.5 sm:pt-3 gap-2 text-xs"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <div className="text-[10px] sm:text-[11px]">
+            Showing <span className="font-semibold text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-brand-400">{Math.min(currentPage * pageSize, sessions.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{sessions.length}</span> sessions
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1 rounded-lg border border-border text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-2 transition-all cursor-pointer"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span className="text-[10px] sm:text-xs px-2 py-0.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Page <strong className="font-bold" style={{ color: 'var(--text-primary)' }}>{currentPage}</strong> of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-2.5 py-1 rounded-lg border border-border text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-2 transition-all cursor-pointer"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <ChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

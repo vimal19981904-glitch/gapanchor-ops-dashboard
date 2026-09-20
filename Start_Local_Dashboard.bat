@@ -1,11 +1,8 @@
 @echo off
 title GapAnchor Ops Local Dashboard
 echo =======================================================
-echo     Starting GapAnchor Dashboard Local Server...
+echo     Starting GapAnchor Ops Local Dashboard...
 echo =======================================================
-echo.
-echo Please leave this window open! The dashboard requires this 
-echo server to run in the background.
 echo.
 
 :: Change working directory to the directory where this script is located
@@ -16,7 +13,8 @@ if not exist "package.json" (
     cd /d "C:\Users\ARUL XAVIER\OneDrive - gapanchor\dashboard"
 )
 
-echo Your browser will automatically open in a few seconds...
+echo Starting local dev server on http://localhost:3000...
+echo Opening browser in 4 seconds...
 echo.
 
 :: Open the browser automatically after 4 seconds

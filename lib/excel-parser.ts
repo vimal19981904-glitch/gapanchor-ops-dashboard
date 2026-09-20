@@ -65,10 +65,12 @@ export function autoCategorizeTransaction(
   else if (pUpper.includes('SAP') || pUpper.includes('HANA')) platform = 'SAP S/4HANA';
 
   // 3. Category Detection
-  let category = type === 'income' ? 'Training Fees' : 'Ops & General';
+  let category = type === 'income' ? 'Training Fees' : 'Ops & Venue Logistics';
 
   if (type === 'income') {
-    if (pUpper.includes('CONSULTING') || pUpper.includes('AUDIT') || pUpper.includes('MILESTONE')) {
+    if (pUpper.includes('ARUL PANDI') || pUpper.includes('ARULPANDI') || pUpper.includes('ARUL XAVIER')) {
+      category = 'Other Revenue';
+    } else if (pUpper.includes('CONSULTING') || pUpper.includes('AUDIT') || pUpper.includes('MILESTONE')) {
       category = 'Consulting';
     } else if (pUpper.includes('BATCH') || pUpper.includes('COHORT') || pUpper.includes('FEES') || pUpper.includes('WMS') || pUpper.includes('BOOTCAMP')) {
       category = 'Training Fees';
@@ -77,8 +79,10 @@ export function autoCategorizeTransaction(
     }
   } else {
     // Expense
-    if (pUpper.includes('SALARY') || pUpper.includes('TRAINER') || pUpper.includes('HONORARIUM') || pUpper.includes('FACULTY')) {
-      category = 'Trainer Salary';
+    if (pUpper.includes('ARYA') || pUpper.includes('OPERATION')) {
+      category = 'Operation Cost';
+    } else if (pUpper.includes('SALARY') || pUpper.includes('TRAINER') || pUpper.includes('HONORARIUM') || pUpper.includes('FACULTY')) {
+      category = 'Salary';
     } else if (
       pUpper.includes('AWS') || pUpper.includes('CLOUD') || pUpper.includes('INFRA') ||
       pUpper.includes('ZOOM') || pUpper.includes('MONITOR') || pUpper.includes('LAPTOP') ||

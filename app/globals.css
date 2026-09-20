@@ -79,52 +79,52 @@
 
   /* ─── Badge System ──────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide transition-all duration-200;
+    @apply inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-all duration-200;
     letter-spacing: 0.03em;
   }
-  .badge-income { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
-  .badge-expense { @apply bg-rose-500/15 text-rose-400 border border-rose-500/30; }
-  .badge-upi { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
-  .badge-cash { @apply bg-amber-500/15 text-amber-400 border border-amber-500/30; }
-  .badge-bank { @apply bg-brand-500/15 text-brand-300 border border-brand-500/30; }
-  .badge-card { @apply bg-cyan-500/15 text-cyan-400 border border-cyan-500/30; }
+  .badge-income { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
+  .badge-expense { @apply bg-rose-500/15 text-rose-300 border border-rose-500/35 shadow-sm shadow-rose-500/10; }
+  .badge-upi { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
+  .badge-cash { @apply bg-amber-500/15 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10; }
+  .badge-bank { @apply bg-brand-500/15 text-brand-300 border border-brand-500/35 shadow-sm shadow-brand-500/10; }
+  .badge-card { @apply bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm shadow-cyan-500/10; }
 
-  .badge-scheduled { @apply bg-brand-500/15 text-brand-400 border border-brand-500/30; }
-  .badge-in-progress { @apply bg-amber-500/15 text-amber-400 border border-amber-500/30; }
-  .badge-completed { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
-  .badge-stale { @apply bg-rose-500/15 text-rose-400 border border-rose-500/30; }
-  .badge-processed { @apply bg-cyan-500/15 text-cyan-400 border border-cyan-500/30; }
-  .badge-open { @apply bg-blue-500/15 text-blue-400 border border-blue-500/30; }
+  .badge-scheduled { @apply bg-brand-500/15 text-brand-300 border border-brand-500/35 shadow-sm shadow-brand-500/10; }
+  .badge-in-progress { @apply bg-amber-500/15 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10; }
+  .badge-completed { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
+  .badge-stale { @apply bg-rose-500/15 text-rose-300 border border-rose-500/35 shadow-sm shadow-rose-500/10; }
+  .badge-processed { @apply bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm shadow-cyan-500/10; }
+  .badge-open { @apply bg-blue-500/15 text-blue-300 border border-blue-500/35 shadow-sm shadow-blue-500/10; }
 
-  /* ─── Apple Style Glossy Pill Buttons ───────────────────────── */
+  /* ─── Apple Style Glossy Boxy Buttons ───────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
     color: var(--text-primary);
     background: var(--surface-1);
     backdrop-filter: blur(12px);
   }
   .btn-process {
-    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  /* ─── Payment Status Indicator Dots ─────────────────────────── */
+  /* ─── Payment Status Indicator Dots ────────────────────────── */
   .status-dot {
     @apply inline-block w-2 h-2 rounded-full shrink-0;
   }
   .status-dot-paid {
     @apply bg-emerald-400;
-    box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
   }
   .status-dot-partial {
     @apply bg-amber-400;
-    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
   }
   .status-dot-pending {
     @apply bg-rose-400;
-    box-shadow: 0 0 6px rgba(251, 113, 133, 0.5);
+    box-shadow: 0 0 6px rgba(251, 113, 133, 0.6);
   }
 }
 
@@ -432,6 +432,22 @@
       max-height: 300px;
       transform: translateY(0);
     }
+  }
+
+  /* Mobile: Disable hover transform on glass cards (prevents touch jank) */
+  .glass-card:hover {
+    transform: none;
+  }
+
+  /* Mobile: Normalize glass-card stacking gaps */
+  .glass-card + .glass-card {
+    margin-top: 0;
+  }
+
+  /* Mobile: Safe area inset for notched iPhones */
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 

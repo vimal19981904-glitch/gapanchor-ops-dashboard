@@ -91,6 +91,7 @@ export default function FinanceAnalyticsPage() {
   const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [breakdownView, setBreakdownView] = useState<'combined' | 'income' | 'expense'>('combined');
+  const [activePieSlice, setActivePieSlice] = useState<{ name: string; value: number; type: 'income' | 'expense'; color: string } | null>(null);
   const [timelineGranularity, setTimelineGranularity] = useState<'hourly' | 'day' | 'weekly'>('day');
   const [timelinePreset, setTimelinePreset] = useState<string>('all');
   const [timelineStartDate, setTimelineStartDate] = useState<string>('');
@@ -137,6 +138,9 @@ export default function FinanceAnalyticsPage() {
       const json = await res.json();
       if (json.success) {
         setData(json);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('finance-data-updated'));
+        }
       } else {
         toast.error(json.error || 'Failed to load finance data');
       }
@@ -158,7 +162,7 @@ export default function FinanceAnalyticsPage() {
       const res = await fetch('/api/finance/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath: 'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement.xlsx' }),
+        body: JSON.stringify({ filePath: 'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement02.xlsx' }),
       });
       const json = await res.json();
       if (json.success) {
@@ -468,12 +472,21 @@ export default function FinanceAnalyticsPage() {
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Income</span>
             <TrendingUp size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
           </div>
-          <p className="text-base sm:text-3xl font-black font-mono text-emerald-300 truncate">
-            {formatCurrency(totalIncome)}
-          </p>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            {transactions.filter(t => t.type === 'income').length} credit entries
-          </p>
+          {loading ? (
+            <div className="space-y-1 my-1">
+              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-emerald-500/20 animate-pulse" />
+              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className="text-base sm:text-3xl font-black font-mono text-emerald-300 truncate">
+                {formatCurrency(totalIncome)}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                {transactions.filter(t => t.type === 'income').length} credit entries
+              </p>
+            </>
+          )}
         </div>
 
         <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-rose-500/20 bg-rose-950/20">
@@ -481,12 +494,21 @@ export default function FinanceAnalyticsPage() {
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Expense</span>
             <TrendingDown size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
           </div>
-          <p className="text-base sm:text-3xl font-black font-mono text-rose-300 truncate">
-            {formatCurrency(totalExpense)}
-          </p>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            {transactions.filter(t => t.type === 'expense').length} debit entries
-          </p>
+          {loading ? (
+            <div className="space-y-1 my-1">
+              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-rose-500/20 animate-pulse" />
+              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className="text-base sm:text-3xl font-black font-mono text-rose-300 truncate">
+                {formatCurrency(totalExpense)}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                {transactions.filter(t => t.type === 'expense').length} debit entries
+              </p>
+            </>
+          )}
         </div>
 
         <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-indigo-500/20 bg-indigo-950/20">
@@ -494,12 +516,21 @@ export default function FinanceAnalyticsPage() {
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Net Profit</span>
             <DollarSign size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
           </div>
-          <p className={`text-base sm:text-3xl font-black font-mono truncate ${netProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
-            {formatCurrency(netProfit)}
-          </p>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%
-          </p>
+          {loading ? (
+            <div className="space-y-1 my-1">
+              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-indigo-500/20 animate-pulse" />
+              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className={`text-base sm:text-3xl font-black font-mono truncate ${netProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
+                {formatCurrency(netProfit)}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%
+              </p>
+            </>
+          )}
         </div>
 
         <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-cyan-500/20 bg-cyan-950/20">
@@ -507,17 +538,26 @@ export default function FinanceAnalyticsPage() {
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Transactions</span>
             <Layers size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
           </div>
-          <p className="text-base sm:text-3xl font-black font-mono text-cyan-300 truncate">
-            {transactions.length} Records
-          </p>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            Filtered: {filteredTx.length} active
-          </p>
+          {loading ? (
+            <div className="space-y-1 my-1">
+              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-cyan-500/20 animate-pulse" />
+              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className="text-base sm:text-3xl font-black font-mono text-cyan-300 truncate">
+                {transactions.length} Records
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                Filtered: {filteredTx.length} active
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       {/* Flagship Expense Analytics & Breakdown Dashboard Component */}
-      <ExpenseBreakdownDashboard />
+      <ExpenseBreakdownDashboard refreshTrigger={data} />
 
       {/* Flagship Income Analytics & Money Flow Dashboard Component */}
       <IncomeBreakdownDashboard />
@@ -720,7 +760,7 @@ export default function FinanceAnalyticsPage() {
         </div>
 
         {/* Chart 2: Unified Income & Expense Category Breakdown (Single Pie) */}
-        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
+        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4 bg-gradient-to-br from-black via-zinc-950 to-slate-900 border border-zinc-800/90 shadow-2xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-white">
               <PieChartIcon size={18} className="text-emerald-400" />
@@ -756,81 +796,149 @@ export default function FinanceAnalyticsPage() {
             <div className="h-60 relative flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <defs>
-                    <linearGradient id="pageIncPieGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#f8fafc" />
-                      <stop offset="50%" stopColor="#cbd5e1" />
-                      <stop offset="100%" stopColor="#94a3b8" />
-                    </linearGradient>
-                    <linearGradient id="pageExpPieGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#475569" />
-                      <stop offset="50%" stopColor="#334155" />
-                      <stop offset="100%" stopColor="#1e293b" />
-                    </linearGradient>
-                  </defs>
                   <Pie
                     data={
                       breakdownView === 'combined'
                         ? [
-                            ...incomePieData.map((item, i) => ({
-                              ...item,
-                              name: `${item.name} (Income)`,
-                              fill: 'url(#pageIncPieGrad)',
-                            })),
-                            ...expensePieData.map((item, i) => ({
-                              ...item,
-                              name: `${item.name} (Expense)`,
-                              fill: 'url(#pageExpPieGrad)',
-                            })),
+                            ...incomePieData.map((item, i) => {
+                              const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                              const color = fallbackInc[i % fallbackInc.length];
+                              return {
+                                ...item,
+                                rawName: item.name,
+                                name: `${item.name} (Income)`,
+                                type: 'income' as const,
+                                color,
+                              };
+                            }),
+                            ...expensePieData.map((item, i) => {
+                              const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                              const color = fallbackExp[i % fallbackExp.length];
+                              return {
+                                ...item,
+                                rawName: item.name,
+                                name: `${item.name} (Expense)`,
+                                type: 'expense' as const,
+                                color,
+                              };
+                            }),
                           ]
                         : breakdownView === 'income'
-                        ? incomePieData.map((item, i) => ({ ...item, fill: ['#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b'][i % 5] }))
-                        : expensePieData.map((item, i) => ({ ...item, fill: ['#64748b', '#475569', '#334155', '#1e293b', '#0f172a'][i % 5] }))
+                        ? incomePieData.map((item, i) => {
+                            const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                            return {
+                              ...item,
+                              rawName: item.name,
+                              name: item.name,
+                              type: 'income' as const,
+                              color: fallbackInc[i % fallbackInc.length],
+                            };
+                          })
+                        : expensePieData.map((item, i) => {
+                            const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                            return {
+                              ...item,
+                              rawName: item.name,
+                              name: item.name,
+                              type: 'expense' as const,
+                              color: fallbackExp[i % fallbackExp.length],
+                            };
+                          })
                     }
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={4}
+                    innerRadius={52}
+                    outerRadius={78}
+                    paddingAngle={3}
                     stroke="rgba(15, 23, 42, 0.9)"
                     strokeWidth={3}
                     dataKey="value"
                     nameKey="name"
+                    isAnimationActive={true}
+                    animationDuration={600}
+                    animationEasing="ease-out"
+                    onMouseEnter={(entry: any) => {
+                      if (entry) {
+                        setActivePieSlice({
+                          name: entry.rawName || entry.name,
+                          value: entry.value,
+                          type: entry.type || 'income',
+                          color: entry.color,
+                        });
+                      }
+                    }}
+                    onMouseLeave={() => setActivePieSlice(null)}
                   >
                     {(breakdownView === 'combined'
                       ? [
-                          ...incomePieData.map((item, i) => ({ ...item, fill: 'url(#pageIncPieGrad)' })),
-                          ...expensePieData.map((item, i) => ({ ...item, fill: 'url(#pageExpPieGrad)' })),
+                          ...incomePieData.map((item, i) => {
+                            const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                            return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
+                          }),
+                          ...expensePieData.map((item, i) => {
+                            const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                            return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
+                          }),
                         ]
                       : breakdownView === 'income'
-                      ? incomePieData.map((item, i) => ({ ...item, fill: ['#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b'][i % 5] }))
-                      : expensePieData.map((item, i) => ({ ...item, fill: ['#64748b', '#475569', '#334155', '#1e293b', '#0f172a'][i % 5] }))
+                      ? incomePieData.map((item, i) => {
+                          const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                          return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
+                        })
+                      : expensePieData.map((item, i) => {
+                          const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                          return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
+                        })
                     ).map((entry, i) => (
-                      <Cell key={`cell-${i}`} fill={entry.fill} />
+                      <Cell
+                        key={`cell-${entry.rawName}-${i}`}
+                        fill={entry.color}
+                        className="cursor-pointer outline-none transition-all duration-200"
+                        style={{
+                          filter: activePieSlice?.name === entry.rawName ? `brightness(1.3) drop-shadow(0 0 10px ${entry.color})` : 'brightness(1.0)',
+                          opacity: activePieSlice && activePieSlice.name !== entry.rawName ? 0.35 : 1,
+                          transition: 'all 0.2s ease',
+                        }}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(v: number) => [formatCurrency(v), '']}
-                    contentStyle={{
-                      background: '#0b1329',
-                      borderColor: '#475569',
-                      borderRadius: '12px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                    }}
-                  />
                 </PieChart>
               </ResponsiveContainer>
 
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Net Profit</span>
-                <span className={`text-sm font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
-                  {formatCurrency(netProfit)}
-                </span>
+              {/* Dynamic Center Readout (Zero Collision, Perfectly Aligned) */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2 z-10 select-none">
+                {activePieSlice ? (
+                  <div className="flex flex-col items-center animate-fade-in">
+                    <span
+                      className="text-[10px] uppercase font-black tracking-wider truncate max-w-[130px]"
+                      style={{ color: activePieSlice.color }}
+                    >
+                      {activePieSlice.name}
+                    </span>
+                    <span className="text-sm sm:text-base font-black font-mono text-white mt-0.5">
+                      {formatCurrency(activePieSlice.value)}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                      {activePieSlice.type === 'income'
+                        ? `${totalIncome > 0 ? Math.round((activePieSlice.value / totalIncome) * 100) : 0}% of Income`
+                        : `${totalExpense > 0 ? Math.round((activePieSlice.value / totalExpense) * 100) : 0}% of Expense`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center animate-fade-in">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                      Net Profit
+                    </span>
+                    <span className={`text-sm sm:text-base font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
+                      {formatCurrency(netProfit)}
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
+                      {totalIncome > 0 ? `${((netProfit / totalIncome) * 100).toFixed(1)}% margin` : 'Balanced'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-
 
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {(breakdownView === 'combined' || breakdownView === 'income') && (
@@ -840,14 +948,26 @@ export default function FinanceAnalyticsPage() {
                     Income ({formatCurrency(totalIncome)})
                   </span>
                   <div className="space-y-1.5">
-                    {incomePieData.map((item) => {
+                    {incomePieData.map((item, i) => {
+                      const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                      const color = fallbackInc[i % fallbackInc.length];
+                      const isHovered = activePieSlice?.name === item.name;
                       const totalVol = totalIncome + totalExpense;
                       const pct = totalVol > 0 ? ((item.value / totalVol) * 100).toFixed(0) : 0;
                       return (
-                        <div key={item.name} className="p-2 rounded-xl bg-surface-2 border border-border/60 text-xs">
+                        <div
+                          key={item.name}
+                          onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'income', color })}
+                          onMouseLeave={() => setActivePieSlice(null)}
+                          className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
+                            isHovered
+                              ? 'bg-surface-3 border-emerald-500/50 shadow-sm'
+                              : 'bg-surface-2 border-border/60 hover:bg-surface-3'
+                          }`}
+                        >
                           <div className="flex justify-between font-bold">
                             <span className="flex items-center gap-1.5 text-slate-300">
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500" />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
                               <span className="truncate">{item.name}</span>
                             </span>
                             <span className="text-emerald-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>
@@ -866,12 +986,24 @@ export default function FinanceAnalyticsPage() {
                   </span>
                   <div className="space-y-1.5">
                     {expensePieData.map((item, i) => {
+                      const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                      const color = fallbackExp[i % fallbackExp.length];
+                      const isHovered = activePieSlice?.name === item.name;
                       const pct = totalExpense > 0 ? ((item.value / totalExpense) * 100).toFixed(0) : 0;
                       return (
-                        <div key={item.name} className="p-2 rounded-xl bg-surface-2 border border-border/60 text-xs">
+                        <div
+                          key={item.name}
+                          onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'expense', color })}
+                          onMouseLeave={() => setActivePieSlice(null)}
+                          className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
+                            isHovered
+                              ? 'bg-surface-3 border-rose-500/50 shadow-sm'
+                              : 'bg-surface-2 border-border/60 hover:bg-surface-3'
+                          }`}
+                        >
                           <div className="flex justify-between font-bold">
                             <span className="flex items-center gap-1.5 text-slate-300">
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: CHART_COLORS[(i + 2) % CHART_COLORS.length] }} />
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
                               <span className="truncate">{item.name}</span>
                             </span>
                             <span className="text-rose-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>

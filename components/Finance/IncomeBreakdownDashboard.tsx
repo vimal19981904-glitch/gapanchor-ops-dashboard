@@ -99,6 +99,7 @@ export default function IncomeBreakdownDashboard() {
           icon={DollarSign}
           badge="Credit"
           badgeType="emerald"
+          loading={loading}
         />
         <MetricCard
           label="Top Revenue Source"
@@ -107,6 +108,7 @@ export default function IncomeBreakdownDashboard() {
           icon={PieChartIcon}
           badge="Dominant"
           badgeType="cyan"
+          loading={loading}
         />
         <MetricCard
           label="Credit Entries"
@@ -115,6 +117,7 @@ export default function IncomeBreakdownDashboard() {
           icon={Layers}
           badge="Verified"
           badgeType="purple"
+          loading={loading}
         />
         <MetricCard
           label="Revenue Streams"
@@ -123,6 +126,7 @@ export default function IncomeBreakdownDashboard() {
           icon={Activity}
           badge="Structured"
           badgeType="emerald"
+          loading={loading}
         />
       </div>
 

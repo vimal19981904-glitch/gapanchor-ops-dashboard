@@ -44,7 +44,7 @@ const QUALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; c
   'Unrated': { label: 'Unrated', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-900/50', border: 'border-slate-800' },
 };
 
-function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function StatusBadgeSelect({ value, onChange, className = '' }: { value: string; onChange: (val: string) => void; className?: string }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -66,10 +66,10 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm ${className || 'w-[114px]'}`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{current.label}</span>
+        <span className="truncate">{current.label}</span>
       </button>
 
       {open && (
@@ -96,7 +96,7 @@ function StatusBadgeSelect({ value, onChange }: { value: string; onChange: (val:
   );
 }
 
-function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function QualityBadgeSelect({ value, onChange, className = '' }: { value: string; onChange: (val: string) => void; className?: string }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -118,10 +118,10 @@ function QualityBadgeSelect({ value, onChange }: { value: string; onChange: (val
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm`}
+        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 h-7 rounded-xl text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap leading-none shrink-0 ${current.bg} ${current.color} ${current.border} hover:brightness-125 shadow-sm ${className || 'w-[136px]'}`}
       >
         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-        <span>{current.label}</span>
+        <span className="truncate">{current.label}</span>
       </button>
 
       {open && (
@@ -568,8 +568,8 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                     <th className="py-3 px-3">Country</th>
                     <th className="py-3 px-3">Course / Service</th>
                     <th className="py-3 px-3">Date Submitted</th>
-                    <th className="py-3 px-3">Contact Status</th>
-                    <th className="py-3 px-3">Lead Quality</th>
+                    <th className="py-3 px-3 w-[138px] min-w-[138px] whitespace-nowrap">Contact Status</th>
+                    <th className="py-3 px-3 w-[160px] min-w-[160px] whitespace-nowrap">Lead Quality</th>
                     <th className="py-3 px-4 text-right">Quick Actions</th>
                   </tr>
                 </thead>
@@ -614,7 +614,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                       </td>
 
                       {/* Contact Status Selectable */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <StatusBadgeSelect
                           value={enquiry.contactStatus || 'Pending'}
                           onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
@@ -622,7 +622,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                       </td>
 
                       {/* Lead Quality Selectable */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <QualityBadgeSelect
                           value={enquiry.leadQuality || 'Unrated'}
                           onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
@@ -712,7 +712,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
               </button>
               <button
                 onClick={async () => {
-                  await handleUpdateStatus(editingEnquiry.id, { notes: noteText, status: 'Processed' });
+                  await handleUpdateStatus(editingEnquiry.id, { notes: noteText });
                   setEditingEnquiry(null);
                 }}
                 className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-semibold"

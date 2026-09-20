@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ArrowRight, CheckCircle2, LogOut, User, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, CheckCircle2, LogOut, User, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -185,18 +185,30 @@ export default function LoginPage() {
               { name: 'Employee B (Blue Yonder & Kinaxis)', email: 'employee.b@gapanchor.com' },
               { name: 'Employee C (SAP S/4HANA)', email: 'employee.c@gapanchor.com' },
               { name: 'Arul Xavier (Master Admin)', email: 'admin@gapanchor.com' },
+              { name: 'Demo Account (Full Showcase)', email: 'demo@gapanchor.com', isDemo: true, badge: '100% DB-Free Demo' },
             ].map((acc, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setDemoAccount(acc.email)}
-                className="w-full text-left p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs transition-colors flex items-center justify-between cursor-pointer"
+                className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                  acc.isDemo
+                    ? 'border-purple-500/40 bg-gradient-to-r from-purple-950/50 via-indigo-950/40 to-slate-900 hover:border-purple-400 shadow-lg shadow-purple-500/10'
+                    : 'border-white/5 bg-white/5 hover:bg-white/10'
+                }`}
               >
                 <div>
-                  <div className="font-semibold text-slate-200">{acc.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-200">{acc.name}</span>
+                    {acc.isDemo && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-widest flex items-center gap-1 font-mono">
+                        <Sparkles size={10} className="text-purple-400 animate-pulse" /> {acc.badge}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[10px] text-slate-400">{acc.email}</div>
                 </div>
-                <CheckCircle2 size={14} className="text-brand-400 shrink-0" />
+                <CheckCircle2 size={14} className={acc.isDemo ? 'text-purple-400 shrink-0' : 'text-brand-400 shrink-0'} />
               </button>
             ))}
           </div>

@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       }
 
       const defaultPaths = [
+        'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement02.xlsx',
         'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement.xlsx',
         'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement_Converted.xlsx',
       ];
@@ -57,6 +58,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Preserve existing custom categorization before refreshing
+    const existingTx = await prisma.transaction.findMany({
+      where: { origin: 'excel_statement_sync' },
+      select: { notes: true, sourceOrCategory: true, platform: true }
+    });
+
+    const existingCategoryMap = new Map<string, { category: string; platform?: string | null }>();
+    for (const t of existingTx) {
+      if (t.notes) {
+        const match = t.notes.match(/\[Ref:\s*([A-Za-z0-9]+)\]/);
+        if (match && match[1]) {
+          existingCategoryMap.set(match[1], { category: t.sourceOrCategory, platform: t.platform });
+        }
+        existingCategoryMap.set(t.notes, { category: t.sourceOrCategory, platform: t.platform });
+      }
+    }
+
     // Cleanly replace existing excel_statement_sync records to prevent duplicate accumulation across re-syncs
     await prisma.transaction.deleteMany({
       where: { origin: 'excel_statement_sync' },
@@ -68,12 +86,25 @@ export async function POST(request: NextRequest) {
     let totalExpenseImported = 0;
 
     for (const tx of parsedTx) {
+      let finalCategory = tx.sourceOrCategory;
+      let finalPlatform = tx.platform || null;
+
+      if (tx.refNo && existingCategoryMap.has(tx.refNo)) {
+        const existing = existingCategoryMap.get(tx.refNo)!;
+        finalCategory = existing.category;
+        if (existing.platform) finalPlatform = existing.platform;
+      } else if (tx.notes && existingCategoryMap.has(tx.notes)) {
+        const existing = existingCategoryMap.get(tx.notes)!;
+        finalCategory = existing.category;
+        if (existing.platform) finalPlatform = existing.platform;
+      }
+
       await prisma.transaction.create({
         data: {
           date: tx.date,
           type: tx.type,
-          sourceOrCategory: tx.sourceOrCategory,
-          platform: tx.platform || null,
+          sourceOrCategory: finalCategory,
+          platform: finalPlatform,
           amount: tx.amount,
           paymentMethod: tx.paymentMethod,
           notes: tx.notes,
