@@ -41,7 +41,7 @@ if __name__ == "__main__":
     if not body and len(sys.argv) > 3:
         body = sys.argv[3]
 
-    to = to or "avpartners.consultants@outlook.com"
+    to = to or "contact@gapanchor.com"
     subj = subj or "[URGENT] Lead Follow-up Required - Karandeep Singh"
     body = body or "<h3>Test Alert</h3>"
 

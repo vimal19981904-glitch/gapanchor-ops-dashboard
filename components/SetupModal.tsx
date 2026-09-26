@@ -20,8 +20,8 @@ export default function SetupModal({ isOpen, onClose, onRefresh, initialTab = 'm
   const [phoneId, setPhoneId] = useState('109482938472910');
   const [wabaId, setWabaId] = useState('act_gapanchor_7598505274');
 
-  // Microsoft Azure App Registration credentials discovered for avpartners.consultants@outlook.com
-  const [outlookEmail, setOutlookEmail] = useState('avpartners.consultants@outlook.com');
+  // Microsoft Azure App Registration credentials configured for contact@gapanchor.com
+  const [outlookEmail, setOutlookEmail] = useState('contact@gapanchor.com');
   const [clientId, setClientId] = useState('13fb55fd-34c4-4056-bf2b-125bfd7a08de');
   const [tenantId, setTenantId] = useState('0d233d8f-d61c-4816-9dc4-af92f9119eba');
   const [clientSecret, setClientSecret] = useState('');
@@ -229,7 +229,7 @@ export default function SetupModal({ isOpen, onClose, onRefresh, initialTab = 'm
           <form onSubmit={handleSaveMicrosoft} className="space-y-4">
             <div className="p-3.5 rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-300 text-xs font-medium flex items-center gap-2">
               <Key size={14} className="shrink-0" />
-              <span>Connect Azure App Registration for <strong>avpartners.consultants@outlook.com</strong> (Graph API Mail.Read & Calendars.Read).</span>
+              <span>Connect Azure App Registration for <strong>contact@gapanchor.com</strong> (Graph API Mail.Read & Calendars.Read).</span>
             </div>
 
             <div>

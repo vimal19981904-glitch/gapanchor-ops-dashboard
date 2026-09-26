@@ -203,7 +203,7 @@ export async function sendLeadAlertEmail(
   payload: LeadEmailPayload,
   maxRetries = 3
 ): Promise<{ success: boolean; error?: string; attempts: number; previewUrl?: string; note?: string }> {
-  const defaultTarget = process.env.ALERT_EMAIL_RECIPIENT || 'avpartners.consultants@outlook.com';
+  const defaultTarget = process.env.ALERT_EMAIL_RECIPIENT || 'contact@gapanchor.com';
   const recipients = [defaultTarget];
   const { subject, html, text } = buildLeadAlertEmailHtml(payload);
 

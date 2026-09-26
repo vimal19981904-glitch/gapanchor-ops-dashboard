@@ -17,6 +17,8 @@ import { SkeletonKPI } from '@/components/ui/Skeleton';
 import { formatCurrency } from '@/lib/utils';
 import { DollarSign, Calendar, MessageSquare, Code2 } from 'lucide-react';
 
+import NavigationDrawer from '@/components/NavigationDrawer';
+
 export default function Dashboard() {
   const [financeData, setFinanceData] = useState<any>(null);
   const [opsData, setOpsData] = useState<any>(null);
@@ -24,6 +26,9 @@ export default function Dashboard() {
   const [devData, setDevData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Navigation Drawer
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
 
   // Modals
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
@@ -105,6 +110,7 @@ export default function Dashboard() {
         graphStatus={financeData?.graphApiStatus}
         whatsappStatus={commsData?.whatsappConfig}
         onOpenSetup={handleOpenSetup}
+        onOpenNav={() => setIsNavDrawerOpen(true)}
       />
 
       {/* Top KPI Summary Cards */}
@@ -161,31 +167,37 @@ export default function Dashboard() {
       {/* Main Module Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5 sm:gap-6">
         {/* Finance Module (Full Width) */}
-        <FinanceCard
-          financeData={financeData}
-          onOpenModal={() => setIsFinanceModalOpen(true)}
-          onRefresh={fetchAllData}
-          loading={loading}
-        />
+        <div id="finance-section" className="xl:col-span-2 transition-all rounded-3xl">
+          <FinanceCard
+            financeData={financeData}
+            onOpenModal={() => setIsFinanceModalOpen(true)}
+            onRefresh={fetchAllData}
+            loading={loading}
+          />
+        </div>
 
         {/* Training Operations */}
-        <OpsCard
-          opsData={opsData}
-          onOpenModal={handleOpenAddSession}
-          onEditSession={handleOpenEditSession}
-          loading={loading}
-        />
+        <div id="ops-section" className="transition-all rounded-3xl">
+          <OpsCard
+            opsData={opsData}
+            onOpenModal={handleOpenAddSession}
+            onEditSession={handleOpenEditSession}
+            loading={loading}
+          />
+        </div>
 
         {/* WhatsApp & Excel Command Center */}
-        <CommsCard
-          commsData={commsData}
-          onRefresh={fetchAllData}
-          loading={loading}
-          onOpenExcelModal={() => setIsEnquiryModalOpen(true)}
-        />
+        <div id="comms-section" className="transition-all rounded-3xl">
+          <CommsCard
+            commsData={commsData}
+            onRefresh={fetchAllData}
+            loading={loading}
+            onOpenExcelModal={() => setIsEnquiryModalOpen(true)}
+          />
+        </div>
 
         {/* Dev Progress */}
-        <div className="xl:col-span-2">
+        <div id="dev-section" className="xl:col-span-2 transition-all rounded-3xl">
           <DevProgressCard
             devData={devData}
             onOpenModal={() => setIsDevModalOpen(true)}
@@ -194,10 +206,25 @@ export default function Dashboard() {
         </div>
 
         {/* Google Calendar Upcoming Events Widget */}
-        <div className="xl:col-span-2">
+        <div id="calendar-section" className="xl:col-span-2 transition-all rounded-3xl">
           <CalendarWidget />
         </div>
       </div>
+
+      {/* Navigation Drawer */}
+      <NavigationDrawer
+        isOpen={isNavDrawerOpen}
+        onClose={() => setIsNavDrawerOpen(false)}
+        onOpenFinanceModal={() => setIsFinanceModalOpen(true)}
+        onOpenOpsModal={() => setIsOpsModalOpen(true)}
+        onOpenEnquiryModal={() => setIsEnquiryModalOpen(true)}
+        onOpenDevModal={() => setIsDevModalOpen(true)}
+        onOpenSetupModal={handleOpenSetup}
+        financeSummary={financeData?.summary}
+        opsSummary={opsData?.summary}
+        commsSummary={commsData?.summary}
+        devSummary={devData}
+      />
 
       {/* Modals & Setup Drawer */}
       <FinanceModal isOpen={isFinanceModalOpen} onClose={() => setIsFinanceModalOpen(false)} onRefresh={fetchAllData} />

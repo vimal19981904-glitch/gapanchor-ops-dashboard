@@ -103,10 +103,32 @@ export async function POST(request: Request) {
     }
 
     let filePath = DEFAULT_EXCEL_PATH;
-    let scriptOutput = '';
-
-    // Check if request is multipart/form-data (manual file upload)
     const contentType = request.headers.get('content-type') || '';
+
+    // 1. Primary: Cloud Microsoft Graph API sync for contact@gapanchor.com
+    const { syncOutlookGraphEnquiries } = await import('@/lib/outlook-graph-sync');
+    const graphSyncResult = await syncOutlookGraphEnquiries();
+
+    if (graphSyncResult.success) {
+      const allEnquiries = await prisma.enquiry.findMany({
+        orderBy: { messageTimestamp: 'desc' },
+        include: {
+          assignedTo: {
+            select: { id: true, name: true, email: true, role: true, assignedCourse: true },
+          },
+        },
+      });
+      return NextResponse.json({
+        success: true,
+        message: graphSyncResult.message,
+        totalParsed: graphSyncResult.totalParsed,
+        insertedCount: graphSyncResult.insertedCount,
+        updatedCount: graphSyncResult.updatedCount,
+        enquiries: allEnquiries,
+      });
+    }
+
+    // 2. Handle manual Excel file upload if provided via multipart/form-data
     if (contentType.includes('multipart/form-data')) {
       try {
         const formData = await request.formData();
@@ -121,28 +143,6 @@ export async function POST(request: Request) {
       } catch (err: any) {
         console.warn('FormData parsing error:', err.message);
       }
-    } else {
-      // Direct 1-Click Sync: Run python extractor script locally if present
-      const localScriptPath = path.join(process.cwd(), 'scripts', 'extract_outlook_enquiries.py');
-      const userScriptPath = `c:\\Project X - Online training platform\\anitigravity\\extract_enquiries.py`;
-      const scriptToRun = fs.existsSync(localScriptPath)
-        ? localScriptPath
-        : fs.existsSync(userScriptPath)
-        ? userScriptPath
-        : null;
-
-      if (scriptToRun) {
-        try {
-          const { stdout } = await execPromise(`python "${scriptToRun}"`, {
-            cwd: path.dirname(scriptToRun),
-            maxBuffer: 20 * 1024 * 1024,
-          });
-          scriptOutput = stdout;
-          console.log('Outlook extractor script finished successfully.');
-        } catch (err: any) {
-          console.warn('Outlook python script execution note:', err.message);
-        }
-      }
     }
 
     let enquiries: any[] = [];
@@ -153,13 +153,15 @@ export async function POST(request: Request) {
     let isExcelParsed = false;
 
     try {
-      const parsed = parseEnquiryExcel(filePath);
-      enquiries = parsed.enquiries;
-      summary = parsed.summary;
-      totalParsed = parsed.totalParsed;
-      isExcelParsed = true;
+      if (fs.existsSync(filePath)) {
+        const parsed = parseEnquiryExcel(filePath);
+        enquiries = parsed.enquiries;
+        summary = parsed.summary;
+        totalParsed = parsed.totalParsed;
+        isExcelParsed = true;
+      }
     } catch (parseErr: any) {
-      console.warn('Excel parse note (running in cloud environment):', parseErr.message);
+      console.warn('Excel parse note:', parseErr.message);
     }
 
     if (isExcelParsed && enquiries.length > 0) {
@@ -285,7 +287,6 @@ export async function POST(request: Request) {
       updatedCount,
       summary: summary || meta?.summary || null,
       enquiries: allEnquiries,
-      scriptOutput,
     });
   } catch (error: any) {
     console.error('Excel sync error:', error);

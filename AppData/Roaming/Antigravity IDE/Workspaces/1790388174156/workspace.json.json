@@ -1,0 +1,58 @@
+{
+  "filePath": "..\\..\\AppData\\Roaming\\Antigravity IDE\\Workspaces\\1790388174156\\workspace.json",
+  "lines": [
+    {
+      "line": 6,
+      "author": "human",
+      "confidence": 0.3999999999999997,
+      "aiEdits": 0,
+      "humanEdits": 1,
+      "lastEditType": "human",
+      "lastEditTimestamp": 1790388173432,
+      "signals": {
+        "typingRhythm": 0.5,
+        "editSize": 0.5,
+        "cursorMovement": 0.5,
+        "editSequence": 0.5,
+        "undoFrequency": 0.5,
+        "extensionSource": 0.5,
+        "velocityProfile": 0.5,
+        "selectionPattern": 0.7,
+        "pastePattern": 0.5,
+        "deletionPattern": 0.5,
+        "pausePattern": 0.5
+      }
+    },
+    {
+      "line": 7,
+      "author": "human",
+      "confidence": 0.3999999999999997,
+      "aiEdits": 0,
+      "humanEdits": 1,
+      "lastEditType": "human",
+      "lastEditTimestamp": 1790388173432,
+      "signals": {
+        "typingRhythm": 0.5,
+        "editSize": 0.5,
+        "cursorMovement": 0.5,
+        "editSequence": 0.5,
+        "undoFrequency": 0.5,
+        "extensionSource": 0.5,
+        "velocityProfile": 0.5,
+        "selectionPattern": 0.7,
+        "pastePattern": 0.5,
+        "deletionPattern": 0.5,
+        "pausePattern": 0.5
+      }
+    }
+  ],
+  "summary": {
+    "totalLines": 2,
+    "aiLines": 0,
+    "humanLines": 2,
+    "mixedLines": 0,
+    "aiPercentage": 0,
+    "humanPercentage": 100
+  },
+  "lastUpdated": 1790388173459
+}

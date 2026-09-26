@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const isTest = searchParams.get('test') === 'true';
 
     if (isTest) {
-      const recipient = searchParams.get('to') || process.env.ALERT_EMAIL_RECIPIENT || 'avpartners.consultants@outlook.com';
+      const recipient = searchParams.get('to') || process.env.ALERT_EMAIL_RECIPIENT || 'contact@gapanchor.com';
       const now = new Date();
 
       // Retrieve real Karandeep Singh enquiry from database if available
