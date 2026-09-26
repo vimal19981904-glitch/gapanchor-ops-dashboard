@@ -13,7 +13,7 @@ cd /d "%~dp0"
 
 :: Fallback if %~dp0 is not the dashboard folder
 if not exist "package.json" (
-    cd /d "C:\Users\ARUL XAVIER\OneDrive - gapanchor\dashboard"
+    cd /d "C:\Users\ARUL XAVIER\OneDrive - gapanchor\www.gapanchor.com"
 )
 
 echo Your browser will automatically open in a few seconds...

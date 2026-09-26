@@ -10,7 +10,7 @@ cd /d "%~dp0"
 
 :: Fallback if %~dp0 is not the dashboard folder
 if not exist "package.json" (
-    cd /d "C:\Users\ARUL XAVIER\OneDrive - gapanchor\dashboard"
+    cd /d "C:\Users\ARUL XAVIER\OneDrive - gapanchor\www.gapanchor.com"
 )
 
 echo Starting local dev server on http://localhost:3000...
