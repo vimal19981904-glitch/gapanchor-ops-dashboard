@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Calendar,
   Users,
@@ -12,6 +13,8 @@ import {
   GraduationCap,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  Maximize2,
 } from 'lucide-react';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 
@@ -26,7 +29,7 @@ const platforms = ['Manhattan WMS', 'Blue Yonder', 'Kinaxis', 'SAP S/4HANA'];
 
 export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }: Props) {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 5;
+  const pageSize = 3;
 
   if (loading) return <SkeletonCard />;
 
@@ -50,7 +53,7 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
   };
 
   return (
-    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl">
+    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-slate-900/60 backdrop-blur-xl h-full">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-4 pb-2.5 sm:pb-4 border-b border-border/50">
@@ -60,7 +63,7 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-sm sm:text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-200 to-cyan-100 bg-clip-text text-transparent">
                   Training Operations
                 </h2>
                 <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
@@ -74,6 +77,13 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
+            <Link
+              href="/training"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition-all cursor-pointer no-underline shrink-0"
+            >
+              <Maximize2 size={12} />
+              <span>Intelligence Deck</span>
+            </Link>
             <button
               onClick={onOpenModal}
               className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center"
@@ -248,7 +258,7 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
       </div>
 
       {/* Pagination Footer */}
-      {totalPages > 1 && (
+      {totalPages > 0 && (
         <div
           className="flex flex-col sm:flex-row items-center justify-between border-t border-border/50 mt-3 sm:mt-4 pt-2.5 sm:pt-3 gap-2 text-xs"
           style={{ color: 'var(--text-tertiary)' }}
@@ -279,6 +289,20 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/40 text-xs">
+        <span className="text-slate-400 text-[11px]">
+          Dedicated Training Cohorts Pipeline
+        </span>
+        <Link
+          href="/training"
+          className="flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 no-underline"
+        >
+          <span>Full Training Ops</span>
+          <ChevronRight size={14} />
+        </Link>
+      </div>
     </div>
   );
 }

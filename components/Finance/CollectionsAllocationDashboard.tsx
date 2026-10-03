@@ -322,7 +322,7 @@ export default function CollectionsAllocationDashboard({
                 onMouseLeave={() => setActiveCategory(null)}
                 className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   activeCategory === item.name
-                    ? 'bg-slate-800 border-indigo-500/50 shadow-lg scale-[1.01]'
+                    ? 'bg-slate-800 border-indigo-500/50 shadow-lg'
                     : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800/70'
                 }`}
               >

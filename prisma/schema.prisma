@@ -162,3 +162,24 @@ model IntegrationConfig {
   lastSynced  DateTime?
   updatedAt   DateTime @updatedAt
 }
+
+// ─── Trainers & Operations Work With Us Registrations ──
+model TrainerRegistration {
+  id               String    @id @default(cuid())
+  name             String
+  email            String?
+  phone            String?
+  role             String    @default("Trainer") // "Trainer" | "Employee" | "Both"
+  primaryCourse    String    @default("Manhattan WMS")
+  status           String    @default("Active") // "Active" | "Onboarding" | "Assigned" | "Inactive"
+  totalBatches     Int       @default(0)
+  jobSupportLeads  Int       @default(0)
+  experienceYears  Float     @default(3.0)
+  notes            String?
+  source           String    @default("outlook_work_with_us")
+  outlookMessageId String?   @unique
+  receivedDate     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+

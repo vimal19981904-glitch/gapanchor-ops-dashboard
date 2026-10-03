@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processPendingLeadsMonitoring } from '@/lib/lead-monitoring';
+import { syncOutlookGraphEnquiries } from '@/lib/outlook-graph-sync';
 import { sendLeadAlertEmail, LeadEmailPayload } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +59,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ─── 1. Run Graph Cloud Sync (5-min Intake from contact@gapanchor.com -> Demo enquiry!) ───
+    let graphSyncResult: any = null;
+    try {
+      graphSyncResult = await syncOutlookGraphEnquiries();
+    } catch (graphErr: any) {
+      console.error('Graph Sync failed during 5m cron:', graphErr.message);
+      graphSyncResult = { success: false, error: graphErr.message };
+    }
+
+    // ─── 2. Run Lead SLA Breach Monitoring & Alerts ───
     const result = await processPendingLeadsMonitoring();
     const recentLogs = await prisma.cronExecutionLog.findMany({
       take: 10,
@@ -70,6 +83,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: result.success,
       timestamp: new Date().toISOString(),
+      graphSync: graphSyncResult,
       execution: result,
       activePendingCount: activePendingMonitored.length,
       activePendingLeads: activePendingMonitored.slice(0, 10).map((a) => ({

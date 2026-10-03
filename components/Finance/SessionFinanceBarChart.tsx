@@ -837,7 +837,7 @@ export default function SessionFinanceBarChart() {
                   onMouseLeave={() => setActivePieHover(null)}
                   className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
                     activePieHover === item.name
-                      ? 'bg-slate-800 border-slate-600 shadow-lg scale-[1.02]'
+                      ? 'bg-slate-800 border-slate-600 shadow-lg'
                       : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700'
                   }`}
                 >

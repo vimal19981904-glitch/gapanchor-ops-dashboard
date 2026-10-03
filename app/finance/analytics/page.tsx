@@ -17,6 +17,7 @@ import ExpenseBreakdownDashboard from '@/components/Finance/ExpenseBreakdownDash
 import IncomeBreakdownDashboard from '@/components/Finance/IncomeBreakdownDashboard';
 import AddCollectionModal from '@/components/Finance/AddCollectionModal';
 import SessionFinanceBarChart from '@/components/Finance/SessionFinanceBarChart';
+import { NavDrawerButton } from '@/components/NavigationContext';
 
 
 const CHART_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6', '#3b82f6'];
@@ -385,32 +386,39 @@ export default function FinanceAnalyticsPage() {
     <div className="min-h-screen bg-[#070c18] text-white p-2.5 sm:p-6 md:p-8 space-y-3.5 sm:space-y-6">
       {/* Top Header & Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 glass-card !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <a
-            href="/"
-            className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-surface-2 border border-border hover:bg-surface-3 transition-colors text-slate-300 hover:text-white"
-            title="Return to Main Dashboard"
-          >
-            <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
-          </a>
+        <div className="flex items-center justify-between w-full lg:w-auto gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
+            <a
+              href="/"
+              className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-surface-2 border border-border hover:bg-surface-3 transition-colors text-slate-300 hover:text-white shrink-0"
+              title="Return to Main Dashboard"
+            >
+              <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
+            </a>
 
-          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 shrink-0">
-            <DollarSign size={20} className="sm:w-6 sm:h-6" />
+            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 shrink-0">
+              <DollarSign size={18} className="sm:w-6 sm:h-6" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm sm:text-2xl font-black tracking-tight text-white truncate">
+                  <span className="sm:hidden">Finance Intel</span>
+                  <span className="hidden sm:inline">Finance & Revenue Intelligence</span>
+                </h1>
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                  Full Statement
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-medium hidden sm:block truncate">
+                Bank Statement Sync (`Account_Statement.xlsx`) • Dual Credit/Debit Classification
+              </p>
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-2xl font-black tracking-tight text-white truncate">
-                <span className="sm:hidden">Finance Intel</span>
-                <span className="hidden sm:inline">Finance & Revenue Intelligence</span>
-              </h1>
-              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                Full Statement
-              </span>
-            </div>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium hidden sm:block truncate">
-              Bank Statement Sync (`Account_Statement.xlsx`) • Dual Credit/Debit Classification • Categorization Engine
-            </p>
+          {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
+          <div className="lg:hidden shrink-0">
+            <NavDrawerButton className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
           </div>
         </div>
 
@@ -451,6 +459,11 @@ export default function FinanceAnalyticsPage() {
           <button onClick={fetchFinanceData} disabled={loading} className="btn-secondary !p-1.5 sm:!p-2.5 !rounded-xl">
             <RefreshCw size={14} className={`sm:w-[15px] sm:h-[15px] ${loading ? 'animate-spin' : ''}`} />
           </button>
+
+          {/* Desktop Navigation Drawer Button */}
+          <div className="hidden lg:block shrink-0">
+            <NavDrawerButton />
+          </div>
         </div>
       </div>
 
@@ -564,8 +577,8 @@ export default function FinanceAnalyticsPage() {
 
       {/* Multi-Chart Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart 1: Revenue & Expense Timeline Flow */}
-        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
+        {/* Chart 1: Revenue & Expense Timeline Flow (Full Width Top Row) */}
+        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4 lg:col-span-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-white">
               <LineChartIcon size={18} className="text-emerald-400" />

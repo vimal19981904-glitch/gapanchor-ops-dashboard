@@ -3,6 +3,7 @@ import { createGraphClient } from '@/lib/graph-client';
 
 export const TARGET_OUTLOOK_EMAIL = 'contact@gapanchor.com';
 export const TARGET_FOLDER_NAME = 'Demo enquiry!';
+export const TARGET_FOLDER_NAMES = ['Demo enquiry!', 'Job Support'];
 
 export function normalizeCountry(phoneStr: string, geocoderCountry: string = ''): string {
   const cleaned = (phoneStr || '').replace(/[^\d+]/g, '');
@@ -41,7 +42,7 @@ export function normalizeCountry(phoneStr: string, geocoderCountry: string = '')
   return geocoderCountry.trim() || 'India';
 }
 
-export function parseEmailContent(body: string, subject: string, senderName: string, senderEmail: string, receivedDateTime: string) {
+export function parseEmailContent(body: string, subject: string, senderName: string, senderEmail: string, receivedDateTime: string, folderName?: string) {
   const cleanBody = (body || '').replace(/<[^>]*>/g, ' ');
 
   const nameMatch = cleanBody.match(/Name:\s*(.+?)(?:\r?\n|<|Email:|$)/i);
@@ -57,7 +58,11 @@ export function parseEmailContent(body: string, subject: string, senderName: str
   const name = nameMatch ? nameMatch[1].trim() : (senderName || 'Unknown');
   const emailAddr = emailMatch ? emailMatch[1].trim() : (senderEmail && senderEmail.includes('@') ? senderEmail : '');
   const phone = phoneMatch ? phoneMatch[1].trim() : '';
-  const serviceType = serviceMatch ? serviceMatch[1].trim() : 'IT support & Training';
+  const rawService = serviceMatch ? serviceMatch[1].trim() : '';
+  const isJobSupport = (folderName && folderName.toLowerCase() === 'job support') ||
+                       (subject && subject.toLowerCase().includes('job support')) ||
+                       (rawService && rawService.toLowerCase().includes('job support'));
+  const serviceType = isJobSupport ? 'Job Support' : (rawService || 'IT support & Training');
   const scmAnswer = answerMatch ? answerMatch[1].trim() : '';
   const trainingTypeRaw = scmAnswer || (trainingMatch ? trainingMatch[1].trim() : '');
   let messageRaw = messageMatch ? messageMatch[1].trim() : scmAnswer;
@@ -85,10 +90,12 @@ export function parseEmailContent(body: string, subject: string, senderName: str
     trainingType = 'Kinaxis';
   } else if (combinedText.includes('sap')) {
     trainingType = 'SAP S/4HANA';
-  } else if (trainingTypeRaw && !['training', 'n/a', 'none'].includes(trainingTypeRaw.toLowerCase())) {
+  } else if (trainingTypeRaw && !['training', 'n/a', 'none', 'job support'].includes(trainingTypeRaw.toLowerCase())) {
     trainingType = trainingTypeRaw;
-  } else if (messageRaw && !['n/a', 'none'].includes(messageRaw.toLowerCase())) {
+  } else if (messageRaw && !['n/a', 'none', 'job support'].includes(messageRaw.toLowerCase())) {
     trainingType = messageRaw;
+  } else if (isJobSupport) {
+    trainingType = 'Job Support';
   } else {
     trainingType = 'General Training';
   }
@@ -228,168 +235,147 @@ export async function syncOutlookGraphEnquiries() {
   const basePath = isAppToken ? `/users/${accountEmail}` : '/me';
 
   try {
-    // 1. Find target mail folder in contact@gapanchor.com mailbox
-    let folder: any = null;
+    // 1. Fetch mail folders from contact@gapanchor.com mailbox
+    let allMailFolders: any[] = [];
     try {
-      const foldersRes = await client
-        .api(`${basePath}/mailFolders`)
-        .filter(`displayName eq '${TARGET_FOLDER_NAME}'`)
-        .get();
-
-      folder = foldersRes.value?.[0];
-    } catch (e) {}
-
-    if (!folder) {
-      // Fallback search top 100 folders
-      try {
-        const allFolders = await client.api(`${basePath}/mailFolders`).top(100).get();
-        folder = (allFolders.value || []).find(
-          (f: any) => (f.displayName || '').toLowerCase() === TARGET_FOLDER_NAME.toLowerCase()
-        );
-      } catch (e) {}
+      const foldersRes = await client.api(`${basePath}/mailFolders`).top(100).get();
+      allMailFolders = foldersRes.value || [];
+    } catch (e) {
+      console.warn('Could not list mail folders directly:', e);
     }
 
-    if (!folder) {
-      return {
-        success: false,
-        error: `Mail folder '${TARGET_FOLDER_NAME}' not found in ${accountEmail} mailbox via Microsoft Graph Cloud API.`,
-        totalParsed: 0,
-        insertedCount: 0,
-        updatedCount: 0,
-      };
-    }
-
-    // 2. Fetch messages in folder via Graph API
-    const messagesRes = await client
-      .api(`${basePath}/mailFolders/${folder.id}/messages`)
-      .select('id,subject,from,receivedDateTime,bodyPreview,body')
-      .orderby('receivedDateTime desc')
-      .top(100)
-      .get();
-
-    const rawMessages = messagesRes.value || [];
+    let totalParsedCount = 0;
     let insertedCount = 0;
     let updatedCount = 0;
 
     const existingEnquiries = await prisma.enquiry.findMany();
 
-    for (const msg of rawMessages) {
-      const bodyContent = msg.body?.content || msg.bodyPreview || '';
-      const senderName = msg.from?.emailAddress?.name || '';
-      const senderEmail = msg.from?.emailAddress?.address || '';
+    for (const targetFolderName of TARGET_FOLDER_NAMES) {
+      let folder = allMailFolders.find(
+        (f: any) => (f.displayName || '').toLowerCase() === targetFolderName.toLowerCase()
+      );
 
-      const parsed = parseEmailContent(bodyContent, msg.subject || '', senderName, senderEmail, msg.receivedDateTime);
+      if (!folder) {
+        try {
+          const filterRes = await client
+            .api(`${basePath}/mailFolders`)
+            .filter(`displayName eq '${targetFolderName}'`)
+            .get();
+          folder = filterRes.value?.[0];
+        } catch (e) {}
+      }
 
-      if (parsed.name === 'Unknown' && !parsed.email && !parsed.phone) {
+      if (!folder) {
+        console.warn(`Mail folder '${targetFolderName}' not found in ${accountEmail} mailbox.`);
         continue;
       }
 
-      const itemEmail = (parsed.email || '').trim().toLowerCase();
-      const itemName = (parsed.name || '').trim().toLowerCase();
-      const itemPhone = (parsed.phone || '').trim().toLowerCase();
-      const itemTraining = (parsed.trainingType || '').trim().toLowerCase();
-      const itemDate = parsed.receivedDate;
+      // Fetch messages in folder via Graph API (top 500)
+      let rawMessages: any[] = [];
+      try {
+        const messagesRes = await client
+          .api(`${basePath}/mailFolders/${folder.id}/messages`)
+          .select('id,subject,from,receivedDateTime,bodyPreview,body')
+          .orderby('receivedDateTime desc')
+          .top(500)
+          .get();
 
-      // Deduplication check
-      const existing = existingEnquiries.find(e => {
-        const eEmail = (e.email || '').trim().toLowerCase();
-        const eName = (e.participantName || '').trim().toLowerCase();
-        const ePhone = (e.phone || '').trim().toLowerCase();
-        const eTraining = (e.trainingType || e.topic || '').trim().toLowerCase();
-        const eDate = e.messageTimestamp ? new Date(e.messageTimestamp) : null;
+        rawMessages = messagesRes.value || [];
+      } catch (msgErr: any) {
+        console.warn(`Failed to fetch messages for folder ${targetFolderName}:`, msgErr.message);
+      }
 
-        const identityMatch =
-          (itemEmail && eEmail && itemEmail === eEmail) ||
-          (itemName && eName && itemName === eName) ||
-          (itemPhone && ePhone && itemPhone.length > 5 && itemPhone === ePhone);
-        if (!identityMatch) return false;
+      totalParsedCount += rawMessages.length;
 
-        const topicMatch =
-          itemTraining === eTraining ||
-          (itemTraining.includes('manhattan') &&
-            eTraining.includes('manhattan') &&
-            itemTraining.includes('proactive') === eTraining.includes('proactive'));
-        if (!topicMatch) return false;
+      for (const msg of rawMessages) {
+        const bodyContent = msg.body?.content || msg.bodyPreview || '';
+        const senderName = msg.from?.emailAddress?.name || '';
+        const senderEmail = msg.from?.emailAddress?.address || '';
 
-        if (itemDate && eDate) {
-          const timeDiffHours = Math.abs(itemDate.getTime() - eDate.getTime()) / (1000 * 60 * 60);
-          return timeDiffHours <= 24;
+        const parsed = parseEmailContent(bodyContent, msg.subject || '', senderName, senderEmail, msg.receivedDateTime, targetFolderName);
+
+        if (parsed.name === 'Unknown' && !parsed.email && !parsed.phone) {
+          continue;
         }
-        return true;
-      });
 
-      if (existing) {
-        await prisma.enquiry.update({
-          where: { id: existing.id },
-          data: {
-            participantName: parsed.name || existing.participantName,
-            phone: parsed.phone || existing.phone,
-            country: parsed.country || existing.country,
-            serviceType: parsed.serviceType || existing.serviceType,
-            trainingType: parsed.trainingType || existing.trainingType,
-            topic: parsed.trainingType || existing.topic,
-            lastMessage: parsed.message || existing.lastMessage,
-            receivedDate: parsed.receivedDate,
-            messageTimestamp: parsed.receivedDate,
-            whatsappMessageId: msg.id,
-            source: 'outlook',
-          },
-        });
-        updatedCount++;
-      } else {
-        await prisma.enquiry.create({
-          data: {
-            participantName: parsed.name,
-            email: parsed.email || null,
-            phone: parsed.phone || '',
-            country: parsed.country || 'India',
-            serviceType: parsed.serviceType || 'IT support & Training',
-            trainingType: parsed.trainingType || 'General Training',
-            topic: parsed.trainingType || 'General Training',
-            lastMessage: parsed.message,
-            receivedDate: parsed.receivedDate,
-            messageTimestamp: parsed.receivedDate,
-            whatsappMessageId: msg.id,
-            source: 'outlook',
-            status: 'Open',
-            leadQuality: parsed.trainingType.toLowerCase().includes('proactive') ? 'High' : 'Unrated',
-            contactStatus: 'Pending',
-          },
-        });
-        insertedCount++;
+        // Unique Message Deduplication check: match by Graph Message ID
+        const existing = existingEnquiries.find(e => e.whatsappMessageId === msg.id);
+
+        if (existing) {
+          await prisma.enquiry.update({
+            where: { id: existing.id },
+            data: {
+              participantName: parsed.name || existing.participantName,
+              phone: parsed.phone || existing.phone,
+              country: parsed.country || existing.country,
+              serviceType: parsed.serviceType || existing.serviceType,
+              trainingType: parsed.trainingType || existing.trainingType,
+              topic: parsed.trainingType || existing.topic,
+              lastMessage: parsed.message || existing.lastMessage,
+              receivedDate: parsed.receivedDate,
+              messageTimestamp: parsed.receivedDate,
+              whatsappMessageId: msg.id,
+              source: 'outlook',
+            },
+          });
+          updatedCount++;
+        } else {
+          await prisma.enquiry.create({
+            data: {
+              participantName: parsed.name,
+              email: parsed.email || null,
+              phone: parsed.phone || '',
+              country: parsed.country || 'India',
+              serviceType: parsed.serviceType || (targetFolderName === 'Job Support' ? 'Job Support' : 'Training'),
+              trainingType: parsed.trainingType || (targetFolderName === 'Job Support' ? 'Job Support' : 'General Training'),
+              topic: parsed.trainingType || (targetFolderName === 'Job Support' ? 'Job Support' : 'General Training'),
+              lastMessage: parsed.message,
+              receivedDate: parsed.receivedDate,
+              messageTimestamp: parsed.receivedDate,
+              whatsappMessageId: msg.id,
+              source: 'outlook',
+              status: 'Open',
+              leadQuality: parsed.trainingType.toLowerCase().includes('proactive') || targetFolderName === 'Job Support' ? 'High' : 'Unrated',
+              contactStatus: 'Pending',
+            },
+          });
+          insertedCount++;
+        }
       }
     }
 
-    // Update integration config
+    // Update integration config while preserving existing OAuth tokens
+    const existingConfig = await prisma.integrationConfig.findUnique({ where: { service: 'microsoft_graph' } });
+    const existingMeta = existingConfig?.metadata ? JSON.parse(existingConfig.metadata) : {};
+
+    const updatedMeta = {
+      ...existingMeta,
+      accountEmail: tokenInfo.accountEmail,
+      totalParsed: totalParsedCount,
+      insertedCount,
+      updatedCount,
+      lastSyncedAt: new Date().toISOString(),
+    };
+
     await prisma.integrationConfig.upsert({
       where: { service: 'microsoft_graph' },
       create: {
         service: 'microsoft_graph',
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({
-          accountEmail: tokenInfo.accountEmail,
-          totalParsed: rawMessages.length,
-          insertedCount,
-          updatedCount,
-        }),
+        metadata: JSON.stringify(updatedMeta),
       },
       update: {
         connected: true,
         lastSynced: new Date(),
-        metadata: JSON.stringify({
-          accountEmail: tokenInfo.accountEmail,
-          totalParsed: rawMessages.length,
-          insertedCount,
-          updatedCount,
-        }),
+        metadata: JSON.stringify(updatedMeta),
       },
     });
 
     return {
       success: true,
-      message: `Cloud Graph Sync completed for ${tokenInfo.accountEmail}: ${rawMessages.length} fetched (${insertedCount} new, ${updatedCount} updated)`,
-      totalParsed: rawMessages.length,
+      message: `Cloud Graph Sync completed for ${tokenInfo.accountEmail}: ${totalParsedCount} fetched (${insertedCount} new, ${updatedCount} updated)`,
+      totalParsed: totalParsedCount,
       insertedCount,
       updatedCount,
     };

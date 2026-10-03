@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserCheck, X, Check, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,6 +36,11 @@ export default function AssignLeadModal({
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,43 +109,50 @@ export default function AssignLeadModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md glass-modal overflow-hidden rounded-2xl border border-brand-500/30 p-6 shadow-2xl">
+  return createPortal(
+    <div
+      className="fixed inset-0 w-screen h-screen z-[99999] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fade-in my-auto overflow-y-auto"
+      onClick={onClose}
+      style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+    >
+      <div
+        className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-indigo-500/40 bg-[#0b1329] p-5 sm:p-6 shadow-2xl shadow-indigo-950/80 animate-slide-up text-white my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-tertiary hover:text-primary transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <X size={18} />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+        <div className="flex items-center gap-3 mb-4 pr-6">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0">
             <UserCheck size={20} />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-primary">Assign Lead to Team Member</h3>
-            <p className="text-xs text-tertiary">Route lead to specific employee portal</p>
+          <div className="min-w-0">
+            <h3 className="text-sm sm:text-base font-bold text-white truncate">Assign Lead to Team Member</h3>
+            <p className="text-[11px] text-slate-400 truncate">Route lead to specific employee portal</p>
           </div>
         </div>
 
         {/* Details preview */}
-        <div className="p-3 mb-4 rounded-xl border border-border bg-surface-2 text-xs">
-          <div className="font-semibold text-primary">{participantName || 'Enquiry Lead'}</div>
-          <div className="text-brand-400 font-medium mt-0.5">{topic}</div>
+        <div className="p-3 mb-4 rounded-xl border border-slate-800 bg-slate-900/90 text-xs">
+          <div className="font-bold text-slate-100">{participantName || 'Enquiry Lead'}</div>
+          <div className="text-cyan-400 font-semibold mt-0.5">{topic}</div>
         </div>
 
         {/* Employee Selection */}
-        <div className="space-y-3 mb-6">
-          <label className="text-xs font-semibold text-secondary block">Select Assigned Employee</label>
+        <div className="space-y-3 mb-5">
+          <label className="text-xs font-bold text-slate-300 block">Select Assigned Employee</label>
           {loading ? (
-            <div className="py-6 text-center text-xs text-tertiary">Loading employees...</div>
+            <div className="py-6 text-center text-xs text-slate-400">Loading employees...</div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
               {employees.map((emp) => {
                 const isSelected = selectedEmployeeId === emp.id;
                 return (
@@ -148,8 +161,8 @@ export default function AssignLeadModal({
                     onClick={() => setSelectedEmployeeId(emp.id)}
                     className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-brand-500 bg-brand-500/10 text-primary shadow-sm'
-                        : 'border-border bg-surface-0 hover:border-border-secondary text-secondary'
+                        ? 'border-indigo-500 bg-indigo-500/20 text-white shadow-sm ring-1 ring-indigo-400/40'
+                        : 'border-slate-800 bg-slate-900/60 hover:border-slate-700 text-slate-300'
                     }`}
                   >
                     <div>
@@ -161,9 +174,9 @@ export default function AssignLeadModal({
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-tertiary mt-0.5">{emp.email} • {emp.assignedCourse || 'General'}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{emp.email} • {emp.assignedCourse || 'General'}</div>
                     </div>
-                    {isSelected && <Check size={16} className="text-brand-400 shrink-0" />}
+                    {isSelected && <Check size={16} className="text-cyan-400 shrink-0" />}
                   </div>
                 );
               })}
@@ -172,23 +185,24 @@ export default function AssignLeadModal({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800/80">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-tertiary hover:text-secondary transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleAssign}
             disabled={assigning || !selectedEmployeeId}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white transition-all shadow-md shadow-indigo-600/30 disabled:opacity-50 cursor-pointer"
           >
             <UserCheck size={14} />
             {assigning ? 'Assigning...' : 'Assign Lead'}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

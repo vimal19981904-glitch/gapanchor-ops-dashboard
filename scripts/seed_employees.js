@@ -6,7 +6,7 @@ async function main() {
 
   const users = [
     {
-      name: 'Arul Xavier (Master Admin)',
+      name: 'Master Admin',
       email: 'admin@gapanchor.com',
       password: 'admin123#password', // Plain text / demo password
       role: 'admin',

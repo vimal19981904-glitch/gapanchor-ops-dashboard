@@ -34,16 +34,19 @@ export async function processPendingLeadsMonitoring(): Promise<{
     const fourHoursMs = 4 * 60 * 60 * 1000; // 4 Hours
     const thirtyMinutesMs = 30 * 60 * 1000; // 30 Minutes
 
-    // ─── 1. Register or update active Pending leads into LeadMonitoringAudit ────
-    const pendingEnquiries = await prisma.enquiry.findMany({
-      where: {
-        contactStatus: 'Pending',
-      },
+    // ─── 1. Register or update top 30 most recent Pending leads into LeadMonitoringAudit ────
+    const recentEnquiries = await prisma.enquiry.findMany({
+      orderBy: [
+        { messageTimestamp: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: 30,
       include: {
         monitoringAudit: true,
       },
     });
 
+    const pendingEnquiries = recentEnquiries.filter((e) => e.contactStatus === 'Pending');
     leadsCheckedCount = pendingEnquiries.length;
 
     // Batch register unmonitored pending enquiries
@@ -52,7 +55,7 @@ export async function processPendingLeadsMonitoring(): Promise<{
       await prisma.leadMonitoringAudit.createMany({
         data: unmonitored.map((e) => ({
           enquiryId: e.id,
-          pendingStartTime: e.updatedAt || e.createdAt || e.messageTimestamp,
+          pendingStartTime: e.messageTimestamp || e.updatedAt || e.createdAt,
           isActive: true,
         })),
         skipDuplicates: true,
@@ -91,10 +94,12 @@ export async function processPendingLeadsMonitoring(): Promise<{
       statusChangesDetectedCount = auditsToDeactivate.length;
     }
 
-    // ─── 3. Query leads requiring 1st Alert or Recurring Alert ─────────────────
+    // ─── 3. Query top 30 recent pending leads requiring 1st Alert or Recurring Alert ─────
+    const recentPendingIds = pendingEnquiries.map((e) => e.id);
     const auditsToMonitor = await prisma.leadMonitoringAudit.findMany({
       where: {
         isActive: true,
+        enquiryId: { in: recentPendingIds },
         enquiry: {
           contactStatus: 'Pending',
         },

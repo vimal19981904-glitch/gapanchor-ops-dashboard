@@ -61,7 +61,6 @@
 
   .glass-card:hover {
     border-color: var(--border-secondary);
-    transform: translateY(-2px);
     box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.5);
   }
 
@@ -98,7 +97,7 @@
 
   /* ─── Apple Style Glossy Boxy Buttons ───────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
     @apply inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
@@ -107,7 +106,7 @@
     backdrop-filter: blur(12px);
   }
   .btn-process {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ─── Payment Status Indicator Dots ────────────────────────── */
@@ -292,15 +291,14 @@
 .glass-card:nth-child(3) { animation-delay: 120ms; }
 .glass-card:nth-child(4) { animation-delay: 180ms; }
 
-/* Subtle hover lift for inner cards/containers */
-.glass-card [class*="rounded-2xl"][class*="border"]:not(table):not(thead):not(tbody):not(tr) {
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Smoother badge hover */
+/* Disable hover pop-up / lift / scale animations across all cards & badges (preserving graph tooltips/animations) */
+.glass-card:hover,
+.glass-card [class*="rounded-"]:not(table):not(thead):not(tbody):not(tr):hover,
+[class*="rounded-2xl"][class*="border"]:not(table):not(thead):not(tbody):not(tr):hover,
+[class*="rounded-xl"][class*="border"]:not(table):not(thead):not(tbody):not(tr):hover,
 .badge:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
+  transform: none;
+  filter: brightness(1.05);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -449,5 +447,38 @@
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SMOOTH GENTLE DRAWER SLIDE ANIMATION (1.2 Seconds Ease Out)
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes smoothDrawerSlideIn {
+  0% {
+    transform: translateX(100%);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+}
+
+.animate-drawer-slide-in {
+  animation: smoothDrawerSlideIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+}
+
+@keyframes smoothBackdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-only {
+  animation: smoothBackdropFadeIn 0.8s ease-out forwards !important;
 }
 

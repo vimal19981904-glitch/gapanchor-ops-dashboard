@@ -8,11 +8,14 @@ import FinanceModal from '@/components/FinanceModal';
 import OpsCard from '@/components/OpsCard';
 import OpsModal from '@/components/OpsModal';
 import CommsCard from '@/components/CommsCard';
+import JobSupportCard from '@/components/JobSupportCard';
+import JobSupportModal from '@/components/JobSupportModal';
 import DevProgressCard from '@/components/DevProgressCard';
 import DevModal from '@/components/DevModal';
 import SetupModal from '@/components/SetupModal';
 import EnquiryModal from '@/components/EnquiryModal';
 import CalendarWidget from '@/components/CalendarWidget';
+import TrainersCard from '@/components/TrainersCard';
 import { SkeletonKPI } from '@/components/ui/Skeleton';
 import { formatCurrency } from '@/lib/utils';
 import { DollarSign, Calendar, MessageSquare, Code2 } from 'lucide-react';
@@ -24,6 +27,7 @@ export default function Dashboard() {
   const [opsData, setOpsData] = useState<any>(null);
   const [commsData, setCommsData] = useState<any>(null);
   const [devData, setDevData] = useState<any>(null);
+  const [jobSupportData, setJobSupportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,6 +38,8 @@ export default function Dashboard() {
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any | null>(null);
+  const [isJobSupportModalOpen, setIsJobSupportModalOpen] = useState(false);
+  const [editingJobSupportSession, setEditingJobSupportSession] = useState<any | null>(null);
   const [isDevModalOpen, setIsDevModalOpen] = useState(false);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
 
@@ -51,23 +57,35 @@ export default function Dashboard() {
     setIsOpsModalOpen(true);
   };
 
+  const handleOpenAddJobSupportSession = () => {
+    setEditingJobSupportSession(null);
+    setIsJobSupportModalOpen(true);
+  };
+
+  const handleOpenEditJobSupportSession = (session: any) => {
+    setEditingJobSupportSession(session);
+    setIsJobSupportModalOpen(true);
+  };
+
   const fetchAllData = async () => {
     try {
-      const [finRes, opsRes, commsRes, devRes] = await Promise.all([
+      const [finRes, opsRes, commsRes, devRes, jsRes] = await Promise.all([
         fetch('/api/finance'),
         fetch('/api/ops'),
         fetch('/api/comms'),
         fetch('/api/dev'),
+        fetch('/api/job-support/session'),
       ]);
 
-      const [finJson, opsJson, commsJson, devJson] = await Promise.all([
-        finRes.json(), opsRes.json(), commsRes.json(), devRes.json(),
+      const [finJson, opsJson, commsJson, devJson, jsJson] = await Promise.all([
+        finRes.json(), opsRes.json(), commsRes.json(), devRes.json(), jsRes.json(),
       ]);
 
       if (finJson.success) setFinanceData(finJson);
       if (opsJson.success) setOpsData(opsJson);
       if (commsJson.success) setCommsData(commsJson);
       if (devJson.success) setDevData(devJson);
+      if (jsJson.success) setJobSupportData(jsJson);
     } catch (err) {
       console.error('Dashboard fetch error:', err);
     } finally {
@@ -129,8 +147,6 @@ export default function Dashboard() {
               value={formatCurrency(netProfit)}
               subtext={`Inc: ${formatCurrency(totalIncome)} • Exp: ${formatCurrency(totalExpense)}`}
               icon={DollarSign}
-              trend="up"
-              trendValue="+18.4%"
               color="emerald"
             />
             <StatCard
@@ -138,8 +154,6 @@ export default function Dashboard() {
               value={`${totalSessions} Sessions`}
               subtext={`${totalParticipants} Participants Across SCM`}
               icon={Calendar}
-              trend="up"
-              trendValue="Manhattan/BY"
               color="indigo"
             />
             <StatCard
@@ -147,8 +161,6 @@ export default function Dashboard() {
               value={`${enquiryTotal} Total`}
               subtext={actionCount > 0 ? `${actionCount} pending action` : 'All processed'}
               icon={MessageSquare}
-              trend={actionCount > 0 ? 'down' : 'up'}
-              trendValue={actionCount > 0 ? `${actionCount} Action` : '✓ All clear'}
               color={actionCount > 0 ? 'amber' : 'cyan'}
             />
             <StatCard
@@ -156,8 +168,6 @@ export default function Dashboard() {
               value={`${devCount} Shipped`}
               subtext="Features, Fixes & Infra"
               icon={Code2}
-              trend="up"
-              trendValue="Q3 Active"
               color="amber"
             />
           </>
@@ -177,7 +187,7 @@ export default function Dashboard() {
         </div>
 
         {/* Training Operations */}
-        <div id="ops-section" className="transition-all rounded-3xl">
+        <div id="ops-section" className="transition-all rounded-3xl h-full flex flex-col">
           <OpsCard
             opsData={opsData}
             onOpenModal={handleOpenAddSession}
@@ -186,8 +196,19 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Job Support Operations (Fills the dashboard empty space!) */}
+        <div id="job-support-section" className="transition-all rounded-3xl h-full flex flex-col">
+          <JobSupportCard
+            jobSupportData={jobSupportData}
+            onOpenModal={handleOpenAddJobSupportSession}
+            onEditSession={handleOpenEditJobSupportSession}
+            onRefresh={fetchAllData}
+            loading={loading}
+          />
+        </div>
+
         {/* WhatsApp & Excel Command Center */}
-        <div id="comms-section" className="transition-all rounded-3xl">
+        <div id="comms-section" className="xl:col-span-2 transition-all rounded-3xl">
           <CommsCard
             commsData={commsData}
             onRefresh={fetchAllData}
@@ -208,6 +229,11 @@ export default function Dashboard() {
         {/* Google Calendar Upcoming Events Widget */}
         <div id="calendar-section" className="xl:col-span-2 transition-all rounded-3xl">
           <CalendarWidget />
+        </div>
+
+        {/* Trainers & Operations Work With Us Intake Section */}
+        <div id="trainers-section" className="xl:col-span-2 transition-all rounded-3xl">
+          <TrainersCard onRefreshParent={fetchAllData} />
         </div>
       </div>
 
@@ -237,6 +263,15 @@ export default function Dashboard() {
         onRefresh={fetchAllData}
         sessionToEdit={editingSession}
         masterParticipantsList={opsData?.masterParticipants}
+      />
+      <JobSupportModal
+        isOpen={isJobSupportModalOpen}
+        onClose={() => {
+          setIsJobSupportModalOpen(false);
+          setEditingJobSupportSession(null);
+        }}
+        onRefresh={fetchAllData}
+        sessionToEdit={editingJobSupportSession}
       />
       <DevModal isOpen={isDevModalOpen} onClose={() => setIsDevModalOpen(false)} onRefresh={fetchAllData} />
       <EnquiryModal isOpen={isEnquiryModalOpen} onClose={() => setIsEnquiryModalOpen(false)} onRefreshParent={fetchAllData} />

@@ -32,7 +32,7 @@ export default function LegendItem({
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(name)}
       className={`group relative flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 cursor-pointer ${
-        isActive ? 'scale-[1.02] shadow-lg shadow-black/40 border-cyan-500/50' : 'hover:scale-[1.01]'
+        isActive ? 'shadow-lg shadow-black/40 border-cyan-500/50' : ''
       }`}
       style={{
         background: isActive
@@ -46,7 +46,7 @@ export default function LegendItem({
     >
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className="w-3.5 h-3.5 rounded-[4px] shrink-0 transition-transform duration-300 group-hover:scale-125"
+          className="w-3.5 h-3.5 rounded-[4px] shrink-0 transition-transform duration-300"
           style={{
             background: `linear-gradient(135deg, ${categoryConfig.solid}, ${categoryConfig.stroke})`,
             boxShadow: `0 0 10px ${categoryConfig.solid}66`,

@@ -118,7 +118,9 @@ export default function LoginPage() {
             </div>
             <div className="flex items-center justify-between pt-1 border-t border-white/10">
               <div>
-                <div className="font-bold text-white text-sm">{currentUser.name}</div>
+                <div className="font-bold text-white text-sm">
+                  {currentUser.name && currentUser.name.toLowerCase().includes('arul') ? 'Master Admin' : (currentUser.name || 'Master Admin')}
+                </div>
                 <div className="text-[11px] text-slate-400">{currentUser.email}</div>
               </div>
               <button
@@ -184,7 +186,7 @@ export default function LoginPage() {
               { name: 'Employee A (Manhattan WMS)', email: 'employee.a@gapanchor.com' },
               { name: 'Employee B (Blue Yonder & Kinaxis)', email: 'employee.b@gapanchor.com' },
               { name: 'Employee C (SAP S/4HANA)', email: 'employee.c@gapanchor.com' },
-              { name: 'Arul Xavier (Master Admin)', email: 'admin@gapanchor.com' },
+              { name: 'Master Admin', email: 'admin@gapanchor.com' },
               { name: 'Demo Account (Full Showcase)', email: 'demo@gapanchor.com', isDemo: true, badge: '100% DB-Free Demo' },
             ].map((acc, i) => (
               <button

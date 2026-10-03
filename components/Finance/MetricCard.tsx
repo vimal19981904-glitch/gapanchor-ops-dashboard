@@ -24,7 +24,7 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
 
   return (
     <div
-      className="group relative rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:-translate-y-0.5 border"
+      className="group relative rounded-2xl p-3 sm:p-4 transition-all duration-300 border"
       style={{
         background: expenseDashboardTheme.colors.surfaces.cardBg,
         borderColor: expenseDashboardTheme.colors.surfaces.borderDefault,

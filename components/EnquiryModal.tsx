@@ -356,7 +356,7 @@ export default function EnquiryModal({ isOpen, onClose, onRefreshParent }: Enqui
                   className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  <span>{syncing ? 'Extracting & Syncing...' : 'Sync Outlook & Excel'}</span>
+                  <span>{syncing ? 'Extracting & Syncing...' : 'Sync & Excel'}</span>
                 </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}

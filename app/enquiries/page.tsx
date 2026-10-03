@@ -7,13 +7,14 @@ import {
   Mail, CheckCircle2, AlertCircle, Sparkles, TrendingUp, UserCheck, Star,
   Send, Calendar, ArrowUpDown, ArrowLeft, Building2, User, Eye, FileText,
   ExternalLink, Upload, ChevronLeft, ChevronRight, Clock, PhoneCall, XCircle,
-  Zap, ShieldAlert, Circle, ChevronDown, ChevronUp
+  Zap, ShieldAlert, Circle, ChevronDown, ChevronUp, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AssignLeadModal from '@/components/AssignLeadModal';
 import UserNav from '@/components/UserNav';
 import MobileLeadCards from '@/components/MobileLeadCards';
 import DeleteRecordAction from '@/components/DeleteRecordAction';
+import { NavDrawerButton } from '@/components/NavigationContext';
 
 interface Enquiry {
   id: string;
@@ -179,6 +180,26 @@ function MiniDonutChart({
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isCurrentlyOpen = isOpenControlled !== undefined ? isOpenControlled : internalOpen;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isCurrentlyOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        if (isOpenControlled && onToggle) {
+          onToggle();
+        } else {
+          setInternalOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isCurrentlyOpen, isOpenControlled, onToggle]);
 
   const size = 48;
   const strokeWidth = 7;
@@ -189,6 +210,7 @@ function MiniDonutChart({
 
   return (
     <div
+      ref={containerRef}
       onClick={(e) => {
         e.stopPropagation();
         if (onToggle) {
@@ -275,6 +297,23 @@ export default function EnquiriesPage() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDonut, setActiveDonut] = useState<string | null>(null);
+
+  // Close active donut popup when clicking outside anywhere on the page
+  useEffect(() => {
+    if (!activeDonut) return;
+    const handleGlobalClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.group\\/donut')) {
+        setActiveDonut(null);
+      }
+    };
+    document.addEventListener('mousedown', handleGlobalClickOutside);
+    document.addEventListener('touchstart', handleGlobalClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleGlobalClickOutside);
+      document.removeEventListener('touchstart', handleGlobalClickOutside);
+    };
+  }, [activeDonut]);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -446,7 +485,17 @@ export default function EnquiriesPage() {
         (item.processedNotes && item.processedNotes.toLowerCase().includes(searchLower));
 
       const matchesCountry = countryFilter === 'ALL' || item.country === countryFilter;
-      const matchesCourse = courseFilter === 'ALL' || item.trainingType === courseFilter || item.topic === courseFilter;
+      const isJobSupportItem = (item.serviceType || '').toLowerCase() === 'job support' || (item.trainingType || '').toLowerCase() === 'job support';
+      let matchesCourse = false;
+      if (courseFilter === 'ALL') {
+        matchesCourse = true;
+      } else if (courseFilter === 'Job Support') {
+        matchesCourse = isJobSupportItem;
+      } else if (courseFilter === 'Training') {
+        matchesCourse = !isJobSupportItem;
+      } else {
+        matchesCourse = item.trainingType === courseFilter || item.topic === courseFilter;
+      }
       const matchesStatus = statusFilter === 'ALL' || item.contactStatus === statusFilter;
       const matchesQuality = qualityFilter === 'ALL' || item.leadQuality === qualityFilter;
 
@@ -503,55 +552,64 @@ export default function EnquiriesPage() {
 
         {/* ── Top Navigation Bar ── */}
         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-5 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-full overflow-hidden">
-          <div className="flex items-start md:items-center space-x-4 w-full xl:w-auto">
-            <Link href="/" className="group flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shadow-inner shrink-0">
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-lg md:text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent truncate">
-                  Enquiry Intelligence
-                </h1>
-                <span className="hidden sm:inline px-2.5 py-0.5 text-[10px] font-bold tracking-widest rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 uppercase shrink-0">
-                  Live CRM
-                </span>
+          <div className="flex items-center justify-between w-full xl:w-auto gap-2">
+            <div className="flex items-start md:items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+              <Link href="/" className="group flex items-center gap-2 p-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shadow-inner shrink-0">
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
+              </Link>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base md:text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent truncate">
+                    Enquiry Intelligence
+                  </h1>
+                  <span className="hidden sm:inline px-2.5 py-0.5 text-[10px] font-bold tracking-widest rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25 uppercase shrink-0">
+                    Live CRM
+                  </span>
+                </div>
+                <p className="text-[10px] md:text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap truncate">
+                  <span className="inline-flex items-center gap-1 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                    Supabase PostgreSQL
+                  </span>
+                  <span className="hidden md:inline text-slate-600 shrink-0">• Real-time DB Persistence</span>
+                  {lastSynced && <span className="text-slate-600 shrink-0">• Synced {new Date(lastSynced).toLocaleTimeString()}</span>}
+                </p>
               </div>
-              <p className="text-[10px] md:text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                  Supabase PostgreSQL
-                </span>
-                <span className="hidden md:inline text-slate-600 shrink-0">• Real-time DB Persistence</span>
-                {lastSynced && <span className="text-slate-600 shrink-0">• Synced {new Date(lastSynced).toLocaleTimeString()}</span>}
-              </p>
+            </div>
+
+            {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
+            <div className="xl:hidden shrink-0">
+              <NavDrawerButton className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-between xl:justify-end overflow-visible">
             <div className="shrink-0"><UserNav /></div>
-            {currentUser?.role === 'admin' && (
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-                <button
-                  onClick={() => handleSyncExcel()}
-                  disabled={syncing}
-                  className="group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-                  <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  <span>{syncing ? 'Syncing…' : 'Sync Outlook'}</span>
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={syncing}
-                  title="Upload custom data file"
-                  className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
-                >
-                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+              <button
+                onClick={() => handleSyncExcel()}
+                disabled={syncing}
+                className="group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
+                <span>{syncing ? 'Syncing…' : 'Sync'}</span>
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={syncing}
+                title="Upload custom data file"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+              >
+                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            </div>
+            {/* Desktop Navigation Drawer Button */}
+            <div className="hidden xl:block shrink-0">
+              <NavDrawerButton />
+            </div>
           </div>
         </div>
 
@@ -679,6 +737,8 @@ export default function EnquiriesPage() {
         <div className="flex items-center gap-2 p-2 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl overflow-x-auto scrollbar-hide">
           {[
             { id: 'ALL', label: 'All Enquiries', count: totalCount },
+            { id: 'Job Support', label: 'Job Support', count: enquiries.filter(e => (e.serviceType || '').toLowerCase() === 'job support' || (e.trainingType || '').toLowerCase() === 'job support').length },
+            { id: 'Training', label: 'Training Enquiries', count: enquiries.filter(e => (e.serviceType || '').toLowerCase() !== 'job support' && (e.trainingType || '').toLowerCase() !== 'job support').length },
             { id: 'Manhattan WMS', label: 'Manhattan WMS', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('manhattan wms')).length },
             { id: 'Manhattan ProActive', label: 'Manhattan ProActive', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('proactive')).length },
             { id: 'Blue Yonder WMS (JDA)', label: 'Blue Yonder (JDA)', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('blue yonder') || (e.trainingType || '').toLowerCase().includes('jda')).length },
@@ -700,42 +760,78 @@ export default function EnquiriesPage() {
             </button>
           ))}
         </div>
-
         {/* ── Filters & Search ── */}
         <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl w-full max-w-full overflow-hidden">
-          <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search name, email, phone, notes…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
-              />
-            </div>
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto">
-              {[
-                { value: courseFilter, onChange: setCourseFilter, options: [['ALL','All Courses'], ...uniqueCourses.map(c => [c, c])] },
-                { value: countryFilter, onChange: setCountryFilter, options: [['ALL',`All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
-                { value: qualityFilter, onChange: setQualityFilter, options: [['ALL','All Quality'], ['High','💎 High Quality'], ['Medium','⚡ Medium Quality'], ['Low','🧊 Low Quality'], ['Unrated','⚪ Unrated']] },
-                { value: statusFilter, onChange: setStatusFilter, options: [['ALL','All Statuses'], ['Pending','⏳ Pending'], ['In Touch','💬 In Touch'], ['Talked','📞 Talked'], ['Future','🔮 Future'], ['Converted','💎 Converted'], ['Lost','❌ Lost']] },
-              ].map((sel, i) => (
-                <select
-                  key={i}
-                  value={sel.value}
-                  onChange={e => sel.onChange(e.target.value)}
-                  className="w-full sm:w-auto bg-slate-950/80 border border-slate-700/50 rounded-xl px-2.5 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer hover:border-slate-600 transition-colors truncate"
+          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-3 items-center w-full lg:w-auto">
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search name, email, phone, notes…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto">
+                {[
+                  { value: countryFilter, onChange: setCountryFilter, options: [['ALL',`All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
+                  { value: qualityFilter, onChange: setQualityFilter, options: [['ALL','All Quality'], ['High','💎 High Quality'], ['Medium','⚡ Medium Quality'], ['Low','🧊 Low Quality'], ['Unrated','⚪ Unrated']] },
+                  { value: statusFilter, onChange: setStatusFilter, options: [['ALL','All Statuses'], ['Pending','⏳ Pending'], ['In Touch','💬 In Touch'], ['Talked','📞 Talked'], ['Future','🔮 Future'], ['Converted','💎 Converted'], ['Lost','❌ Lost']] },
+                ].map((sel, i) => (
+                  <select
+                    key={i}
+                    value={sel.value}
+                    onChange={e => sel.onChange(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-950/80 border border-slate-700/50 rounded-xl px-2.5 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer hover:border-slate-600 transition-colors truncate"
+                  >
+                    {sel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                ))}
+                <button
+                  onClick={() => { if (sortBy === 'date_desc') setSortBy('quality'); else if (sortBy === 'quality') setSortBy('date_asc'); else setSortBy('date_desc'); }}
+                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/50 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer"
                 >
-                  {sel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              ))}
+                  <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{sortBy === 'date_desc' ? 'Newest First' : sortBy === 'date_asc' ? 'Oldest First' : 'High Quality First'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right-Side Segment Toggle: All Leads vs Training vs Job Support */}
+            <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-700/60 rounded-xl shrink-0 w-full lg:w-auto justify-center">
               <button
-                onClick={() => { if (sortBy === 'date_desc') setSortBy('quality'); else if (sortBy === 'quality') setSortBy('date_asc'); else setSortBy('date_desc'); }}
-                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/50 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer"
+                onClick={() => setCourseFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  courseFilter === 'ALL'
+                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
               >
-                <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{sortBy === 'date_desc' ? 'Newest First' : sortBy === 'date_asc' ? 'Oldest First' : 'High Quality First'}</span>
+                All Leads
+              </button>
+              <button
+                onClick={() => setCourseFilter('Training')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  courseFilter === 'Training'
+                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Training</span>
+              </button>
+              <button
+                onClick={() => setCourseFilter('Job Support')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  courseFilter === 'Job Support'
+                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5 text-amber-400" />
+                <span>Job Support</span>
               </button>
             </div>
           </div>
@@ -800,6 +896,7 @@ export default function EnquiriesPage() {
                     <tr>
                       <th className="py-4 px-5 text-[10px]">Lead & Contact</th>
                       <th className="py-4 px-4 text-[10px]">Country</th>
+                      <th className="py-4 px-4 text-[10px]">Type</th>
                       <th className="py-4 px-4 text-[10px]">Course / Service</th>
                       <th className="py-4 px-4 text-[10px]">Date</th>
                       <th className="py-4 px-4 text-[10px] w-[138px] min-w-[138px] whitespace-nowrap">Contact Status</th>
@@ -844,10 +941,22 @@ export default function EnquiriesPage() {
                           </span>
                         </td>
 
-                        {/* Course */}
+                        {/* Type */}
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                            (enquiry.serviceType || '').toLowerCase() === 'job support' || (enquiry.trainingType || '').toLowerCase() === 'job support'
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                          }`}>
+                            {(enquiry.serviceType || '').toLowerCase() === 'job support' || (enquiry.trainingType || '').toLowerCase() === 'job support' ? 'Job Support' : 'Training'}
+                          </span>
+                        </td>
+
+                        {/* Course / Service */}
                         <td className="py-4 px-4">
-                          <p className="font-medium text-slate-200 text-xs leading-tight">{enquiry.trainingType || enquiry.topic || 'Training'}</p>
-                          {enquiry.serviceType && <p className="text-[10px] text-slate-600 mt-0.5">{enquiry.serviceType}</p>}
+                          <span className="font-semibold text-slate-200 text-xs truncate max-w-[180px] block" title={enquiry.trainingType || enquiry.topic}>
+                            {enquiry.trainingType && enquiry.trainingType !== 'Job Support' ? enquiry.trainingType : (enquiry.topic || 'General')}
+                          </span>
                         </td>
 
                         {/* Date */}
@@ -1095,14 +1204,43 @@ export default function EnquiriesPage() {
               ))}
             </div>
 
+            {/* Client Requirements & Specifications */}
+            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-slate-200">
+                    {(selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' ? 'Client Job Support Requirements' : 'Course & Service Details'}
+                  </span>
+                </div>
+                <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full border ${
+                  (selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' || (selectedDetailEnquiry.trainingType || '').toLowerCase() === 'job support'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    : 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                }`}>
+                  {(selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' || (selectedDetailEnquiry.trainingType || '').toLowerCase() === 'job support' ? 'Job Support Lead' : 'Training Lead'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/50">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Service Type</span>
+                  <span className="font-semibold text-slate-200">{selectedDetailEnquiry.serviceType || 'IT support & Training'}</span>
+                </div>
+                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/50">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Target Platform</span>
+                  <span className="font-semibold text-slate-200">{selectedDetailEnquiry.trainingType || selectedDetailEnquiry.topic}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Message Body */}
             <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
               <div className="flex items-center gap-1.5 mb-2">
                 <FileText className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold text-slate-300">Enquiry Message</span>
+                <span className="text-xs font-bold text-slate-300">Enquiry Message & Client Inquiry Body</span>
                 <span className="ml-auto text-[10px] text-slate-600 font-mono">{selectedDetailEnquiry.trainingType || selectedDetailEnquiry.topic}</span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-800/40">
+              <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-800/40">
                 {selectedDetailEnquiry.lastMessage || 'No message body.'}
               </p>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle, Calendar, Plus, Trash2, Check, AlertCircle, ShieldAlert, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,6 +57,15 @@ export default function OpsModal({
   const [title, setTitle] = useState('');
   const [platform, setPlatform] = useState('Manhattan WMS');
   const [trainer, setTrainer] = useState('Arul Xavier');
+  const [isCustomTrainer, setIsCustomTrainer] = useState(false);
+  const [registeredTrainers, setRegisteredTrainers] = useState<string[]>([
+    'Arul Xavier',
+    'Meghana',
+    'Vimal',
+    'raj',
+    'Test Trainer',
+    'Senior Supply Chain Specialist',
+  ]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState('Online Sandbox + Teams');
   const [totalParticipants, setTotalParticipants] = useState<number>(0);
@@ -66,6 +75,7 @@ export default function OpsModal({
   const [trainerAmountDue, setTrainerAmountDue] = useState<number | ''>(85000);
   const [participantRows, setParticipantRows] = useState<ParticipantRow[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [isTableExpanded, setIsTableExpanded] = useState(false);
   const [newParticipantInput, setNewParticipantInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,6 +83,39 @@ export default function OpsModal({
   const [deletingSession, setDeletingSession] = useState(false);
   const [expandedMobileRowIndex, setExpandedMobileRowIndex] = useState<number | null>(null);
   const [generatingInvoiceIndex, setGeneratingInvoiceIndex] = useState<number | null>(null);
+
+  // Fetch registered trainers from /api/trainers
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/trainers')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.trainers)) {
+            const names = data.trainers.map((t: any) => t.name);
+            setRegisteredTrainers((prev) => Array.from(new Set([...prev, ...names])));
+          }
+        })
+        .catch((err) => console.error('OpsModal trainer fetch error:', err));
+    }
+  }, [isOpen]);
+
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const handleGenerateInvoice = async (row: ParticipantRow, idx: number) => {
     setGeneratingInvoiceIndex(idx);
@@ -417,18 +460,49 @@ export default function OpsModal({
             </div>
 
             <div>
-              <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
-                Trainer Name <span className="text-rose-400">*</span>
+              <label className="text-xs font-bold mb-1.5 flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
+                <span>Trainer Name <span className="text-rose-400">*</span></span>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomTrainer(!isCustomTrainer)}
+                  className="text-[10px] text-cyan-400 hover:underline font-normal cursor-pointer"
+                >
+                  {isCustomTrainer ? 'Choose from list' : '+ Custom name'}
+                </button>
               </label>
-              <input
-                type="text"
-                required
-                value={trainer}
-                onChange={(e) => setTrainer(e.target.value)}
-                placeholder="e.g. Arul Xavier, Specialist Trainer"
-                className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-cyan-500 font-semibold text-cyan-300 transition-all"
-                style={{ background: 'var(--surface-2)' }}
-              />
+              {isCustomTrainer ? (
+                <input
+                  type="text"
+                  required
+                  value={trainer}
+                  onChange={(e) => setTrainer(e.target.value)}
+                  placeholder="e.g. Meghana, Arul Xavier, Specialist Trainer"
+                  className="w-full rounded-xl border border-cyan-500/50 px-3.5 py-2.5 text-sm outline-none font-semibold text-cyan-300 transition-all"
+                  style={{ background: 'var(--surface-2)' }}
+                />
+              ) : (
+                <select
+                  value={trainer}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomTrainer(true);
+                    } else {
+                      setTrainer(e.target.value);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-cyan-500/50 px-3.5 py-2.5 text-sm outline-none focus:border-cyan-400 font-bold text-cyan-300 transition-all cursor-pointer"
+                  style={{ background: 'var(--surface-2)' }}
+                >
+                  {registeredTrainers.map((tName) => (
+                    <option key={tName} value={tName} className="bg-slate-900 text-white font-medium">
+                      👨‍🏫 {tName}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-slate-900 text-cyan-400 font-bold">
+                    ✍️ + Add / Enter Custom Trainer Name...
+                  </option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -487,7 +561,7 @@ export default function OpsModal({
 
           {/* 3.4 Participants Selection Dropdown */}
 
-          <div className="relative">
+          <div ref={dropdownRef} className="relative">
             <div className="flex justify-between items-center mb-1.5">
               <label className="text-xs font-bold block" style={{ color: 'var(--text-secondary)' }}>
                 Select Participants ({participantRows.length} selected)

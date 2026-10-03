@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import ical from 'node-ical';
+import { cleanTeamsMeetingUrl } from './teams-utils';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────
 export type MeetingPlatform = 'google_meet' | 'teams' | 'zoom' | 'in_person' | 'other';
@@ -161,7 +162,7 @@ export async function saveIcalFeed(feedUrl: string, email?: string): Promise<voi
 export async function getIcalFeedConfig(): Promise<{ url: string; email?: string } | null> {
   const envUrl = process.env.GOOGLE_CALENDAR_ICAL_URL;
   if (envUrl) {
-    return { url: envUrl, email: process.env.GOOGLE_CALENDAR_EMAIL || 'admin@gapanchor.com' };
+    return { url: envUrl, email: process.env.GOOGLE_CALENDAR_EMAIL || 'xavierarul48@gmail.com' };
   }
 
   try {
@@ -172,7 +173,7 @@ export async function getIcalFeedConfig(): Promise<{ url: string; email?: string
     if (config?.connected && config.metadata) {
       const meta = JSON.parse(config.metadata);
       if (meta.feedUrl) {
-        return { url: meta.feedUrl, email: meta.email || 'admin@gapanchor.com' };
+        return { url: meta.feedUrl, email: meta.email || 'xavierarul48@gmail.com' };
       }
     }
   } catch (err) {
@@ -256,7 +257,9 @@ export async function getAuthenticatedClient() {
   return oauth2Client;
 }
 
-// ─── MEETING PLATFORM & LINK EXTRACTION ────────────────────────────────
+// ─── TEAMS URL CLEANING & SANITIZATION ──────────────────────────────────
+export { cleanTeamsMeetingUrl } from './teams-utils';
+
 export function extractMeetingInfo(event: any): {
   platform: MeetingPlatform;
   platformName: string;
@@ -275,7 +278,7 @@ export function extractMeetingInfo(event: any): {
         return { platform: 'google_meet', platformName: 'Google Meet', joinUrl: videoEp.uri };
       }
       if (videoEp.uri.includes('teams.microsoft.com') || videoEp.uri.includes('teams.live.com')) {
-        return { platform: 'teams', platformName: 'Microsoft Teams', joinUrl: videoEp.uri };
+        return { platform: 'teams', platformName: 'Microsoft Teams', joinUrl: cleanTeamsMeetingUrl(videoEp.uri) };
       }
       if (videoEp.uri.includes('zoom.us')) {
         return { platform: 'zoom', platformName: 'Zoom', joinUrl: videoEp.uri };
@@ -295,7 +298,7 @@ export function extractMeetingInfo(event: any): {
   // Microsoft Teams
   const teamsMatch = textToScan.match(/https:\/\/(?:teams\.microsoft\.com|teams\.live\.com)\/[^\s"<>'`]+/i);
   if (teamsMatch) {
-    return { platform: 'teams', platformName: 'Microsoft Teams', joinUrl: teamsMatch[0] };
+    return { platform: 'teams', platformName: 'Microsoft Teams', joinUrl: cleanTeamsMeetingUrl(teamsMatch[0]) };
   }
 
   // Zoom
@@ -395,7 +398,7 @@ export function parseOutlookBookingBody(rawBody: string): ExtractedBookingInfo {
   if (meetingId) parts.push(`🔑 Meeting ID: ${meetingId}`);
   if (passcode) parts.push(`🔒 Passcode: ${passcode}`);
 
-  const cleanDescription = parts.length > 0 ? parts.join(' • ') : text.replace(/\n+/g, ' ').trim().slice(0, 300);
+  const cleanDescription = parts.length > 0 ? parts.join('\n') : text.replace(/\n+/g, ' ').trim().slice(0, 300);
 
   return {
     customerName,

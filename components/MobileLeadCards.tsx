@@ -113,7 +113,7 @@ export default function MobileLeadCards({
                 : 'bg-slate-900/70 hover:bg-slate-800/60 border-slate-800/80'
             }`}
           >
-            {/* ── Sleek 2-Line Header (Perfect Alignment, Zero Overlap) ── */}
+            {/* ── Sleek 2-Line Header (Perfect Alignment & Spacing) ── */}
             <div
               className="p-3 cursor-pointer select-none"
               onClick={() => onToggleExpand(lead.id)}
@@ -127,28 +127,30 @@ export default function MobileLeadCards({
               }}
               aria-expanded={isExpanded}
             >
-              {/* Line 1: Avatar + Name (Left) & Status Badge + Chevron (Right) */}
+              {/* Line 1: Avatar + Participant Name + Assignment (Left) & Status Badge + Chevron (Right) */}
               <div className="flex items-center justify-between gap-2 w-full">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                     {initials}
                   </div>
-                  <div className="min-w-0 flex items-center gap-1.5 flex-1">
-                    <span className="font-bold text-white text-xs sm:text-sm truncate">
-                      {lead.participantName}
-                    </span>
-                    <span className={`px-1.5 py-0.5 text-[8px] font-bold rounded max-w-[110px] truncate shrink-0 ${
-                      lead.assignedToName
-                        ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25'
-                        : 'bg-slate-800 text-slate-400 border border-slate-700/60'
-                    }`}>
-                      {lead.assignedToName ? lead.assignedToName.replace(/\s*\(.*?\)/, '') : 'Unassigned'}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-white text-xs sm:text-sm truncate">
+                        {lead.participantName}
+                      </span>
+                      <span className={`px-1.5 py-0.5 text-[8px] font-bold rounded max-w-[100px] truncate shrink-0 ${
+                        lead.assignedToName
+                          ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700/60'
+                      }`}>
+                        {lead.assignedToName ? lead.assignedToName.replace(/\s*\(.*?\)/, '') : 'Unassigned'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                     {statusConfig.label}
                   </span>
                   <div className="w-6 h-6 rounded-lg text-slate-400 hover:text-cyan-400 flex items-center justify-center shrink-0 transition-colors">
@@ -157,14 +159,13 @@ export default function MobileLeadCards({
                 </div>
               </div>
 
-              {/* Line 2: Country & Course (Indented neatly under name for 100% full course visibility) */}
-              <div className="flex items-center gap-2 mt-1.5 pl-10 text.xs">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-slate-300 font-medium text-[10px] shrink-0">
+              {/* Line 2: Country (Left) & Program / Tech Stack Name (Right) */}
+              <div className="flex items-center justify-between gap-2 mt-2 pl-10 text-xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 font-medium text-[10px] shrink-0">
                   <Globe size={10} className="text-cyan-400" />
                   {countryText}
                 </span>
-                <span className="text-slate-600 text-[10px]">•</span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-200 font-semibold text-[10px] truncate max-w-[210px]">
+                <span className="px-2.5 py-0.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-200 font-semibold text-[10px] truncate max-w-[180px]">
                   {courseText}
                 </span>
               </div>

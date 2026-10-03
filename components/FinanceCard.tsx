@@ -140,35 +140,37 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
           {/* Tab toggle */}
           <div className="flex rounded-full border border-border p-0.5 sm:p-1" style={{ background: 'var(--surface-2)' }}>
-            <button onClick={() => setActiveTab('charts')} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'charts' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'charts' ? { color: 'var(--text-secondary)' } : {}}>
+            <button onClick={() => setActiveTab('charts')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'charts' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'charts' ? { color: 'var(--text-secondary)' } : {}}>
               Analytics
             </button>
-            <button onClick={() => setActiveTab('transactions')} className={`px-3 sm:px-4 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'transactions' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'transactions' ? { color: 'var(--text-secondary)' } : {}}>
+            <button onClick={() => setActiveTab('transactions')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'transactions' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'transactions' ? { color: 'var(--text-secondary)' } : {}}>
               Transactions ({transactions.length})
             </button>
           </div>
 
-          <button onClick={handleExportCSV} className="btn-secondary !py-1 sm:!py-1.5 !px-2.5 sm:!px-3 !text-[11px] sm:!text-xs">
-            <Download size={12} className="sm:w-[13px] sm:h-[13px]" />
-            <span>CSV</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={handleExportCSV} className="btn-secondary !py-1 sm:!py-1.5 !px-2 sm:!px-3 !text-[10.5px] sm:!text-xs">
+              <Download size={12} className="sm:w-[13px] sm:h-[13px]" />
+              <span>CSV</span>
+            </button>
 
-          <button onClick={onOpenModal} className="btn-primary !py-1 sm:!py-1.5 !px-2.5 sm:!px-3 !text-[11px] sm:!text-xs">
-            <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
-            <span>Add Entry</span>
-          </button>
+            <button onClick={onOpenModal} className="btn-primary !py-1 sm:!py-1.5 !px-2 sm:!px-3 !text-[10.5px] sm:!text-xs">
+              <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
+              <span>Add Entry</span>
+            </button>
 
-          <a
-            href="/finance/analytics"
-            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-brand-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
-            title="Open Expanded Finance Intelligence & Excel Import View"
-          >
-            <Maximize2 size={12} className="sm:w-[13px] sm:h-[13px]" />
-            <span>Expanded View</span>
-          </a>
+            <a
+              href="/finance/analytics"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-brand-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
+              title="Open Expanded Finance Intelligence & Excel Import View"
+            >
+              <Maximize2 size={12} className="sm:w-[13px] sm:h-[13px]" />
+              <span>Deck</span>
+            </a>
+          </div>
         </div>
       </div>
 

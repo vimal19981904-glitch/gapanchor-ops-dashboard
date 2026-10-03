@@ -17,9 +17,9 @@ interface Props {
 
 export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelModal }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'whatsapp' | 'outlook'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'training' | 'job_support'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 10;
+  const pageSize = 5;
 
   // Assign modal state
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -40,12 +40,17 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
   const { summary, enquiries = [], whatsappConfig = {} } = commsData || {};
   const { total = 0, staleCount = 0, openCount = 0, processedCount = 0, actionRequiredCount = 0, avgResponseTimeMins = 14 } = summary || {};
 
-  const filteredEnquiries = enquiries.filter((e: any) => sourceFilter === 'all' || e.source === sourceFilter);
+  const filteredEnquiries = enquiries.filter((e: any) => {
+    const isJobSupp = (e.serviceType || '').toLowerCase() === 'job support' || (e.trainingType || '').toLowerCase() === 'job support';
+    if (typeFilter === 'training') return !isJobSupp;
+    if (typeFilter === 'job_support') return isJobSupp;
+    return true;
+  });
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize) || 1;
   const paginatedEnquiries = filteredEnquiries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const handleFilterChange = (filter: 'all' | 'whatsapp' | 'outlook') => {
-    setSourceFilter(filter);
+  const handleFilterChange = (filter: 'all' | 'training' | 'job_support') => {
+    setTypeFilter(filter);
     setCurrentPage(1);
   };
 
@@ -125,9 +130,9 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
               Enquiry Threads & Actions
             </h4>
             <div className="flex items-center gap-1 p-1 rounded-lg border border-border" style={{ background: 'var(--surface-0)' }}>
-              <button onClick={() => handleFilterChange('all')} className={`text-[10px] px-2 py-1 rounded-md font-semibold transition-colors ${sourceFilter === 'all' ? 'bg-surface-2 text-primary shadow-sm border border-border' : 'text-tertiary hover:text-secondary'}`}>All</button>
-              <button onClick={() => handleFilterChange('whatsapp')} className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-semibold transition-colors ${sourceFilter === 'whatsapp' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-tertiary hover:text-secondary'}`}><MessageSquare size={10} /> WhatsApp</button>
-              <button onClick={() => handleFilterChange('outlook')} className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-semibold transition-colors ${sourceFilter === 'outlook' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-tertiary hover:text-secondary'}`}><Mail size={10} /> Outlook</button>
+              <button onClick={() => handleFilterChange('all')} className={`text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'all' ? 'bg-surface-2 text-primary shadow-sm border border-border' : 'text-tertiary hover:text-secondary'}`}>All</button>
+              <button onClick={() => handleFilterChange('training')} className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'training' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30' : 'text-tertiary hover:text-secondary'}`}>Training</button>
+              <button onClick={() => handleFilterChange('job_support')} className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'job_support' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'text-tertiary hover:text-secondary'}`}>Job Support</button>
             </div>
           </div>
 

@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import CreateEventModal from '@/components/CreateEventModal';
 import ConnectCalendarModal from '@/components/ConnectCalendarModal';
+import { cleanTeamsMeetingUrl } from '@/lib/teams-utils';
 
 interface CalendarEvent {
   id: string;
@@ -340,7 +341,7 @@ export default function CalendarWidget() {
 
                   {event.joinUrl ? (
                     <a
-                      href={event.joinUrl}
+                      href={cleanTeamsMeetingUrl(event.joinUrl) || event.joinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 hover:text-white shadow-sm transition-all no-underline shrink-0 ml-auto"

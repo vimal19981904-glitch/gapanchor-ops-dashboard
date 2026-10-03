@@ -50,6 +50,8 @@ import { toast } from 'sonner';
 import CreateEventModal from '@/components/CreateEventModal';
 import ConnectCalendarModal from '@/components/ConnectCalendarModal';
 import { useTheme } from '@/components/ui/ThemeProvider';
+import { NavDrawerButton } from '@/components/NavigationContext';
+import { cleanTeamsMeetingUrl } from '@/lib/teams-utils';
 
 interface CalendarEvent {
   id: string;
@@ -199,7 +201,8 @@ export default function CalendarPage() {
 
   // Copy Join URL
   const handleCopyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
+    const cleaned = cleanTeamsMeetingUrl(url) || url;
+    navigator.clipboard.writeText(cleaned);
     setCopiedUrl(true);
     toast.success('Meeting join link copied to clipboard');
     setTimeout(() => setCopiedUrl(false), 2000);
@@ -323,42 +326,106 @@ export default function CalendarPage() {
     }
   };
 
+  // Helper to extract clean structured fields from event
+  const parseEventDetails = (event: CalendarEvent) => {
+    let customerName = event.customerName;
+    let customerEmail = event.customerEmail;
+    let customerPhone = event.customerPhone;
+    let scmProgram = event.scmProgram;
+    let meetingId = event.meetingId;
+    let passcode = event.passcode;
+
+    const rawText = event.cleanDescription || event.description || '';
+
+    if (!customerName) {
+      const m = rawText.match(/(?:👤\s*Customer|Customer|Name):\s*([^\n•\r<]+)/i);
+      if (m && m[1].trim()) customerName = m[1].trim();
+    }
+    if (!customerEmail) {
+      const m = rawText.match(/(?:✉️|Email):\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+      if (m && m[1].trim()) customerEmail = m[1].trim();
+      else {
+        const mGen = rawText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        if (mGen && !mGen[1].includes('microsoft.com') && !mGen[1].includes('gapanchor.com')) {
+          customerEmail = mGen[1].trim();
+        }
+      }
+    }
+    if (!customerPhone) {
+      const m = rawText.match(/(?:📞|Phone(?:\s*Number)?):\s*([\d\s+()-]{7,})/i);
+      if (m && m[1].trim()) customerPhone = m[1].trim();
+    }
+    if (!scmProgram) {
+      const m = rawText.match(/(?:📦\s*Program|Program|Service):\s*([^\n•\r<]+)/i);
+      if (m && m[1].trim()) scmProgram = m[1].trim();
+    }
+    if (!meetingId) {
+      const m = rawText.match(/(?:🔑\s*Meeting ID|Meeting ID):\s*([0-9\s]+)/i);
+      if (m && m[1].trim()) meetingId = m[1].trim();
+    }
+    if (!passcode) {
+      const m = rawText.match(/(?:🔒\s*Passcode|Passcode):\s*([A-Za-z0-9]+)/i);
+      if (m && m[1].trim()) passcode = m[1].trim();
+    }
+
+    // Extract notes excluding known field patterns
+    const notes = rawText
+      .split(/[\n•]/)
+      .map((l) => l.trim())
+      .filter((l) => {
+        if (!l) return false;
+        if (/^(?:👤\s*Customer|Customer|Name|Email|Phone|Program|Service|Meeting ID|Passcode):/i.test(l)) return false;
+        if (/^(?:✉️|📞|📦|🔑|🔒)/.test(l)) return false;
+        return true;
+      })
+      .join('\n');
+
+    return { customerName, customerEmail, customerPhone, scmProgram, meetingId, passcode, notes };
+  };
+
   return (
     <div className="min-h-screen w-full px-1 sm:px-4 md:px-8 py-2 sm:py-6 max-w-full space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* ──── TOP HEADER & TOOLBAR ────────────────────────────────────── */}
       <header className="glass-card animate-fade-in p-2.5 sm:p-6 rounded-2xl sm:rounded-3xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           {/* Brand & Back Navigation */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              href="/"
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-surface-2 hover:bg-surface-3 border border-border flex items-center justify-center transition-colors shrink-0 text-slate-300 hover:text-white"
-              title="Return to Dashboard"
-            >
-              <ArrowLeft size={16} className="sm:w-4 sm:h-4" />
-            </Link>
+          <div className="flex items-center justify-between w-full lg:w-auto gap-2">
+            <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
+              <Link
+                href="/"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-surface-2 hover:bg-surface-3 border border-border flex items-center justify-center transition-colors shrink-0 text-slate-300 hover:text-white"
+                title="Return to Dashboard"
+              >
+                <ArrowLeft size={16} className="sm:w-4 sm:h-4" />
+              </Link>
 
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base sm:text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                  <span className="sm:hidden">Calendar Hub</span>
-                  <span className="hidden sm:inline">Calendar & Events Hub</span>
-                </h1>
-                {status.connected ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 max-w-[180px] sm:max-w-none truncate">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0" />
-                    <span className="truncate">Google Calendar</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 shrink-0" />
-                    Sandbox
-                  </span>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                    <span className="sm:hidden">Calendar Hub</span>
+                    <span className="hidden sm:inline">Calendar & Events Hub</span>
+                  </h1>
+                  {status.connected ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 max-w-[180px] sm:max-w-none truncate">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0" />
+                      <span className="truncate">Google Calendar</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 shrink-0" />
+                      Sandbox
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-xs font-medium truncate hidden sm:block" style={{ color: 'var(--text-tertiary)' }}>
+                  Training batches, client consultations, mock interviews & operational reviews
+                </p>
               </div>
-              <p className="text-[10px] sm:text-xs font-medium truncate hidden sm:block" style={{ color: 'var(--text-tertiary)' }}>
-                Training batches, client consultations, mock interviews & operational reviews
-              </p>
+            </div>
+
+            {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
+            <div className="lg:hidden shrink-0">
+              <NavDrawerButton className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
             </div>
           </div>
 
@@ -420,6 +487,11 @@ export default function CalendarPage() {
               <span className="sm:hidden">New Event</span>
               <span className="hidden sm:inline">Create New Event</span>
             </button>
+
+            {/* Desktop Navigation Drawer Button */}
+            <div className="hidden lg:block shrink-0">
+              <NavDrawerButton />
+            </div>
           </div>
         </div>
 
@@ -675,7 +747,7 @@ export default function CalendarPage() {
                           <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                             {ev.joinUrl && (
                               <a
-                                href={ev.joinUrl}
+                                href={ev.platform === 'teams' ? (cleanTeamsMeetingUrl(ev.joinUrl) || ev.joinUrl) : ev.joinUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
@@ -839,7 +911,7 @@ export default function CalendarPage() {
 
                       {ev.joinUrl && (
                         <a
-                          href={ev.joinUrl}
+                          href={ev.platform === 'teams' ? (cleanTeamsMeetingUrl(ev.joinUrl) || ev.joinUrl) : ev.joinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -898,7 +970,7 @@ export default function CalendarPage() {
                   </div>
 
                   <a
-                    href={selectedEvent.joinUrl}
+                    href={selectedEvent.platform === 'teams' ? (cleanTeamsMeetingUrl(selectedEvent.joinUrl) || selectedEvent.joinUrl) : selectedEvent.joinUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black bg-gradient-to-r ${
@@ -910,7 +982,7 @@ export default function CalendarPage() {
                   </a>
 
                   <button
-                    onClick={() => handleCopyLink(selectedEvent.joinUrl!)}
+                    onClick={() => handleCopyLink(selectedEvent.platform === 'teams' ? (cleanTeamsMeetingUrl(selectedEvent.joinUrl!) || selectedEvent.joinUrl!) : selectedEvent.joinUrl!)}
                     className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold border border-border hover:bg-surface-3 text-slate-300 transition-colors"
                   >
                     {copiedUrl ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
@@ -952,23 +1024,120 @@ export default function CalendarPage() {
               </div>
 
               {/* Description / Agenda & Extracted Booking Info */}
-              {(selectedEvent.cleanDescription || selectedEvent.description) && (
-                <div className="pt-3 border-t border-border/50">
-                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5 text-slate-400">
-                    Agenda & Customer Details
-                  </label>
-                  <div className="text-xs leading-relaxed text-slate-300 p-3 rounded-xl bg-surface-2 border border-border space-y-2">
-                    {selectedEvent.scmProgram && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
-                        <span>📦 Program: {selectedEvent.scmProgram}</span>
-                      </div>
-                    )}
-                    <p className="whitespace-pre-line text-xs font-medium">
-                      {selectedEvent.cleanDescription || selectedEvent.description}
-                    </p>
+              {(() => {
+                const details = parseEventDetails(selectedEvent);
+                const hasInfo =
+                  details.customerName ||
+                  details.customerEmail ||
+                  details.customerPhone ||
+                  details.scmProgram ||
+                  details.meetingId ||
+                  details.notes ||
+                  selectedEvent.description;
+
+                if (!hasInfo) return null;
+
+                return (
+                  <div className="pt-3 border-t border-border/50">
+                    <label className="text-[11px] font-bold uppercase tracking-wider block mb-2 text-slate-400">
+                      Agenda & Customer Details
+                    </label>
+                    <div className="p-3.5 rounded-2xl bg-surface-2 border border-border/80 space-y-3">
+                      {/* 1. SCM Program / Course */}
+                      {details.scmProgram && (
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
+                          <span className="text-cyan-400 text-sm mt-0.5 shrink-0">📦</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                              Program Module
+                            </span>
+                            <span className="inline-flex items-center px-2.5 py-0.5 mt-0.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold text-xs">
+                              {details.scmProgram}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Customer Name */}
+                      {details.customerName && (
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
+                          <span className="text-indigo-400 text-sm mt-0.5 shrink-0">👤</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                              Customer Name
+                            </span>
+                            <span className="font-bold text-white text-xs block truncate">
+                              {details.customerName}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. Email Address */}
+                      {details.customerEmail && (
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
+                          <span className="text-sky-400 text-sm mt-0.5 shrink-0">✉️</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                              Email Address
+                            </span>
+                            <span className="font-semibold text-sky-300 font-mono text-xs block truncate break-all">
+                              {details.customerEmail}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. Phone Number */}
+                      {details.customerPhone && (
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
+                          <span className="text-emerald-400 text-sm mt-0.5 shrink-0">📞</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                              Phone Number
+                            </span>
+                            <span className="font-semibold text-emerald-300 font-mono text-xs block truncate">
+                              {details.customerPhone}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 5. Meeting ID & Passcode */}
+                      {details.meetingId && (
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
+                          <span className="text-amber-400 text-sm mt-0.5 shrink-0">🔑</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                              Meeting ID & Access
+                            </span>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              <span className="font-mono text-amber-300 font-bold text-xs">{details.meetingId}</span>
+                              {details.passcode && (
+                                <span className="text-[11px] text-slate-300">
+                                  Passcode: <code className="px-1.5 py-0.5 rounded bg-surface-3 border border-border text-white font-mono font-bold">{details.passcode}</code>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 6. Raw Description / Additional Agenda Notes */}
+                      {details.notes && (
+                        <div className="pt-0.5 text-xs">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1 tracking-wide">
+                            Agenda & Notes
+                          </span>
+                          <p className="whitespace-pre-line text-xs font-medium leading-relaxed text-slate-300 bg-surface-3/50 p-2.5 rounded-xl border border-border/40">
+                            {details.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Attendees */}
               {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
