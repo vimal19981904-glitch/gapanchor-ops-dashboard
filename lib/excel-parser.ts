@@ -81,7 +81,13 @@ export function autoCategorizeTransaction(
     // Expense
     if (pUpper.includes('ARYA') || pUpper.includes('OPERATION')) {
       category = 'Operation Cost';
-    } else if (pUpper.includes('SALARY') || pUpper.includes('TRAINER') || pUpper.includes('HONORARIUM') || pUpper.includes('FACULTY')) {
+    } else if (
+      pUpper.includes('SALARY') ||
+      pUpper.includes('TRAINER') ||
+      pUpper.includes('HONORARIUM') ||
+      pUpper.includes('FACULTY') ||
+      (pUpper.includes('DUMMY NAME') && (pUpper.includes('HDF') || pUpper.includes('IDF') || pUpper.includes('SBI') || amount >= 3000))
+    ) {
       category = 'Salary';
     } else if (
       pUpper.includes('AWS') || pUpper.includes('CLOUD') || pUpper.includes('INFRA') ||
