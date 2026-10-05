@@ -31,7 +31,7 @@ export async function processPendingLeadsMonitoring(): Promise<{
 
   try {
     const now = new Date();
-    const fourHoursMs = 4 * 60 * 60 * 1000; // 4 Hours
+    const fourAndHalfHoursMs = 4.5 * 60 * 60 * 1000; // 4.5 Hours (270 minutes)
     const thirtyMinutesMs = 30 * 60 * 1000; // 30 Minutes
 
     // ─── 1. Register or update top 30 most recent Pending leads into LeadMonitoringAudit ────
@@ -115,14 +115,14 @@ export async function processPendingLeadsMonitoring(): Promise<{
 
       const elapsedMs = now.getTime() - new Date(audit.pendingStartTime).getTime();
 
-      // Threshold 1: Initial 4 Hours Inactivity Grace Period
-      if (elapsedMs >= fourHoursMs) {
+      // Threshold 1: Initial 4.5 Hours Inactivity Grace Period
+      if (elapsedMs >= fourAndHalfHoursMs) {
         const arrivalDate = enquiry.messageTimestamp ? new Date(enquiry.messageTimestamp) : new Date(audit.pendingStartTime);
-        const breachDate = new Date(arrivalDate.getTime() + fourHoursMs);
+        const breachDate = new Date(arrivalDate.getTime() + fourAndHalfHoursMs);
 
         const timeInPendingFormatted = formatTimeElapsed(elapsedMs);
         const leadArrivalTime = arrivalDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-        const slaBreachTime = `${breachDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (4h SLA Breached)`;
+        const slaBreachTime = `${breachDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (4.5h SLA Breached)`;
         const alertTriggeredTime = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
         const payload: LeadEmailPayload = {
