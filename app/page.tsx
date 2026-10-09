@@ -113,7 +113,7 @@ export default function Dashboard() {
 
   const totalIncome = financeData?.summary?.totalIncome || 0;
   const totalExpense = financeData?.summary?.totalExpense || 0;
-  const netProfit = financeData?.summary?.netProfit || 0;
+  const netProfit = totalIncome - totalExpense;
   const totalSessions = opsData?.summary?.totalSessions || 0;
   const totalParticipants = opsData?.summary?.totalParticipants || 0;
   const enquiryTotal = commsData?.summary?.total || 0;

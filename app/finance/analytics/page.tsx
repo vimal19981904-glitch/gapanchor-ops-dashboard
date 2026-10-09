@@ -163,7 +163,7 @@ export default function FinanceAnalyticsPage() {
       const res = await fetch('/api/finance/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath: 'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement02.xlsx' }),
+        body: JSON.stringify({ filePath: 'C:\\Users\\ARUL XAVIER\\OneDrive - gapanchor\\dashboard\\Account_Statement03.xlsx' }),
       });
       const json = await res.json();
       if (json.success) {

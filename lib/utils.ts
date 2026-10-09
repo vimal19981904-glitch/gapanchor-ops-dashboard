@@ -30,10 +30,10 @@ export function formatRelativeTime(date: string | Date): string {
 
 export function getQuarterFromDate(date: Date): string {
   const month = date.getMonth();
-  if (month < 3) return 'Q1';
-  if (month < 6) return 'Q2';
-  if (month < 9) return 'Q3';
-  return 'Q4';
+  if (month >= 3 && month <= 5) return 'Q1'; // 1 Apr – 30 Jun (Q1 FY)
+  if (month >= 6 && month <= 8) return 'Q2'; // 1 Jul – 30 Sep (Q2 FY)
+  if (month >= 9 && month <= 11) return 'Q3'; // 1 Oct – 31 Dec (Q3 FY)
+  return 'Q4'; // 1 Jan – 31 Mar (Q4 FY)
 }
 
 export function cn(...classes: (string | undefined | null | false)[]): string {

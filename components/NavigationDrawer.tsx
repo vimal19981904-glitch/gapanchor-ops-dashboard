@@ -16,7 +16,8 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  BarChart3
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import UserNav from '@/components/UserNav';
@@ -131,6 +132,15 @@ export default function NavigationDrawer({
 
   const sections = [
     {
+      id: 'ops-analytics',
+      title: 'Ops Peak Analytics & Trends',
+      subtitle: 'Daily & Weekly Peak Volume Bar Graphs (Full View)',
+      icon: BarChart3,
+      color: 'emerald',
+      badge: 'Peak Trends',
+      action: () => handleAction(() => { window.location.href = '/ops-analytics'; }),
+    },
+    {
       id: 'finance',
       title: 'Finance Intelligence',
       subtitle: 'Finance & Revenue Intelligence (Full View)',
@@ -141,7 +151,7 @@ export default function NavigationDrawer({
     },
     {
       id: 'comms',
-      title: 'Leads & WhatsApp Comms',
+      title: 'Leads',
       subtitle: 'Leads & Enquiries Command Center (Full View)',
       icon: MessageSquare,
       color: 'cyan',
