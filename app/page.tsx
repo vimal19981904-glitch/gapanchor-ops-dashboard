@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/utils';
 import { DollarSign, Calendar, MessageSquare, Code2 } from 'lucide-react';
 
 import NavigationDrawer from '@/components/NavigationDrawer';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 export default function Dashboard() {
   const [financeData, setFinanceData] = useState<any>(null);
@@ -33,6 +34,7 @@ export default function Dashboard() {
 
   // Navigation Drawer
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
+  useScrollLock(isNavDrawerOpen);
 
   // Modals
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
@@ -121,15 +123,20 @@ export default function Dashboard() {
   const devCount = devData?.updates?.length || 0;
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden px-2 sm:px-6 md:px-8 py-2 sm:py-6">
-      <DashboardHeader
-        onRefresh={handleRefresh}
-        isRefreshing={refreshing}
-        graphStatus={financeData?.graphApiStatus}
-        whatsappStatus={commsData?.whatsappConfig}
-        onOpenSetup={handleOpenSetup}
-        onOpenNav={() => setIsNavDrawerOpen(true)}
-      />
+    <div className="w-full max-w-full overflow-x-clip px-2 sm:px-6 md:px-8 py-2 sm:py-6">
+      {/* Sticky Header - Fixed at Top When Scrolling Down */}
+      <div className="sticky top-0 z-40 -mt-2 sm:-mt-6 pt-2 sm:pt-6 pb-1 bg-surface-0/90 dark:bg-[#080c14]/90 backdrop-blur-xl transition-all mb-3 sm:mb-6">
+        <div className="[&>header]:!mb-0">
+          <DashboardHeader
+            onRefresh={handleRefresh}
+            isRefreshing={refreshing}
+            graphStatus={financeData?.graphApiStatus}
+            whatsappStatus={commsData?.whatsappConfig}
+            onOpenSetup={handleOpenSetup}
+            onOpenNav={() => setIsNavDrawerOpen(true)}
+          />
+        </div>
+      </div>
 
       {/* Top KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-5 mb-3 sm:mb-7">

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import NavigationDrawer, { NavMenuIcon } from '@/components/NavigationDrawer';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 import PageTransition from '@/components/PageTransition';
 
@@ -21,6 +22,9 @@ const NavigationContext = createContext<NavigationContextType>({
 
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Freeze background scrolling when navigation drawer is open
+  useScrollLock(isOpen);
 
   const openNav = () => setIsOpen(true);
   const closeNav = () => setIsOpen(false);

@@ -482,3 +482,19 @@
   animation: smoothBackdropFadeIn 0.8s ease-out forwards !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE & DRAWER OVERSCROLL CONTAINMENT (Prevents background scroll)
+   ═══════════════════════════════════════════════════════════════ */
+
+.custom-scrollbar {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure drawer overlay and drawer panels contain touch scroll */
+.animate-fade-only,
+.animate-drawer-slide-in {
+  overscroll-behavior: contain;
+}
+
+
