@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   }
 
   const emailHint = searchParams.get('email') || 'contact@gapanchor.com';
-  const scope = 'openid profile email Mail.Read offline_access';
+  const scope = 'openid profile email Mail.Read Mail.ReadWrite Calendars.Read OnlineMeetings.Read OnlineMeetingTranscript.Read.All Chat.Read Files.Read.All offline_access';
   const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(
     clientId
   )}&response_type=code&redirect_uri=${encodeURIComponent(

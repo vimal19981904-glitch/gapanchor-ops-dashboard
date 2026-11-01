@@ -11,10 +11,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AssignLeadModal from '@/components/AssignLeadModal';
-import UserNav from '@/components/UserNav';
 import MobileLeadCards from '@/components/MobileLeadCards';
 import DeleteRecordAction from '@/components/DeleteRecordAction';
 import { NavDrawerButton } from '@/components/NavigationContext';
+import { CallVolumeMeter } from '@/components/call-intelligence/CallVolumeMeter';
+import { RedFlagBadge } from '@/components/call-intelligence/RedFlagBadge';
+import { LeadDetailsDrawer } from '@/components/call-intelligence/LeadDetailsDrawer';
+import { TeamsSyncControls } from '@/components/call-intelligence/TeamsSyncControls';
+import { FollowUpAssistantBar } from '@/components/call-intelligence/FollowUpAssistantBar';
+import { analyzeEnquiryFollowUp } from '@/lib/followup-intelligence';
+import { DailyPipelineBoard } from '@/components/pipeline/DailyPipelineBoard';
 
 interface Enquiry {
   id: string;
@@ -36,6 +42,11 @@ interface Enquiry {
   processedNotes: string | null;
   assignedToId?: string | null;
   assignedToName?: string | null;
+  callScore?: number | null;
+  callFollowUpDate?: string | null;
+  hasRedFlag?: boolean;
+  redFlagReason?: string | null;
+  redFlagDismissed?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
@@ -333,6 +344,8 @@ export default function EnquiriesPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [qualityFilter, setQualityFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'quality'>('date_desc');
+  const [smartFollowUpFilter, setSmartFollowUpFilter] = useState('all');
+  const [aiMatchedIds, setAiMatchedIds] = useState<string[] | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -341,13 +354,14 @@ export default function EnquiriesPage() {
   // Reset to page 1 when search or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy]);
+  }, [search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy, smartFollowUpFilter, aiMatchedIds]);
 
   // Notes & Assign Modal state
   const [editingEnquiry, setEditingEnquiry] = useState<Enquiry | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [selectedDetailEnquiry, setSelectedDetailEnquiry] = useState<Enquiry | null>(null);
+  const [selectedCallEnquiry, setSelectedCallEnquiry] = useState<Enquiry | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTargetEnquiry, setAssignTargetEnquiry] = useState<Enquiry | null>(null);
 
@@ -388,6 +402,29 @@ export default function EnquiriesPage() {
 
   useEffect(() => {
     fetchEnquiries();
+
+    const handleExternalLeadUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { enquiryId, contactStatus, status, leadQuality, notes, enquiry } = customEvent.detail || {};
+      if (enquiryId) {
+        setEnquiries((prev) =>
+          prev.map((e) => {
+            if (e.id !== enquiryId) return e;
+            if (enquiry) return { ...e, ...enquiry };
+            return {
+              ...e,
+              ...(contactStatus !== undefined ? { contactStatus } : {}),
+              ...(status !== undefined ? { status } : {}),
+              ...(leadQuality !== undefined ? { leadQuality } : {}),
+              ...(notes !== undefined ? { processedNotes: notes } : {}),
+            };
+          })
+        );
+      }
+    };
+
+    window.addEventListener('gapanchor:lead-updated', handleExternalLeadUpdate);
+    return () => window.removeEventListener('gapanchor:lead-updated', handleExternalLeadUpdate);
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -473,16 +510,67 @@ export default function EnquiriesPage() {
 
   // Filtering & Sorting
   const filteredEnquiries = useMemo(() => {
+    // 1. If AI copilot matched specific lead IDs, prioritize that curated set
+    if (aiMatchedIds && aiMatchedIds.length > 0) {
+      const aiSet = new Set(aiMatchedIds);
+      let leads = enquiries.filter(item => aiSet.has(item.id));
+
+      // If user typed into the secondary search input, allow searching within AI results
+      if (search.trim()) {
+        const searchLower = search.toLowerCase().trim();
+        leads = leads.filter(item =>
+          item.participantName.toLowerCase().includes(searchLower) ||
+          (item.email && item.email.toLowerCase().includes(searchLower)) ||
+          (item.phone && item.phone.includes(searchLower)) ||
+          (item.country && item.country.toLowerCase().includes(searchLower)) ||
+          (item.trainingType && item.trainingType.toLowerCase().includes(searchLower)) ||
+          (item.topic && item.topic.toLowerCase().includes(searchLower)) ||
+          (item.processedNotes && item.processedNotes.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Preserve Gemini's recommended priority order
+      return leads.sort((a, b) => {
+        const idxA = aiMatchedIds.indexOf(a.id);
+        const idxB = aiMatchedIds.indexOf(b.id);
+        return (idxA === -1 ? 9999 : idxA) - (idxB === -1 ? 9999 : idxB);
+      });
+    }
+
+    // 2. Standard multi-criteria filtering
     return enquiries.filter(item => {
-      const searchLower = search.toLowerCase();
-      const matchesSearch =
-        !search ||
-        item.participantName.toLowerCase().includes(searchLower) ||
-        (item.email && item.email.toLowerCase().includes(searchLower)) ||
-        (item.phone && item.phone.includes(searchLower)) ||
-        (item.country && item.country.toLowerCase().includes(searchLower)) ||
-        (item.trainingType && item.trainingType.toLowerCase().includes(searchLower)) ||
-        (item.processedNotes && item.processedNotes.toLowerCase().includes(searchLower));
+      const searchLower = search.toLowerCase().trim();
+      let matchesSearch = true;
+      if (searchLower) {
+        const directMatch =
+          item.participantName.toLowerCase().includes(searchLower) ||
+          (item.email && item.email.toLowerCase().includes(searchLower)) ||
+          (item.phone && item.phone.includes(searchLower)) ||
+          (item.country && item.country.toLowerCase().includes(searchLower)) ||
+          (item.trainingType && item.trainingType.toLowerCase().includes(searchLower)) ||
+          (item.topic && item.topic.toLowerCase().includes(searchLower)) ||
+          (item.lastMessage && item.lastMessage.toLowerCase().includes(searchLower)) ||
+          (item.processedNotes && item.processedNotes.toLowerCase().includes(searchLower));
+
+        const isImportantIntent = searchLower.includes('important') || searchLower.includes('priority') || searchLower.includes('high quality') || searchLower.includes('hot');
+        const semanticImportant = isImportantIntent && (item.leadQuality === 'High' || (typeof item.callScore === 'number' && item.callScore >= 8));
+
+        const isDueIntent = searchLower.includes('due') || searchLower.includes('callback') || searchLower.includes('today') || searchLower.includes('overdue');
+        const semanticDue = isDueIntent && (Boolean(item.callFollowUpDate) || (item.contactStatus === 'In Touch' && Boolean(item.processedNotes)));
+
+        const tokens = searchLower.split(/\s+/).filter(Boolean);
+        const allTokensMatch = tokens.length > 1 && tokens.every(token =>
+          item.participantName.toLowerCase().includes(token) ||
+          (item.email && item.email.toLowerCase().includes(token)) ||
+          (item.phone && item.phone.includes(token)) ||
+          (item.country && item.country.toLowerCase().includes(token)) ||
+          (item.trainingType && item.trainingType.toLowerCase().includes(token)) ||
+          (item.topic && item.topic.toLowerCase().includes(token)) ||
+          (item.processedNotes && item.processedNotes.toLowerCase().includes(token))
+        );
+
+        matchesSearch = directMatch || semanticImportant || semanticDue || allTokensMatch;
+      }
 
       const matchesCountry = countryFilter === 'ALL' || item.country === countryFilter;
       const isJobSupportItem = (item.serviceType || '').toLowerCase() === 'job support' || (item.trainingType || '').toLowerCase() === 'job support';
@@ -499,7 +587,25 @@ export default function EnquiriesPage() {
       const matchesStatus = statusFilter === 'ALL' || item.contactStatus === statusFilter;
       const matchesQuality = qualityFilter === 'ALL' || item.leadQuality === qualityFilter;
 
-      return matchesSearch && matchesCountry && matchesCourse && matchesStatus && matchesQuality;
+      let matchesSmartFollowUp = true;
+      if (smartFollowUpFilter !== 'all') {
+        const analysis = analyzeEnquiryFollowUp(item);
+        if (smartFollowUpFilter === 'due_today') {
+          matchesSmartFollowUp = analysis.isDueTodayOrOverdue;
+        } else if (smartFollowUpFilter === 'high_intent') {
+          matchesSmartFollowUp = analysis.category === 'high_intent' || (typeof item.callScore === 'number' && item.callScore >= 8);
+        } else if (smartFollowUpFilter === 'demo_followup') {
+          matchesSmartFollowUp = analysis.category === 'demo_followup';
+        } else if (smartFollowUpFilter === 'email_pending') {
+          matchesSmartFollowUp = analysis.category === 'whatsapp_missing' || analysis.category === 'email_pending';
+        } else if (smartFollowUpFilter === 'red_flags') {
+          matchesSmartFollowUp = Boolean(item.hasRedFlag && !item.redFlagDismissed);
+        } else if (smartFollowUpFilter === 'has_notes') {
+          matchesSmartFollowUp = Boolean(item.processedNotes && item.processedNotes.trim().length > 0);
+        }
+      }
+
+      return matchesSearch && matchesCountry && matchesCourse && matchesStatus && matchesQuality && matchesSmartFollowUp;
     }).sort((a, b) => {
       if (sortBy === 'date_desc') {
         return new Date(b.messageTimestamp).getTime() - new Date(a.messageTimestamp).getTime();
@@ -513,7 +619,7 @@ export default function EnquiriesPage() {
       }
       return 0;
     });
-  }, [enquiries, search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy]);
+  }, [enquiries, search, countryFilter, courseFilter, statusFilter, qualityFilter, sortBy, smartFollowUpFilter, aiMatchedIds]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredEnquiries.length / pageSize) || 1;
@@ -584,28 +690,26 @@ export default function EnquiriesPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-between xl:justify-end overflow-visible">
-            <div className="shrink-0"><UserNav /></div>
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
-              <button
-                onClick={() => handleSyncExcel()}
-                disabled={syncing}
-                className="group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-60 overflow-hidden cursor-pointer whitespace-nowrap shrink-0"
-              >
-                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
-                <span>{syncing ? 'Syncing…' : 'Sync'}</span>
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={syncing}
-                title="Upload custom data file"
-                className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
-              >
-                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto justify-end overflow-visible">
+            <TeamsSyncControls onSyncComplete={fetchEnquiries} />
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+            <button
+              onClick={() => handleSyncExcel()}
+              disabled={syncing}
+              title="Sync latest enquiries from Outlook Microsoft Graph"
+              className="h-9 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing Outlook...' : 'Sync Outlook'}</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={syncing}
+              title="Upload custom data file"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+            >
+              <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
             {/* Desktop Navigation Drawer Button */}
             <div className="hidden xl:block shrink-0">
               <NavDrawerButton />
@@ -733,33 +837,16 @@ export default function EnquiriesPage() {
           })}
         </div>
 
-        {/* ── Course Category Tabs ── */}
-        <div className="flex items-center gap-2 p-2 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl overflow-x-auto scrollbar-hide">
-          {[
-            { id: 'ALL', label: 'All Enquiries', count: totalCount },
-            { id: 'Job Support', label: 'Job Support', count: enquiries.filter(e => (e.serviceType || '').toLowerCase() === 'job support' || (e.trainingType || '').toLowerCase() === 'job support').length },
-            { id: 'Training', label: 'Training Enquiries', count: enquiries.filter(e => (e.serviceType || '').toLowerCase() !== 'job support' && (e.trainingType || '').toLowerCase() !== 'job support').length },
-            { id: 'Manhattan WMS', label: 'Manhattan WMS', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('manhattan wms')).length },
-            { id: 'Manhattan ProActive', label: 'Manhattan ProActive', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('proactive')).length },
-            { id: 'Blue Yonder WMS (JDA)', label: 'Blue Yonder (JDA)', count: enquiries.filter(e => (e.trainingType || '').toLowerCase().includes('blue yonder') || (e.trainingType || '').toLowerCase().includes('jda')).length },
-            { id: 'General Training', label: 'Other Courses', count: enquiries.filter(e => !(e.trainingType || '').toLowerCase().includes('manhattan') && !(e.trainingType || '').toLowerCase().includes('blue yonder')).length },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setCourseFilter(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                courseFilter === tab.id
-                  ? 'bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 text-white shadow-md shadow-cyan-500/20 border border-cyan-500/20'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-700/40'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${courseFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-500'}`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* ── Executive Call Intelligence & AI Follow-Up Assistant ── */}
+        <FollowUpAssistantBar
+          enquiries={enquiries}
+          activeFilter={smartFollowUpFilter}
+          onFilterChange={(f) => setSmartFollowUpFilter(f)}
+          onSearchChange={(term) => setSearch(term)}
+          aiMatchedIds={aiMatchedIds}
+          onAiMatchedIdsChange={(ids) => setAiMatchedIds(ids)}
+        />
+
         {/* ── Filters & Search ── */}
         <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl w-full max-w-full overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
@@ -776,9 +863,10 @@ export default function EnquiriesPage() {
               </div>
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto">
                 {[
-                  { value: countryFilter, onChange: setCountryFilter, options: [['ALL',`All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
-                  { value: qualityFilter, onChange: setQualityFilter, options: [['ALL','All Quality'], ['High','💎 High Quality'], ['Medium','⚡ Medium Quality'], ['Low','🧊 Low Quality'], ['Unrated','⚪ Unrated']] },
-                  { value: statusFilter, onChange: setStatusFilter, options: [['ALL','All Statuses'], ['Pending','⏳ Pending'], ['In Touch','💬 In Touch'], ['Talked','📞 Talked'], ['Future','🔮 Future'], ['Converted','💎 Converted'], ['Lost','❌ Lost']] },
+                  { value: countryFilter, onChange: setCountryFilter, options: [['ALL', `All Countries (${uniqueCountries.length})`], ...uniqueCountries.map(c => [c, c])] },
+                  { value: courseFilter, onChange: setCourseFilter, options: [['ALL', `All Courses (${uniqueCourses.length})`], ...uniqueCourses.map(c => [c, c])] },
+                  { value: qualityFilter, onChange: setQualityFilter, options: [['ALL', 'All Quality'], ['High', '💎 High Quality'], ['Medium', '⚡ Medium Quality'], ['Low', '🧊 Low Quality'], ['Unrated', '⚪ Unrated']] },
+                  { value: statusFilter, onChange: setStatusFilter, options: [['ALL', 'All Statuses'], ['Pending', '⏳ Pending'], ['In Touch', '💬 In Touch'], ['Talked', '📞 Talked'], ['Future', '🔮 Future'], ['Converted', '💎 Converted'], ['Lost', '❌ Lost']] },
                 ].map((sel, i) => (
                   <select
                     key={i}
@@ -799,38 +887,41 @@ export default function EnquiriesPage() {
               </div>
             </div>
 
-            {/* Right-Side Segment Toggle: All Leads vs Training vs Job Support */}
-            <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-700/60 rounded-xl shrink-0 w-full lg:w-auto justify-center">
+            {/* Right-Side Segment Toggle: Unified Liquid Glass Segmented Control */}
+            <div className="grid grid-cols-3 p-1 bg-slate-950/60 backdrop-blur-2xl border border-white/10 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_4px_20px_rgba(0,0,0,0.5)] shrink-0 w-full sm:w-[350px]">
               <button
+                type="button"
                 onClick={() => setCourseFilter('ALL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`h-8 sm:h-8.5 rounded-full flex items-center justify-center px-2 text-[11px] sm:text-xs font-bold whitespace-nowrap tracking-tight transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-95 cursor-pointer ${
                   courseFilter === 'ALL'
-                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                All Leads
+                <span>All Leads</span>
               </button>
               <button
+                type="button"
                 onClick={() => setCourseFilter('Training')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`h-8 sm:h-8.5 rounded-full flex items-center justify-center gap-1.5 px-2 text-[11px] sm:text-xs font-bold whitespace-nowrap tracking-tight transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-95 cursor-pointer ${
                   courseFilter === 'Training'
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <BookOpen className="w-3.5 h-3.5 shrink-0 opacity-90" />
                 <span>Training</span>
               </button>
               <button
+                type="button"
                 onClick={() => setCourseFilter('Job Support')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`h-8 sm:h-8.5 rounded-full flex items-center justify-center gap-1.5 px-2 text-[11px] sm:text-xs font-bold whitespace-nowrap tracking-tight transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-95 cursor-pointer ${
                   courseFilter === 'Job Support'
-                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Briefcase className="w-3.5 h-3.5 text-amber-400" />
+                <Briefcase className="w-3.5 h-3.5 shrink-0 opacity-90" />
                 <span>Job Support</span>
               </button>
             </div>
@@ -848,19 +939,32 @@ export default function EnquiriesPage() {
               <p className="text-sm font-medium text-slate-400">Loading enquiry database…</p>
             </div>
           ) : filteredEnquiries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <div className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/40">
-                <AlertCircle className="w-10 h-10 text-slate-600" />
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <div className="p-3.5 rounded-2xl bg-slate-800/50 border border-slate-700/40">
+                <AlertCircle className="w-8 h-8 text-slate-500" />
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-slate-300">No enquiries found</p>
-                <p className="text-xs text-slate-500 mt-1">Try adjusting your filters or upload a data file to sync data</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {search ? `No records matched "${search}".` : 'Try clearing your active filters.'}
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => { setSearch(''); setCountryFilter('ALL'); setCourseFilter('ALL'); setStatusFilter('ALL'); setQualityFilter('ALL'); }} className="text-xs px-4 py-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 cursor-pointer transition-colors">
-                  Clear Filters
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setCountryFilter('ALL');
+                    setCourseFilter('ALL');
+                    setStatusFilter('ALL');
+                    setQualityFilter('ALL');
+                    setSmartFollowUpFilter('all');
+                    setAiMatchedIds(null);
+                  }}
+                  className="text-xs px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold cursor-pointer transition-colors shadow-md"
+                >
+                  Clear All Filters & Reset
                 </button>
-                <button onClick={() => fileInputRef.current?.click()} className="text-xs px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer transition-colors flex items-center gap-1.5">
+                <button onClick={() => fileInputRef.current?.click()} className="text-xs px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white cursor-pointer transition-colors flex items-center gap-1.5">
                   <Upload className="w-3.5 h-3.5" /> Upload File
                 </button>
               </div>
@@ -900,7 +1004,7 @@ export default function EnquiriesPage() {
                       <th className="py-4 px-4 text-[10px]">Course / Service</th>
                       <th className="py-4 px-4 text-[10px]">Date</th>
                       <th className="py-4 px-4 text-[10px] w-[138px] min-w-[138px] whitespace-nowrap">Contact Status</th>
-                      <th className="py-4 px-4 text-[10px] w-[160px] min-w-[160px] whitespace-nowrap">Lead Quality</th>
+                      <th className="py-4 px-4 text-[10px] w-[160px] min-w-[160px] whitespace-nowrap">Call Score</th>
                       <th className="py-4 px-4 text-[10px]">Call Notes</th>
                       <th className="py-4 px-5 text-[10px] text-right">Actions</th>
                     </tr>
@@ -916,7 +1020,27 @@ export default function EnquiriesPage() {
                               {enquiry.participantName.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-white group-hover:text-cyan-300 transition-colors text-sm truncate">{enquiry.participantName}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p
+                                  onClick={() => {
+                                    setSelectedDetailEnquiry(enquiry);
+                                    setNoteText(enquiry.processedNotes || '');
+                                  }}
+                                  className="font-semibold text-white group-hover:text-cyan-300 transition-colors text-sm truncate cursor-pointer hover:underline"
+                                  title="Click to view Lead Details & Call Intelligence"
+                                >
+                                  {enquiry.participantName}
+                                </p>
+                                <RedFlagBadge
+                                  enquiryId={enquiry.id}
+                                  hasRedFlag={Boolean(enquiry.hasRedFlag)}
+                                  redFlagReason={enquiry.redFlagReason}
+                                  redFlagDismissed={Boolean(enquiry.redFlagDismissed)}
+                                  onDismissed={() => {
+                                    setEnquiries(prev => prev.map(e => e.id === enquiry.id ? { ...e, redFlagDismissed: true } : e));
+                                  }}
+                                />
+                              </div>
                               <div className="flex items-center gap-2 mt-0.5">
                                 {enquiry.email && (
                                   <a href={`mailto:${enquiry.email}`} className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors truncate max-w-[160px]">
@@ -975,16 +1099,26 @@ export default function EnquiriesPage() {
                           />
                         </td>
 
-                        {/* Lead Quality */}
+                        {/* Call Score (Volume Meter) */}
                         <td className="py-4 px-4 whitespace-nowrap">
-                          <QualityBadgeSelect
-                            value={enquiry.leadQuality || 'Unrated'}
-                            onChange={val => handleUpdateStatus(enquiry.id, { leadQuality: val })}
+                          <CallVolumeMeter
+                            enquiryId={enquiry.id}
+                            initialScore={enquiry.callScore || null}
+                            onScoreUpdated={(s) => {
+                              setEnquiries(prev => prev.map(e => e.id === enquiry.id ? { ...e, callScore: s } : e));
+                            }}
+                            compact
                           />
                         </td>
 
                         {/* Notes */}
                         <td className="py-4 px-4 max-w-[200px]">
+                          {enquiry.callFollowUpDate && (
+                            <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold mb-1 truncate">
+                              <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span>Due: {new Date(enquiry.callFollowUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                            </div>
+                          )}
                           {enquiry.processedNotes ? (
                             <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
                               💬 {enquiry.processedNotes}
@@ -999,33 +1133,18 @@ export default function EnquiriesPage() {
 
                         {/* Actions */}
                         <td className="py-4 px-5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end">
                             <button
-                              onClick={() => { setSelectedDetailEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
+                              onClick={() => {
+                                setSelectedDetailEnquiry(enquiry);
+                                setNoteText(enquiry.processedNotes || '');
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 text-xs font-semibold shadow-sm transition-all cursor-pointer shrink-0"
+                              title="View Lead Details & Call Intelligence"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">View</span>
+                              <span>Details</span>
                             </button>
-
-                            <button
-                              onClick={() => openAssignModal(enquiry)}
-                              className="p-1.5 rounded-xl bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 border border-brand-500/20 transition-all cursor-pointer"
-                              title={enquiry.assignedToName ? `Currently assigned to ${enquiry.assignedToName}. Click to reassign.` : "Assign to Employee"}
-                            >
-                              <UserCheck className="w-3.5 h-3.5" />
-                            </button>
-
-                            {enquiry.phone && (
-                              <a href={`https://wa.me/${enquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer" title="WhatsApp">
-                                <MessageSquare className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            {enquiry.email && (
-                              <a href={`mailto:${enquiry.email}?subject=Regarding your ${enquiry.trainingType || 'GapAnchor Training'} enquiry`} className="p-1.5 rounded-xl bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20 transition-all cursor-pointer" title="Send Email">
-                                <Mail className="w-3.5 h-3.5" />
-                              </a>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -1094,6 +1213,16 @@ export default function EnquiriesPage() {
           </div>
         </div>
 
+        {/* ── Daily Visual Pipeline (Top 10 Active Leads) ── */}
+        <DailyPipelineBoard
+          enquiries={enquiries}
+          onSelectLead={(lead) => {
+            const found = enquiries.find((e) => e.id === lead.id);
+            if (found) setSelectedDetailEnquiry(found);
+          }}
+          onUpdateLeadStatus={handleUpdateStatus}
+        />
+
       </div>
 
       {/* ── Inline Notes Drawer ── */}
@@ -1125,159 +1254,6 @@ export default function EnquiriesPage() {
         </div>
       )}
 
-      {/* ── Client Detail Modal ── */}
-      {selectedDetailEnquiry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700/60 rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-500/20">
-                  {selectedDetailEnquiry.participantName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-white text-lg">{selectedDetailEnquiry.participantName}</h3>
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">Client</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Source: <strong className="text-slate-300 capitalize">{selectedDetailEnquiry.source?.replace(/Excel/i, 'Outlook') || 'Outlook'}</strong>
-                    <span className="ml-2 font-mono text-slate-600">#{selectedDetailEnquiry.id.slice(-8)}</span>
-                  </p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedDetailEnquiry(null)} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer transition-colors"><X className="w-5 h-5" /></button>
-            </div>
-
-            {/* Quick Action Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
-              <div className="flex gap-2 w-full sm:w-auto">
-                {selectedDetailEnquiry.phone && (
-                  <a href={`https://wa.me/${selectedDetailEnquiry.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold transition-all">
-                    <MessageSquare className="w-4 h-4" /> WhatsApp
-                  </a>
-                )}
-                {selectedDetailEnquiry.email && (
-                  <a href={`mailto:${selectedDetailEnquiry.email}?subject=Regarding ${selectedDetailEnquiry.trainingType || 'GapAnchor'} enquiry`} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30 text-xs font-semibold transition-all">
-                    <Mail className="w-4 h-4" /> Email
-                  </a>
-                )}
-              </div>
-              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
-                <div className="flex-1 sm:flex-none [&>div>button]:w-full [&>div>button]:justify-center">
-                  <StatusBadgeSelect
-                    value={selectedDetailEnquiry.contactStatus || 'Pending'}
-                    onChange={async val => {
-                      await handleUpdateStatus(selectedDetailEnquiry.id, { contactStatus: val });
-                      setSelectedDetailEnquiry(p => p ? { ...p, contactStatus: val } : null);
-                    }}
-                  />
-                </div>
-                <div className="flex-1 sm:flex-none [&>div>button]:w-full [&>div>button]:justify-center">
-                  <QualityBadgeSelect
-                    value={selectedDetailEnquiry.leadQuality || 'Unrated'}
-                    onChange={async val => {
-                      await handleUpdateStatus(selectedDetailEnquiry.id, { leadQuality: val });
-                      setSelectedDetailEnquiry(p => p ? { ...p, leadQuality: val } : null);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Info Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: 'Email', value: selectedDetailEnquiry.email || '—', icon: Mail },
-                { label: 'Phone', value: selectedDetailEnquiry.phone || '—', icon: Phone },
-                { label: 'Country', value: selectedDetailEnquiry.country || 'India', icon: Globe },
-                { label: 'Received', value: new Date(selectedDetailEnquiry.messageTimestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }), icon: Calendar },
-              ].map(info => (
-                <div key={info.label} className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <info.icon className="w-3 h-3 text-slate-600" />
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium">{info.label}</span>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-200 truncate block" title={info.value}>{info.value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Client Requirements & Specifications */}
-            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-bold text-slate-200">
-                    {(selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' ? 'Client Job Support Requirements' : 'Course & Service Details'}
-                  </span>
-                </div>
-                <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full border ${
-                  (selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' || (selectedDetailEnquiry.trainingType || '').toLowerCase() === 'job support'
-                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    : 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
-                }`}>
-                  {(selectedDetailEnquiry.serviceType || '').toLowerCase() === 'job support' || (selectedDetailEnquiry.trainingType || '').toLowerCase() === 'job support' ? 'Job Support Lead' : 'Training Lead'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Service Type</span>
-                  <span className="font-semibold text-slate-200">{selectedDetailEnquiry.serviceType || 'IT support & Training'}</span>
-                </div>
-                <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/50">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Target Platform</span>
-                  <span className="font-semibold text-slate-200">{selectedDetailEnquiry.trainingType || selectedDetailEnquiry.topic}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Message Body */}
-            <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
-              <div className="flex items-center gap-1.5 mb-2">
-                <FileText className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold text-slate-300">Enquiry Message & Client Inquiry Body</span>
-                <span className="ml-auto text-[10px] text-slate-600 font-mono">{selectedDetailEnquiry.trainingType || selectedDetailEnquiry.topic}</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-800/40">
-                {selectedDetailEnquiry.lastMessage || 'No message body.'}
-              </p>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                Call Notes & Discussion Log
-              </label>
-              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} rows={3} className="w-full p-3.5 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 resize-none" placeholder="Spoke on 30 Aug. Interested in 6-week Manhattan WMS batch…" />
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-              {/* Delete button integrated inside View Modal */}
-              <DeleteRecordAction
-                recordId={selectedDetailEnquiry.id}
-                recordName={selectedDetailEnquiry.participantName}
-                buttonStyle="full"
-                onDeleteSuccess={(id) => {
-                  setEnquiries((prev) => prev.filter((e) => e.id !== id));
-                  setSelectedDetailEnquiry(null);
-                }}
-              />
-
-              <div className="flex gap-2 items-center">
-                <button onClick={() => setSelectedDetailEnquiry(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 cursor-pointer">Close</button>
-                <button onClick={async () => { setSavingNote(true); try { await handleUpdateStatus(selectedDetailEnquiry.id, { notes: noteText }); setSelectedDetailEnquiry(null); } finally { setSavingNote(false); } }} disabled={savingNote} className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs text-white font-bold shadow-lg shadow-cyan-500/15 cursor-pointer disabled:opacity-60">
-                  {savingNote ? 'Saving…' : 'Save to DB'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Assign Lead Modal ── */}
       <AssignLeadModal
         isOpen={assignModalOpen}
@@ -1287,6 +1263,22 @@ export default function EnquiriesPage() {
         topic={assignTargetEnquiry?.topic}
         currentAssignedId={assignTargetEnquiry?.assignedToId}
         onSuccess={fetchEnquiries}
+      />
+
+      {/* ── Unified Lead Details & Call Intelligence Drawer (40% Screen Width) ── */}
+      <LeadDetailsDrawer
+        isOpen={!!selectedDetailEnquiry}
+        onClose={() => setSelectedDetailEnquiry(null)}
+        enquiry={selectedDetailEnquiry}
+        onUpdateStatus={async (id, updates) => {
+          await handleUpdateStatus(id, updates);
+          setSelectedDetailEnquiry(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
+        }}
+        onDeleteSuccess={(id) => {
+          setEnquiries((prev) => prev.filter((e) => e.id !== id));
+          setSelectedDetailEnquiry(null);
+        }}
+        onAssignClick={openAssignModal}
       />
 
     </div>

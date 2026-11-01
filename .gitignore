@@ -47,4 +47,15 @@ Account_Statement02.xlsx
 .antigravity/
 .code-crawler/
 AppData/
+# Private local credentials & secrets
+credentials.local.md
+*.local.md
 
+# Media & temp local frames
+*.mp4
+*.zip
+jarvis-frames/
+check-status-temp.ts
+scratch_test_prompt.js
+test-prompt.json
+inspect-calls.ts

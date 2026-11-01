@@ -66,6 +66,7 @@ model SessionParticipant {
 // ─── WhatsApp Comms / Enquiries ─────────────────────
 model Enquiry {
   id                String    @id @default(cuid())
+  leadCode          String?   @unique // Human-friendly sequential primary key: GAMA-0001, GABY-0002, GAOR-0003
   participantName   String
   email             String?
   phone             String
@@ -90,8 +91,46 @@ model Enquiry {
   source            String    @default("whatsapp") // whatsapp, manual, outlook, excel
   whatsappMessageId String?   // WhatsApp Cloud API or Outlook message ID
   monitoringAudit   LeadMonitoringAudit?
+  
+  // Call Intelligence & Scoring (Lead Call Automation)
+  callScore          Int?      // Latest 1-10 volume score
+  callFollowUpDate   DateTime? // Next callback reminder date
+  hasRedFlag         Boolean   @default(false)
+  redFlagReason      String?   // Reason extracted by AI
+  redFlagDismissed   Boolean   @default(false) // User clicked [✕ Dismiss]
+  callTimeline       LeadCall[] // Relation for multi-call history
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+// ─── LeadCall (Multi-Call History Timeline) ─────────────────────
+model LeadCall {
+  id                 String    @id @default(cuid())
+  enquiryId          String
+  enquiry            Enquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  callDate           DateTime  @default(now())
+  durationMinutes    Int       @default(0)
+  candidateTalkPct   Int       @default(0)   // e.g. 58 for 58%
+  score              Int                      // 1 to 10
+  summary            String    @db.Text
+  customerExperience String?   @db.Text       // Detailed Customer Experience & Career Advisory Summary
+  clientNeed         String?
+  budget             String?
+  timeline           String?
+  decisionMaker      String?
+  objections         String?
+  counterPitch       String?   @db.Text       // Sales Battlecard counter-pitch
+  verbatimQuotes     String?   @db.Text       // JSON string of exact candidate quotes
+  rubricBreakdown    String?   @db.Text       // JSON string of scoring components
+  whatsappDraft      String?   @db.Text       // Ready-to-send WhatsApp message
+  nextAction         String?
+  teamsMeetingId     String?
+  driveFileId        String?                  // OneDrive transcript file ID
+  createdAt          DateTime  @default(now())
+
+  @@index([enquiryId])
+  @@index([callDate])
 }
 
 // ─── Lead Status Monitoring & Alert Cron Models ──────

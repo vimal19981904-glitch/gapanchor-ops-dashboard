@@ -237,11 +237,11 @@ export default function NavigationDrawer({
               <div>
                 <h2 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
                   Ops Navigation
-                  <span className="text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.2 rounded-full bg-brand-500/30 text-brand-200 border border-brand-500/50">
+                  <span className="hidden sm:inline-block text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.2 rounded-full bg-brand-500/30 text-brand-200 border border-brand-500/50">
                     Drawer
                   </span>
                 </h2>
-                <p className="text-[10.5px] text-slate-300 font-medium">Quick jump & full views</p>
+                <p className="hidden sm:block text-[10.5px] text-slate-300 font-medium">Quick jump & full views</p>
               </div>
             </div>
             <button
@@ -337,8 +337,8 @@ export default function NavigationDrawer({
             )}
           </div>
 
-          {/* Drawer Footer - Solid Opaque Dark Slate */}
-          <div className="p-3.5 border-t border-white/15 bg-slate-950 flex items-center justify-between">
+          {/* Drawer Footer - Solid Opaque Dark Slate (Desktop Only) */}
+          <div className="hidden sm:flex p-3.5 border-t border-white/15 bg-slate-950 items-center justify-between">
             <div className="flex items-center gap-1.5 text-[10.5px] text-slate-300 font-semibold">
               <Layers size={13} className="text-brand-400" />
               <span>GapAnchor Ops Suite</span>

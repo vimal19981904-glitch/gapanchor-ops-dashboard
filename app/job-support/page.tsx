@@ -10,7 +10,6 @@ import {
   DollarSign, Edit3, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import UserNav from '@/components/UserNav';
 import { NavDrawerButton } from '@/components/NavigationContext';
 import JobSupportModal from '@/components/JobSupportModal';
 
@@ -176,10 +175,10 @@ export default function JobSupportOpsPage() {
           <div className="flex items-center gap-2 w-full xl:w-auto xl:justify-end">
             <button
               onClick={handleOpenAddModal}
-              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/20 transition-all cursor-pointer truncate"
+              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer truncate"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">+ New Support</span>
+              <span className="truncate">New Support</span>
             </button>
 
             <button
@@ -191,9 +190,8 @@ export default function JobSupportOpsPage() {
               <span className="truncate">{syncing ? 'Syncing…' : 'Sync'}</span>
             </button>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <UserNav />
-              <div className="hidden xl:block"><NavDrawerButton /></div>
+            <div className="hidden xl:block shrink-0">
+              <NavDrawerButton />
             </div>
           </div>
         </div>

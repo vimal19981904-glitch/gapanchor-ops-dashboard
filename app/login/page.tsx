@@ -83,7 +83,13 @@ export default function LoginPage() {
 
   const setDemoAccount = (empEmail: string) => {
     setEmail(empEmail);
-    setPassword('employee123#password');
+    if (empEmail === 'admin@gapanchor.com') {
+      setPassword('admin123#password');
+    } else if (empEmail === 'demo@gapanchor.com') {
+      setPassword('demo');
+    } else {
+      setPassword('employee123#password');
+    }
   };
 
   return (

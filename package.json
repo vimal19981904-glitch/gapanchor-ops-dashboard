@@ -18,10 +18,12 @@
     "@octokit/rest": "^20.1.1",
     "@prisma/client": "^5.22.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/three": "^0.187.0",
     "date-fns": "^4.4.0",
     "googleapis": "^178.1.1",
     "isomorphic-fetch": "^3.0.0",
     "lucide-react": "^0.453.0",
+    "msedge-tts": "^2.1.1",
     "next": "^14.2.15",
     "next-auth": "^4.24.10",
     "next-themes": "^0.4.3",
@@ -34,6 +36,7 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.13.0",
     "sonner": "^1.7.0",
+    "three": "^0.187.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
