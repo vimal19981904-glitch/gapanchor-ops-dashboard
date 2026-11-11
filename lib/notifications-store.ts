@@ -10,7 +10,7 @@ export interface OpsNotification {
 }
 
 const STORAGE_KEY = 'gapanchor_recent_notifications';
-const MAX_NOTIFICATIONS = 5;
+const MAX_NOTIFICATIONS = 25;
 
 const DEFAULT_NOTIFICATIONS: OpsNotification[] = [
   {

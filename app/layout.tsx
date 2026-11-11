@@ -2,6 +2,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/ui/ThemeProvider';
 import { NavigationProvider } from '@/components/NavigationContext';
 import { Toaster } from 'sonner';
+import { OpsToastController } from '@/components/notifications/OpsToastController';
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NavigationProvider>
             {children}
           </NavigationProvider>
+          <OpsToastController />
           <Toaster
             position="bottom-right"
             richColors

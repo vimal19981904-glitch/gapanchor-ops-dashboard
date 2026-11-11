@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   StageConfig,
   StageKey,
@@ -8,81 +8,126 @@ import {
   mapEnquiryToStage,
   getCardStatusBadge,
 } from './DailyPipelineBoard';
-import { MoreVertical, GripVertical, Check, Sparkles, Undo2, Star } from 'lucide-react';
+import {
+  MoreVertical,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  ArrowLeft,
+  Undo2,
+  Sparkles,
+  Check,
+  Star,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { jarvisAudioFx } from '../../lib/jarvis-audio-fx';
+import { addOpsNotification } from '../../lib/notifications-store';
 
-// ============================================================================
-// ⚙️ TWEAKABLE CONFIGURATION CONSTANTS
-// Adjust these parameters to fine-tune the mobile rolling pipeline experience
-// ============================================================================
-export const ROLLER_CONFIG = {
-  HOLD_DURATION_MS: 400,     // 1. Hold duration: ~400ms to lift card
-  MOVE_TOLERANCE_PX: 8,      // 2. Tolerance: ~8px movement before cancelling long-press
-  EDGE_ZONE_RATIO: 0.28,     // 3. Zone widths: Left (28%), Dead Zone (44%), Right (28%)
-  DEAD_ZONE_RATIO: 0.44,     // Dead zone: 44% of viewport width
-  V_MIN_PX_S: 120,           // Gentle minimum speed at zone boundary (120 px/s)
-  V_MAX_PX_S: 1400,          // 4. Max speed: 1400 px/s at extreme screen edge
-  SPEED_POWER: 1.6,          // Power curve (1.6) for exponential velocity ramp
-  TILE_WIDTH: 112,           // 5. Tile size: width 112px for thumb ergonomics (>=104px)
-  TILE_HEIGHT: 138,          // Tile size: height 138px (>=132px)
-  TILE_SPACING: 128,         // Center-to-center distance between consecutive stage tiles
-  MAX_TILT_DEG: 28,          // Maximum 3D coverflow tilt angle (+/- 28 deg)
-  DECELERATION_TIME_MS: 150, // Dead zone momentum decay time (~150ms)
-};
+// ─── Stage Ordering & Navigation Helpers ─────────────────────────────────────
+export const STAGE_ORDER: StageKey[] = [
+  'no_plan',
+  'uncontacted',
+  'aware',
+  'evaluating',
+  'negotiating',
+  'committed',
+  'lost',
+];
 
+export function getAdjacentStages(currentStage: StageKey, stages: StageConfig[]) {
+  const currentIndex = STAGE_ORDER.indexOf(currentStage);
+
+  // Previous stage (left)
+  let prevKey: StageKey;
+  if (currentIndex <= 0) {
+    prevKey = 'lost';
+  } else {
+    prevKey = STAGE_ORDER[currentIndex - 1];
+  }
+
+  // Next stage (right)
+  let nextKey: StageKey;
+  if (currentIndex >= STAGE_ORDER.length - 1) {
+    nextKey = 'evaluating'; // Reactivate / loop
+  } else if (currentIndex === STAGE_ORDER.length - 2) {
+    nextKey = 'lost';
+  } else {
+    nextKey = STAGE_ORDER[currentIndex + 1];
+  }
+
+  const prevStage = stages.find((s) => s.key === prevKey) || stages[0];
+  const nextStage = stages.find((s) => s.key === nextKey) || stages[stages.length - 1];
+
+  return { prevStage, nextStage };
+}
+
+// ─── Stage Accent Themes ─────────────────────────────────────────────────────
 export const STAGE_THEME: Record<
   StageKey,
-  { border: string; ring: string; shadow: string; pulseGlow: string; text: string }
+  {
+    border: string;
+    bg: string;
+    glow: string;
+    text: string;
+    pillBg: string;
+    pillText: string;
+  }
 > = {
   no_plan: {
-    border: 'border-slate-400',
-    ring: 'ring-slate-400',
-    shadow: 'shadow-[0_0_35px_rgba(148,163,184,0.45)]',
-    pulseGlow: 'animate-pulse bg-slate-500/25',
+    border: 'border-slate-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(148,163,184,0.4)',
     text: 'text-slate-300',
+    pillBg: 'bg-slate-800',
+    pillText: 'text-slate-300',
   },
   uncontacted: {
-    border: 'border-sky-400',
-    ring: 'ring-sky-400',
-    shadow: 'shadow-[0_0_35px_rgba(56,189,248,0.5)]',
-    pulseGlow: 'animate-pulse bg-sky-500/25',
+    border: 'border-sky-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(56,189,248,0.5)',
     text: 'text-sky-300',
+    pillBg: 'bg-sky-500/20',
+    pillText: 'text-sky-300',
   },
   aware: {
-    border: 'border-blue-400',
-    ring: 'ring-blue-400',
-    shadow: 'shadow-[0_0_35px_rgba(96,165,250,0.5)]',
-    pulseGlow: 'animate-pulse bg-blue-500/25',
+    border: 'border-blue-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(96,165,250,0.5)',
     text: 'text-blue-300',
+    pillBg: 'bg-blue-500/20',
+    pillText: 'text-blue-300',
   },
   evaluating: {
-    border: 'border-purple-400',
-    ring: 'ring-purple-400',
-    shadow: 'shadow-[0_0_35px_rgba(192,132,252,0.5)]',
-    pulseGlow: 'animate-pulse bg-purple-500/25',
+    border: 'border-purple-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(192,132,252,0.5)',
     text: 'text-purple-300',
+    pillBg: 'bg-purple-500/20',
+    pillText: 'text-purple-300',
   },
   negotiating: {
-    border: 'border-amber-400',
-    ring: 'ring-amber-400',
-    shadow: 'shadow-[0_0_35px_rgba(251,191,36,0.5)]',
-    pulseGlow: 'animate-pulse bg-amber-500/25',
+    border: 'border-amber-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(251,191,36,0.5)',
     text: 'text-amber-300',
+    pillBg: 'bg-amber-500/20',
+    pillText: 'text-amber-300',
   },
   committed: {
-    border: 'border-emerald-400',
-    ring: 'ring-emerald-400',
-    shadow: 'shadow-[0_0_35px_rgba(52,211,153,0.5)]',
-    pulseGlow: 'animate-pulse bg-emerald-500/25',
+    border: 'border-emerald-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(52,211,153,0.5)',
     text: 'text-emerald-300',
+    pillBg: 'bg-emerald-500/20',
+    pillText: 'text-emerald-300',
   },
   lost: {
-    border: 'border-rose-400',
-    ring: 'ring-rose-400',
-    shadow: 'shadow-[0_0_35px_rgba(251,113,133,0.5)]',
-    pulseGlow: 'animate-pulse bg-rose-500/25',
+    border: 'border-rose-500/50',
+    bg: 'bg-slate-900/90',
+    glow: 'rgba(251,113,133,0.5)',
     text: 'text-rose-300',
+    pillBg: 'bg-rose-500/20',
+    pillText: 'text-rose-300',
   },
 };
 
@@ -99,18 +144,7 @@ interface MobilePipelineRollerProps {
   pushedLeadIds: string[];
 }
 
-interface DragState {
-  lead: PipelineEnquiry;
-  sourceStage: StageKey;
-  pointerX: number;
-  pointerY: number;
-  startX: number;
-  startY: number;
-  ghostX: number;
-  ghostY: number;
-  cardRect: DOMRect;
-  startTime: number;
-}
+const SWIPE_THRESHOLD_PX = 72; // Horizontal pixels needed to trigger stage roll
 
 export function MobilePipelineRoller({
   leads,
@@ -124,40 +158,17 @@ export function MobilePipelineRoller({
   onToggleMenu,
   pushedLeadIds,
 }: MobilePipelineRollerProps) {
-  // ── States ────────────────────────────────────────────────────────────────
-  const [holdingLeadId, setHoldingLeadId] = useState<string | null>(null);
-  const [dragState, setDragState] = useState<DragState | null>(null);
-  const [targetStageKey, setTargetStageKey] = useState<StageKey | null>(null);
-  const [isDropping, setIsDropping] = useState(false);
-  const [droppingIntoStage, setDroppingIntoStage] = useState<StageKey | null>(null);
-  const [ariaAnnouncement, setAriaAnnouncement] = useState<string>('');
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [collapsingLeadId, setCollapsingLeadId] = useState<string | null>(null);
+  // ── Swipe Interaction State ───────────────────────────────────────────────
+  const [activeSwipeLeadId, setActiveSwipeLeadId] = useState<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const [collapsingLeadIds, setCollapsingLeadIds] = useState<Record<string, 'left' | 'right'>>({});
 
-  // ── Refs for 60 FPS Animation Without React Re-renders ────────────────────
-  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const holdStartPosRef = useRef<{ x: number; y: number } | null>(null);
-  const currentPointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const rollerOffsetRef = useRef<number>(0);
-  const velocityRef = useRef<number>(0);
-  const rafIdRef = useRef<number | null>(null);
-  const lastRafTimeRef = useRef<number>(0);
-  const rollerContainerRef = useRef<HTMLDivElement | null>(null);
-  const tilesRef = useRef<(HTMLDivElement | null)[]>([]);
-  const targetStageRef = useRef<StageKey | null>(null);
-  const isDraggingRef = useRef(false);
+  // Touch tracking refs
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isHorizontalSwipe = useRef<boolean | null>(null);
+  const hasThresholdHapticFired = useRef<boolean>(false);
 
-  // Check prefers-reduced-motion
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mq.addEventListener?.('change', handler);
-    return () => mq.removeEventListener?.('change', handler);
-  }, []);
-
-  // Haptic feedback helper (navigator.vibrate with silent fallback)
+  // Haptic feedback helper
   const triggerHaptic = useCallback((ms = 10) => {
     try {
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -166,520 +177,358 @@ export function MobilePipelineRoller({
     } catch {}
   }, []);
 
-  // Lock / Unlock Page Scroll during drag
-  const lockPageScroll = useCallback((lock: boolean) => {
-    if (typeof document === 'undefined') return;
-    if (lock) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-      document.documentElement.style.overscrollBehavior = 'contain';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-      document.documentElement.style.overscrollBehavior = '';
-    }
-  }, []);
+  // ── Execute Roll to Stage (shared between swipe & roller buttons) ─────────
+  const handleRoll = async (
+    lead: PipelineEnquiry,
+    targetStageKey: StageKey,
+    direction: 'left' | 'right'
+  ) => {
+    const sourceStage = mapEnquiryToStage(lead);
+    if (sourceStage === targetStageKey) return;
 
-  // Index of a stage
-  const getStageIndex = useCallback(
-    (key: StageKey) => stages.findIndex((s) => s.key === key),
-    [stages]
-  );
+    // Trigger haptic + audio cue
+    triggerHaptic(20);
+    try {
+      jarvisAudioFx.playSuccessChime();
+    } catch {}
 
-  // ── 1. Long Press Start & Movement Detection ──────────────────────────────
-  const handlePointerDown = (e: React.PointerEvent, lead: PipelineEnquiry) => {
-    // Only primary touch / left mouse button
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (dragState) return;
+    // Mark lead as collapsing in given direction
+    setCollapsingLeadIds((prev) => ({ ...prev, [lead.id]: direction }));
 
-    const targetEl = e.currentTarget as HTMLElement;
-    const rect = targetEl.getBoundingClientRect();
-    const clientX = e.clientX;
-    const clientY = e.clientY;
+    const targetStageConfig = stages.find((s) => s.key === targetStageKey);
 
-    holdStartPosRef.current = { x: clientX, y: clientY };
-    currentPointerRef.current = { x: clientX, y: clientY };
-    setHoldingLeadId(lead.id);
+    try {
+      await onMoveLead(lead.id, targetStageKey);
 
-    // Cancel any previous hold timer
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-
-    holdTimerRef.current = setTimeout(() => {
-      // 1) START: Haptic tick + card lifts
-      triggerHaptic(12);
-
+      // Log to persistent Ops notifications store
       try {
-        jarvisAudioFx.playWakeTone();
+        addOpsNotification({
+          title: `Pipeline Rolled: ${lead.participantName}`,
+          description: `Rolled ${lead.participantName} [${lead.leadCode || `#${lead.id.slice(-6)}`}] to ${targetStageConfig?.label || targetStageKey}`,
+          category: 'pipeline',
+        });
       } catch {}
 
-      const sourceStage = mapEnquiryToStage(lead);
-      const stageIdx = getStageIndex(sourceStage);
-      const screenW = window.innerWidth;
-      const screenCenterX = screenW / 2;
-
-      // Center the roller on the lead's current stage initially
-      const initialOffset = screenCenterX - stageIdx * ROLLER_CONFIG.TILE_SPACING;
-      rollerOffsetRef.current = initialOffset;
-      velocityRef.current = 0;
-      targetStageRef.current = sourceStage;
-      setTargetStageKey(sourceStage);
-
-      isDraggingRef.current = true;
-      lockPageScroll(true);
-
-      setDragState({
-        lead,
-        sourceStage,
-        pointerX: clientX,
-        pointerY: clientY,
-        startX: clientX,
-        startY: clientY,
-        ghostX: clientX,
-        ghostY: clientY - 56, // Position slightly above fingertip so finger doesn't hide it
-        cardRect: rect,
-        startTime: Date.now(),
-      });
-
-      setHoldingLeadId(null);
-      setAriaAnnouncement(
-        `Picked up ${lead.participantName}. Currently in ${
-          stages.find((s) => s.key === sourceStage)?.label || sourceStage
-        }.`
+      // Toast with 5s Undo button
+      toast(
+        <div className="flex items-center justify-between w-full gap-2">
+          <div className="min-w-0 pr-1">
+            <p className="text-xs font-bold text-white truncate">
+              Moved <strong>{lead.participantName}</strong>
+            </p>
+            <p className="text-[11px] text-slate-300">
+              Rolled to{' '}
+              <span className="font-bold text-cyan-300">
+                {targetStageConfig?.label || targetStageKey}
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              toast.dismiss();
+              await onMoveLead(lead.id, sourceStage);
+              toast.info(`Undid move for ${lead.participantName}`);
+            }}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0 cursor-pointer"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+            <span>Undo</span>
+          </button>
+        </div>,
+        { duration: 5000 }
       );
-    }, ROLLER_CONFIG.HOLD_DURATION_MS);
+    } catch (err) {
+      toast.error(`Failed to move ${lead.participantName}`);
+    } finally {
+      setTimeout(() => {
+        setCollapsingLeadIds((prev) => {
+          const next = { ...prev };
+          delete next[lead.id];
+          return next;
+        });
+      }, 280);
+    }
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    currentPointerRef.current = { x: e.clientX, y: e.clientY };
+  // ── Touch Event Handlers for Fluid Horizontal Swipe ───────────────────────
+  const handleTouchStart = (e: React.TouchEvent, leadId: string) => {
+    if (e.touches.length !== 1) return;
+    touchStartPos.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    isHorizontalSwipe.current = null;
+    hasThresholdHapticFired.current = false;
+    setActiveSwipeLeadId(leadId);
+    setSwipeOffset(0);
+  };
 
-    // If still in pre-drag holding period, enforce movement tolerance
-    if (!dragState && holdStartPosRef.current) {
-      const dX = e.clientX - holdStartPosRef.current.x;
-      const dY = e.clientY - holdStartPosRef.current.y;
-      const dist = Math.sqrt(dX * dX + dY * dY);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current || !activeSwipeLeadId) return;
 
-      if (dist > ROLLER_CONFIG.MOVE_TOLERANCE_PX) {
-        // Fast vertical swipe or scroll: cancel long-press hold to allow normal list scrolling
-        if (holdTimerRef.current) {
-          clearTimeout(holdTimerRef.current);
-          holdTimerRef.current = null;
-        }
-        setHoldingLeadId(null);
-        holdStartPosRef.current = null;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const dx = currentX - touchStartPos.current.x;
+    const dy = currentY - touchStartPos.current.y;
+
+    // Determine swipe axis if not yet locked
+    if (isHorizontalSwipe.current === null) {
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      if (absDy > 8 && absDy > absDx) {
+        // Vertical scroll: do not hijack
+        isHorizontalSwipe.current = false;
+        return;
       }
+      if (absDx > 8 && absDx > absDy) {
+        // Horizontal roll swipe: lock axis
+        isHorizontalSwipe.current = true;
+      }
+    }
+
+    if (isHorizontalSwipe.current) {
+      // Elastic resistance curve so card doesn't fly off prematurely
+      const sign = Math.sign(dx);
+      const abs = Math.abs(dx);
+      const dampenedDx = sign * Math.min(abs, 160);
+
+      setSwipeOffset(dampenedDx);
+
+      // Trigger tactile haptic tick once when crossing the threshold
+      const reachedThreshold = Math.abs(dampenedDx) >= SWIPE_THRESHOLD_PX;
+      if (reachedThreshold && !hasThresholdHapticFired.current) {
+        triggerHaptic(12);
+        hasThresholdHapticFired.current = true;
+      } else if (!reachedThreshold && hasThresholdHapticFired.current) {
+        hasThresholdHapticFired.current = false;
+      }
+    }
+  };
+
+  const handleTouchEnd = (lead: PipelineEnquiry) => {
+    if (!isHorizontalSwipe.current || !activeSwipeLeadId) {
+      touchStartPos.current = null;
+      setActiveSwipeLeadId(null);
+      setSwipeOffset(0);
       return;
     }
 
-    // Drag is active: update ghost position
-    if (dragState) {
-      setDragState((prev) =>
-        prev
-          ? {
-              ...prev,
-              pointerX: e.clientX,
-              pointerY: e.clientY,
-              ghostX: e.clientX,
-              ghostY: e.clientY - 56,
-            }
-          : null
-      );
+    const { prevStage, nextStage } = getAdjacentStages(activeStage, stages);
+
+    if (swipeOffset >= SWIPE_THRESHOLD_PX) {
+      // Swiped Right -> Roll to Next Stage
+      handleRoll(lead, nextStage.key, 'right');
+    } else if (swipeOffset <= -SWIPE_THRESHOLD_PX) {
+      // Swiped Left -> Roll to Previous Stage
+      handleRoll(lead, prevStage.key, 'left');
     }
+
+    // Reset swipe state
+    touchStartPos.current = null;
+    setActiveSwipeLeadId(null);
+    setSwipeOffset(0);
+    isHorizontalSwipe.current = null;
+    hasThresholdHapticFired.current = false;
   };
 
-  const handlePointerUp = () => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-    holdStartPosRef.current = null;
-    setHoldingLeadId(null);
-
-    if (dragState && isDraggingRef.current) {
-      finalizeDrop();
-    }
-  };
-
-  // ── 2. Auto-Roll Animation Frame Loop (60 FPS, Zero List Re-renders) ───────
-  useEffect(() => {
-    if (!dragState) return;
-
-    lastRafTimeRef.current = performance.now();
-
-    const loop = (time: number) => {
-      const dt = Math.min((time - lastRafTimeRef.current) / 1000, 0.05); // cap at 50ms
-      lastRafTimeRef.current = time;
-
-      const screenW = window.innerWidth;
-      const screenH = window.innerHeight;
-      const screenCenterX = screenW / 2;
-      const screenCenterY = screenH / 2;
-      const pointerX = currentPointerRef.current.x;
-      const pointerY = currentPointerRef.current.y;
-
-      const leftThreshold = screenW * ROLLER_CONFIG.EDGE_ZONE_RATIO;
-      const rightThreshold = screenW * (1 - ROLLER_CONFIG.EDGE_ZONE_RATIO);
-      const zoneWidth = screenW * ROLLER_CONFIG.EDGE_ZONE_RATIO;
-
-      let targetVelocity = 0;
-
-      if (pointerX < leftThreshold) {
-        // In LEFT zone: roll toward EARLIER stages (positive offset move toward No plan yet)
-        const depth = Math.max(0, Math.min(1, (leftThreshold - pointerX) / zoneWidth));
-        const speed =
-          ROLLER_CONFIG.V_MIN_PX_S +
-          (ROLLER_CONFIG.V_MAX_PX_S - ROLLER_CONFIG.V_MIN_PX_S) *
-            Math.pow(depth, ROLLER_CONFIG.SPEED_POWER);
-        targetVelocity = speed;
-      } else if (pointerX > rightThreshold) {
-        // In RIGHT zone: roll toward LATER stages (negative offset move toward Lost)
-        const depth = Math.max(0, Math.min(1, (pointerX - rightThreshold) / zoneWidth));
-        const speed =
-          ROLLER_CONFIG.V_MIN_PX_S +
-          (ROLLER_CONFIG.V_MAX_PX_S - ROLLER_CONFIG.V_MIN_PX_S) *
-            Math.pow(depth, ROLLER_CONFIG.SPEED_POWER);
-        targetVelocity = -speed;
-      } else {
-        // In DEAD zone (center 44%): roller decelerates to 0 smoothly in ~150ms
-        targetVelocity = 0;
-      }
-
-      // Smooth velocity interpolation
-      const lerpFactor = targetVelocity === 0 ? 0.16 : 0.28;
-      velocityRef.current += (targetVelocity - velocityRef.current) * lerpFactor;
-
-      // Update roller offset
-      let nextOffset = rollerOffsetRef.current + velocityRef.current * dt;
-
-      // Soft rubber-band boundaries (no wrap-around)
-      const minOffset =
-        screenCenterX - (stages.length - 1) * ROLLER_CONFIG.TILE_SPACING - 80;
-      const maxOffset = screenCenterX + 80;
-
-      if (nextOffset < minOffset) {
-        nextOffset = minOffset + (nextOffset - minOffset) * 0.3;
-        velocityRef.current *= 0.5;
-      } else if (nextOffset > maxOffset) {
-        nextOffset = maxOffset + (nextOffset - maxOffset) * 0.3;
-        velocityRef.current *= 0.5;
-      }
-
-      rollerOffsetRef.current = nextOffset;
-
-      // Hit-test and 3D Coverflow direct DOM transforms
-      let hitStageKey: StageKey | null = null;
-      let closestStageKey: StageKey = stages[0].key;
-      let minDistance = Infinity;
-
-      const tileHalfW = ROLLER_CONFIG.TILE_WIDTH / 2;
-      const tileHalfH = ROLLER_CONFIG.TILE_HEIGHT / 2;
-      const rollerBandTop = screenCenterY - tileHalfH - 35;
-      const rollerBandBottom = screenCenterY + tileHalfH + 35;
-
-      stages.forEach((stage, idx) => {
-        const tileEl = tilesRef.current[idx];
-        if (!tileEl) return;
-
-        const tileCenterX = nextOffset + idx * ROLLER_CONFIG.TILE_SPACING;
-        const distFromCenter = (tileCenterX - screenCenterX) / ROLLER_CONFIG.TILE_SPACING;
-        const absDist = Math.abs(distFromCenter);
-
-        // Keep track of tile closest to screen center
-        if (absDist < minDistance) {
-          minDistance = absDist;
-          closestStageKey = stage.key;
-        }
-
-        // Direct hit-test: pointer inside tile bounds (with generous vertical thumb margin)
-        const tileLeft = tileCenterX - tileHalfW;
-        const tileRight = tileCenterX + tileHalfW;
-
-        if (
-          pointerX >= tileLeft &&
-          pointerX <= tileRight &&
-          pointerY >= rollerBandTop &&
-          pointerY <= rollerBandBottom
-        ) {
-          hitStageKey = stage.key;
-        }
-
-        // 3D Coverflow transform math
-        const scale = Math.max(0.80, 1 - Math.min(0.20, absDist * 0.18));
-        const opacity = Math.max(0.52, 1 - Math.min(0.48, absDist * 0.35));
-        const rotateY = prefersReducedMotion
-          ? 0
-          : Math.max(
-              -ROLLER_CONFIG.MAX_TILT_DEG,
-              Math.min(ROLLER_CONFIG.MAX_TILT_DEG, -distFromCenter * 24)
-            );
-        const translateZ = Math.max(-120, -absDist * 60);
-
-        tileEl.style.transform = `translateX(${tileCenterX - ROLLER_CONFIG.TILE_WIDTH / 2}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
-        tileEl.style.opacity = `${opacity}`;
-      });
-
-      // When pointer is in center dead zone, automatically lock onto the stage centered in the pipe cradle
-      const isInDeadZone = pointerX >= leftThreshold && pointerX <= rightThreshold;
-      const activeCandidate = hitStageKey || (isInDeadZone ? closestStageKey : (pointerY >= rollerBandTop - 80 && pointerY <= rollerBandBottom + 80 ? closestStageKey : null));
-
-      if (activeCandidate !== targetStageRef.current) {
-        targetStageRef.current = activeCandidate;
-        setTargetStageKey(activeCandidate);
-        if (activeCandidate) {
-          triggerHaptic(10);
-          setAriaAnnouncement(
-            `Over ${stages.find((s) => s.key === activeCandidate)?.label || activeCandidate}`
-          );
-        }
-      }
-
-      rafIdRef.current = requestAnimationFrame(loop);
-    };
-
-    rafIdRef.current = requestAnimationFrame(loop);
-
-    return () => {
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-    };
-  }, [dragState, stages, prefersReducedMotion, triggerHaptic]);
-
-  // ── 3. Finalize Drop or Cancel ─────────────────────────────────────────────
-  const finalizeDrop = async () => {
-    if (!dragState) return;
-
-    const lead = dragState.lead;
-    const sourceStage = dragState.sourceStage;
-    const targetStage = targetStageRef.current;
-
-    isDraggingRef.current = false;
-    lockPageScroll(false);
-
-    // DROP: Release over a tile that is NOT the current stage
-    if (targetStage && targetStage !== sourceStage) {
-      setIsDropping(true);
-      setDroppingIntoStage(targetStage);
-      triggerHaptic(20);
-
-      try {
-        jarvisAudioFx.playSuccessChime();
-      } catch {}
-
-      // Moved card collapses out of list with height animation
-      setCollapsingLeadId(lead.id);
-
-      const targetStageConfig = stages.find((s) => s.key === targetStage);
-
-      // Perform move via existing handler
-      try {
-        await onMoveLead(lead.id, targetStage);
-
-        // Show toast "Moved <Name> -> <Stage> - Undo" for 5 s
-        toast(
-          <div className="flex items-center justify-between w-full gap-2">
-            <div className="min-w-0 pr-1">
-              <p className="text-xs font-bold text-white truncate">
-                Moved <strong>{lead.participantName}</strong>
-              </p>
-              <p className="text-[11px] text-slate-300">
-                To <span className="font-bold text-cyan-300">{targetStageConfig?.label || targetStage}</span>
-              </p>
-            </div>
-            <button
-              onClick={async () => {
-                toast.dismiss();
-                await onMoveLead(lead.id, sourceStage);
-                toast.info(`Undid move for ${lead.participantName}`);
-              }}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0 cursor-pointer"
-            >
-              <Undo2 className="w-3.5 h-3.5" />
-              <span>Undo</span>
-            </button>
-          </div>,
-          { duration: 5000 }
-        );
-      } catch (err) {
-        toast.error(`Failed to move ${lead.participantName}`);
-      }
-
-      setTimeout(() => {
-        setDragState(null);
-        setIsDropping(false);
-        setDroppingIntoStage(null);
-        setCollapsingLeadId(null);
-      }, 260);
-    } else {
-      // CANCEL: Release on current stage tile, outside tiles, or cancelled
-      triggerHaptic(8);
-      setDragState(null);
-    }
-  };
-
-  // Window-level safety cleanup and pointer tracking
-  useEffect(() => {
-    const handleGlobalPointerMove = (e: PointerEvent) => {
-      currentPointerRef.current = { x: e.clientX, y: e.clientY };
-
-      // If still in pre-drag holding period, enforce movement tolerance
-      if (!isDraggingRef.current && holdStartPosRef.current) {
-        const dX = e.clientX - holdStartPosRef.current.x;
-        const dY = e.clientY - holdStartPosRef.current.y;
-        const dist = Math.sqrt(dX * dX + dY * dY);
-
-        if (dist > ROLLER_CONFIG.MOVE_TOLERANCE_PX) {
-          if (holdTimerRef.current) {
-            clearTimeout(holdTimerRef.current);
-            holdTimerRef.current = null;
-          }
-          setHoldingLeadId(null);
-          holdStartPosRef.current = null;
-        }
-        return;
-      }
-
-      // Drag is active: update ghost position
-      if (isDraggingRef.current) {
-        setDragState((prev) =>
-          prev
-            ? {
-                ...prev,
-                pointerX: e.clientX,
-                pointerY: e.clientY,
-                ghostX: e.clientX,
-                ghostY: e.clientY - 56,
-              }
-            : null
-        );
-      }
-    };
-
-    const handleGlobalPointerUp = () => {
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
-      holdStartPosRef.current = null;
-      setHoldingLeadId(null);
-
-      if (dragState && isDraggingRef.current) {
-        finalizeDrop();
-      }
-    };
-
-    const handleCancel = () => {
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
-      holdStartPosRef.current = null;
-      setHoldingLeadId(null);
-
-      if (dragState) {
-        isDraggingRef.current = false;
-        lockPageScroll(false);
-        setDragState(null);
-      }
-    };
-
-    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
-    window.addEventListener('pointerup', handleGlobalPointerUp);
-    window.addEventListener('pointercancel', handleCancel);
-    window.addEventListener('orientationchange', handleCancel);
-
-    return () => {
-      window.removeEventListener('pointermove', handleGlobalPointerMove);
-      window.removeEventListener('pointerup', handleGlobalPointerUp);
-      window.removeEventListener('pointercancel', handleCancel);
-      window.removeEventListener('orientationchange', handleCancel);
-      lockPageScroll(false);
-    };
-  }, [dragState, lockPageScroll]);
+  const { prevStage, nextStage } = getAdjacentStages(activeStage, stages);
+  const prevTheme = STAGE_THEME[prevStage.key];
+  const nextTheme = STAGE_THEME[nextStage.key];
 
   return (
-    <>
-      {/* ── Screen Reader Live Announcements ── */}
-      <div className="sr-only" aria-live="assertive">
-        {ariaAnnouncement}
+    <div className="space-y-3 pt-1 select-none">
+      {/* ── Subtitle Cue: Simple roller guidance ── */}
+      <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
+        <span className="flex items-center gap-1">
+          <ChevronLeft className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Swipe left to {prevStage.label}</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <span>Swipe right to {nextStage.label}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
+        </span>
       </div>
 
-      {/* ── Active Stage Leads List (Normal View with Long-Press Drag Mode) ── */}
-      <div
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        className="space-y-3 pt-1 min-h-[300px]"
-      >
-        {leads.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/30">
-            <p className="text-sm font-semibold text-slate-300">
-              No prospects in {stages.find((s) => s.key === activeStage)?.label}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Long-press a lead from another stage to roll here, or tap + Add
-            </p>
-          </div>
-        ) : (
-          leads.map((lead) => {
-            const isBeingDragged = dragState?.lead.id === lead.id;
-            const isHolding = holdingLeadId === lead.id;
-            const isCollapsing = collapsingLeadId === lead.id;
-            const isMenuOpen = activeMenuLeadId === lead.id;
-            const badge = getCardStatusBadge(lead, activeStage);
+      {/* ── Leads List ── */}
+      {leads.length === 0 ? (
+        <div className="p-8 text-center rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/30">
+          <p className="text-sm font-semibold text-slate-300">
+            No prospects in {stages.find((s) => s.key === activeStage)?.label}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Swipe a lead from another stage to roll here, or tap + Add
+          </p>
+        </div>
+      ) : (
+        leads.map((lead) => {
+          const isSwipingThis = activeSwipeLeadId === lead.id;
+          const currentOffset = isSwipingThis ? swipeOffset : 0;
+          const isCollapsing = collapsingLeadIds[lead.id];
+          const isMenuOpen = activeMenuLeadId === lead.id;
+          const badge = getCardStatusBadge(lead, activeStage);
 
-            // Status pill text matching existing design
-            let badgeText = 'Curriculum Review';
-            if (activeStage === 'evaluating') {
-              badgeText = lead.callScore ? 'In Dialogue' : 'Curriculum Review';
-            } else if (activeStage === 'negotiating') {
-              badgeText = 'Fee Review';
-            } else if (activeStage === 'committed') {
-              badgeText = 'Converted & Enrolled';
-            } else if (activeStage === 'aware') {
-              badgeText = 'In Dialogue';
-            } else if (activeStage === 'uncontacted') {
-              badgeText = 'Modules Sent';
-            } else if (activeStage === 'no_plan') {
-              badgeText = 'No Plan Set';
-            } else if (activeStage === 'lost') {
-              badgeText = 'Archived / Lost';
-            }
+          const isThresholdReached = Math.abs(currentOffset) >= SWIPE_THRESHOLD_PX;
+          const isMovingRight = currentOffset > 0;
+          const isMovingLeft = currentOffset < 0;
 
-            return (
+          // Compute transform for card exit animation
+          let cardTransform = `translateX(${currentOffset}px)`;
+          if (isCollapsing === 'right') {
+            cardTransform = 'translateX(110%)';
+          } else if (isCollapsing === 'left') {
+            cardTransform = 'translateX(-110%)';
+          }
+
+          // Status pill text
+          let badgeText = 'Curriculum Review';
+          if (activeStage === 'evaluating') {
+            badgeText = lead.callScore ? 'In Dialogue' : 'Curriculum Review';
+          } else if (activeStage === 'negotiating') {
+            badgeText = 'Fee Review';
+          } else if (activeStage === 'committed') {
+            badgeText = 'Converted & Enrolled';
+          } else if (activeStage === 'aware') {
+            badgeText = 'In Dialogue';
+          } else if (activeStage === 'uncontacted') {
+            badgeText = 'Modules Sent';
+          } else if (activeStage === 'no_plan') {
+            badgeText = 'No Plan Set';
+          } else if (activeStage === 'lost') {
+            badgeText = 'Archived / Lost';
+          }
+
+          return (
+            <div
+              key={lead.id}
+              className="relative overflow-hidden rounded-2xl touch-pan-y"
+              style={{
+                maxHeight: isCollapsing ? '0px' : '260px',
+                opacity: isCollapsing ? 0 : 1,
+                marginBottom: isCollapsing ? '0px' : '12px',
+                transition:
+                  'max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease, margin-bottom 0.28s ease',
+              }}
+            >
+              {/* ── BACKGROUND ROLLER ACTION BARS ── */}
+
+              {/* 1. LEFT BACKGROUND (Revealed when moving RIGHT) -> Roll to Next Stage */}
               <div
-                key={lead.id}
-                onPointerDown={(e) => handlePointerDown(e, lead)}
-                onContextMenu={(e) => e.preventDefault()}
+                className={`absolute inset-0 flex items-center justify-start pl-4 rounded-2xl border transition-colors ${
+                  isMovingRight
+                    ? isThresholdReached
+                      ? `${nextTheme.border} ${nextTheme.bg} shadow-[inset_0_0_20px_${nextTheme.glow}]`
+                      : 'border-slate-800 bg-slate-900/90'
+                    : 'opacity-0 pointer-events-none'
+                }`}
+                style={{
+                  opacity: isMovingRight ? Math.min(1, Math.abs(currentOffset) / 35) : 0,
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  {/* Glowing Right Roller Icon */}
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                      isThresholdReached
+                        ? 'bg-cyan-400 text-slate-950 scale-110 shadow-[0_0_15px_rgba(34,211,238,0.8)]'
+                        : 'bg-slate-800 text-cyan-300 scale-100 border border-slate-700'
+                    }`}
+                  >
+                    <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+
+                  <div className="text-left">
+                    <p
+                      className={`text-xs font-black uppercase tracking-wider transition-colors ${
+                        isThresholdReached ? 'text-white' : 'text-slate-300'
+                      }`}
+                    >
+                      {isThresholdReached ? 'Release to Roll →' : `Roll to ${nextStage.label}`}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Next pipeline stage
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. RIGHT BACKGROUND (Revealed when moving LEFT) -> Roll to Prev Stage */}
+              <div
+                className={`absolute inset-0 flex items-center justify-end pr-4 rounded-2xl border transition-colors ${
+                  isMovingLeft
+                    ? isThresholdReached
+                      ? `${prevTheme.border} ${prevTheme.bg} shadow-[inset_0_0_20px_${prevTheme.glow}]`
+                      : 'border-slate-800 bg-slate-900/90'
+                    : 'opacity-0 pointer-events-none'
+                }`}
+                style={{
+                  opacity: isMovingLeft ? Math.min(1, Math.abs(currentOffset) / 35) : 0,
+                }}
+              >
+                <div className="flex items-center gap-2.5 flex-row-reverse text-right">
+                  {/* Glowing Left Roller Icon */}
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                      isThresholdReached
+                        ? 'bg-amber-400 text-slate-950 scale-110 shadow-[0_0_15px_rgba(251,191,36,0.8)]'
+                        : 'bg-slate-800 text-amber-300 scale-100 border border-slate-700'
+                    }`}
+                  >
+                    <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+
+                  <div className="text-right">
+                    <p
+                      className={`text-xs font-black uppercase tracking-wider transition-colors ${
+                        isThresholdReached ? 'text-white' : 'text-slate-300'
+                      }`}
+                    >
+                      {isThresholdReached ? '← Release to Roll' : `Roll to ${prevStage.label}`}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Previous pipeline stage
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── FOREGROUND CARD (SWIPABLE & TAPPABLE) ── */}
+              <div
+                onTouchStart={(e) => handleTouchStart(e, lead.id)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={() => handleTouchEnd(lead)}
                 onClick={() => {
-                  // Normal tap opens prospect details drawer (unchanged)
-                  if (!isDraggingRef.current && !dragState && onSelectLead) {
+                  // If swiped, don't open drawer; if stationary tap, open details drawer
+                  if (Math.abs(currentOffset) < 6 && onSelectLead) {
                     onSelectLead(lead);
                   }
                 }}
                 style={{
-                  WebkitTouchCallout: 'none',
-                  userSelect: 'none',
-                  maxHeight: isCollapsing ? '0px' : '220px',
-                  opacity: isCollapsing ? 0 : isBeingDragged ? 0.25 : 1,
-                  transform: isHolding ? 'scale(0.98)' : 'scale(1)',
-                  transition: 'max-height 0.3s ease, opacity 0.25s ease, transform 0.2s ease',
-                  overflow: isCollapsing ? 'hidden' : 'visible',
+                  transform: cardTransform,
+                  transition: isSwipingThis
+                    ? 'none'
+                    : 'transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)',
+                  willChange: 'transform',
                 }}
-                className={`group relative p-4 rounded-2xl border transition-all select-none cursor-pointer ${
-                  isBeingDragged
-                    ? 'border-dashed border-cyan-500/60 bg-slate-900/40 shadow-inner'
-                    : isHolding
-                    ? 'bg-slate-900 ring-2 ring-cyan-400/80 border-cyan-400 shadow-xl'
-                    : 'bg-[#0f172a]/95 border-slate-800/80 shadow-md active:scale-[0.99] hover:border-slate-700/80'
+                className={`relative p-4 rounded-2xl border transition-shadow cursor-pointer select-none bg-[#0f172a] shadow-md active:scale-[0.99] ${
+                  isSwipingThis && isThresholdReached
+                    ? isMovingRight
+                      ? `${nextTheme.border} ring-2 ring-cyan-400/50 shadow-xl`
+                      : `${prevTheme.border} ring-2 ring-amber-400/50 shadow-xl`
+                    : 'border-slate-800/80 hover:border-slate-700/80'
                 }`}
               >
-                {/* Hold Progress Halo Feedback */}
-                {isHolding && (
-                  <div className="absolute inset-0 rounded-2xl pointer-events-none ring-2 ring-cyan-400 animate-pulse bg-cyan-500/10" />
-                )}
-
-                {/* Row 1: Name, Stars/Score Badge, 3-dots Menu */}
+                {/* Row 1: Candidate Name, Primary Key, Score & Kebab Menu */}
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-white tracking-tight truncate">
-                    {lead.participantName}
-                  </h3>
+                  <div className="min-w-0 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white tracking-tight truncate">
+                      {lead.participantName}
+                    </h3>
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700 shrink-0">
+                      {lead.leadCode || `#${lead.id.slice(-6)}`}
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-1.5 shrink-0">
                     {lead.callScore && (
                       <span
@@ -695,15 +544,15 @@ export function MobilePipelineRoller({
                         <span>{lead.callScore}/10</span>
                       </span>
                     )}
+
                     <div className="relative">
                       <button
                         type="button"
-                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleMenu(isMenuOpen ? null : lead.id);
                         }}
-                        className="p-1 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Actions"
                       >
                         <MoreVertical className="w-4 h-4" />
@@ -712,7 +561,6 @@ export function MobilePipelineRoller({
                       {/* 3-dots Context Menu Popover */}
                       {isMenuOpen && (
                         <div
-                          onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                           className="absolute right-0 mt-1 w-48 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease]"
                         >
@@ -742,8 +590,8 @@ export function MobilePipelineRoller({
                   </div>
                 </div>
 
-                {/* Row 2: Topic / Platform & Quality / JARVIS Pills */}
-                <div className="flex items-center gap-2 flex-wrap text-xs mt-1">
+                {/* Row 2: Topic / Platform & Quality Pills */}
+                <div className="flex items-center gap-2 flex-wrap text-xs mt-1.5">
                   <span className="text-slate-300 font-medium">
                     {lead.trainingType || lead.topic || 'Training Platform'}
                   </span>
@@ -764,7 +612,7 @@ export function MobilePipelineRoller({
                   )}
                 </div>
 
-                {/* Row 3: Country / Service on left, Stage status pill on right */}
+                {/* Row 3: Country / Service & Stage Status Pill */}
                 <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-800/40">
                   <span className="text-xs text-slate-400 font-medium">
                     {lead.country || 'India'} · {lead.serviceType || 'Training'}
@@ -777,225 +625,55 @@ export function MobilePipelineRoller({
                     {badgeText}
                   </span>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
 
-      {/* ── 3D ROLLING PIPELINE OVERLAY (Center Screen Coverflow Roller) ── */}
-      {dragState && (
-        <div
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          className="fixed inset-0 z-50 overflow-hidden bg-slate-950/85 backdrop-blur-xl animate-[fadeIn_0.2s_ease-out] select-none touch-none"
-          style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
-        >
-          {/* Subtle Zone Guidance Vignette (Left 28%, Dead Zone 44%, Right 28%) */}
-          <div className="absolute inset-0 pointer-events-none flex justify-between px-2 opacity-25">
-            <div className="w-[28%] h-full border-r border-dashed border-cyan-500/20 flex items-center justify-center">
-              <span className="text-[10px] font-mono text-cyan-400/60 uppercase tracking-widest rotate-[-90deg]">
-                ← Earlier Stages
-              </span>
-            </div>
-            <div className="flex-1 h-full flex flex-col items-center justify-between py-12">
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                Dead Zone (Stable)
-              </span>
-            </div>
-            <div className="w-[28%] h-full border-l border-dashed border-cyan-500/20 flex items-center justify-center">
-              <span className="text-[10px] font-mono text-cyan-400/60 uppercase tracking-widest rotate-[90deg]">
-                Later Stages →
-              </span>
-            </div>
-          </div>
+                {/* ── ROW 4: DIRECT ROLLER ICONS (1-Tap Fast Rolling) ── */}
+                <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-slate-800/60 gap-2">
+                  {/* Left Roller Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRoll(lead, prevStage.key, 'left');
+                    }}
+                    className="flex-1 flex items-center justify-start gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 active:scale-95 transition-all cursor-pointer text-[11px] font-bold text-slate-300 min-w-0"
+                    title={`Roll backward to ${prevStage.label}`}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{prevStage.label}</span>
+                  </button>
 
-          {/* Fixed Center Alignment Notch / Target Guide */}
-          <div className="absolute top-[34%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none z-30">
-            <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,1)] animate-ping" />
-            <div className="w-0.5 h-7 bg-gradient-to-b from-cyan-400/80 to-transparent mt-1" />
-          </div>
-
-          {/* Top Cue Header */}
-          <div className="absolute top-8 left-0 right-0 text-center px-4 pointer-events-none z-30 animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-white/15 shadow-xl backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-              <span className="text-xs font-bold text-white">
-                Release over a stage to move {dragState.lead.participantName}
-              </span>
-            </div>
-          </div>
-
-          {/* ── 3D HORIZONTAL PIPE ROLLER CYLINDER DRUM BODY ── */}
-          <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-[184px] pointer-events-none flex items-center justify-center">
-            {/* Cylindrical Pipe Metallic Conduit Outer Shell */}
-            <div
-              className="w-full h-[168px] relative border-y border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.18)] overflow-hidden"
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 18%, rgba(2,6,23,0.99) 50%, rgba(15,23,42,0.98) 82%, rgba(30,41,59,0.95) 100%)',
-              }}
-            >
-              {/* Pipe Chrome Highlights & Specular Neon Glints */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
-              <div className="absolute top-2.5 left-0 right-0 h-0.5 bg-white/15" />
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
-
-              {/* Cylindrical Pipe End-Cap Flanges */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-cyan-500/20 to-transparent border-r border-cyan-500/30 flex items-center justify-center">
-                <div className="w-1.5 h-20 rounded-full bg-cyan-400/40" />
-              </div>
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-cyan-500/20 to-transparent border-l border-cyan-500/30 flex items-center justify-center">
-                <div className="w-1.5 h-20 rounded-full bg-cyan-400/40" />
-              </div>
-
-              {/* Metallic Groove Seams along the Pipe */}
-              <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-cyan-500/15 -translate-y-1/2" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,211,238,0.08),transparent_70%)] pointer-events-none" />
-            </div>
-
-            {/* Fixed Center Docking Cradle / Receiver Slot Bracket */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[124px] h-[156px] rounded-2xl border-2 border-cyan-400/80 shadow-[0_0_25px_rgba(34,211,238,0.45)] pointer-events-none z-20 flex flex-col justify-between p-1.5">
-              {/* Top Cradle Notch */}
-              <div className="flex items-center justify-between px-1">
-                <div className="w-2.5 h-2.5 border-t-2 border-l-2 border-cyan-300" />
-                <span className="text-[8px] font-mono font-black text-cyan-300 tracking-wider uppercase animate-pulse">
-                  Target Stage
-                </span>
-                <div className="w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-300" />
-              </div>
-
-              {/* Bottom Cradle Notch */}
-              <div className="flex items-center justify-between px-1">
-                <div className="w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-300" />
-                <span className="text-[7.5px] font-mono text-cyan-400/70 uppercase">
-                  Release to Drop
-                </span>
-                <div className="w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-300" />
-              </div>
-            </div>
-          </div>
-
-          {/* ── 3D HORIZONTAL ROLLER (CENTER OF SCREEN) ── */}
-          <div
-            ref={rollerContainerRef}
-            style={{ perspective: prefersReducedMotion ? 'none' : '900px' }}
-            className="absolute top-1/2 left-0 w-full -translate-y-1/2 h-[200px] flex items-center pointer-events-none"
-          >
-            {stages.map((stage, idx) => {
-              const isTarget = targetStageKey === stage.key;
-              const isCurrent = stage.key === dragState.sourceStage;
-              const isDroppingIntoThis = isDropping && droppingIntoStage === stage.key;
-              const count = (allGroupedLeads[stage.key] || []).length;
-              const theme = STAGE_THEME[stage.key];
-
-              return (
-                <div
-                  key={stage.key}
-                  ref={(el) => {
-                    tilesRef.current[idx] = el;
-                  }}
-                  style={{
-                    width: `${ROLLER_CONFIG.TILE_WIDTH}px`,
-                    height: `${ROLLER_CONFIG.TILE_HEIGHT}px`,
-                    position: 'absolute',
-                    top: `calc(50% - ${ROLLER_CONFIG.TILE_HEIGHT / 2}px)`,
-                    left: 0,
-                    willChange: 'transform, opacity',
-                  }}
-                  className={`rounded-2xl p-3.5 flex flex-col justify-between border transition-all shadow-2xl pointer-events-auto ${
-                    isDroppingIntoThis
-                      ? `${theme.border} ${theme.ring} ring-4 ${theme.shadow} ${theme.pulseGlow} scale-105`
-                      : isTarget
-                      ? `${theme.border} ${theme.ring} ring-2 ${theme.shadow} bg-slate-900/98 scale-[1.02]`
-                      : isCurrent
-                      ? 'bg-slate-900/85 border-slate-700/80'
-                      : 'bg-slate-950/80 border-slate-800/80'
-                  }`}
-                >
-                  {/* Tile Header: Dot & Stage Live Count */}
-                  <div className="flex items-center justify-between">
+                  {/* Stage Dot Indicator in Center */}
+                  <div
+                    className="px-2 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] font-mono text-slate-400 shrink-0 flex items-center gap-1"
+                    title={`Current: ${stages.find((s) => s.key === activeStage)?.label}`}
+                  >
                     <span
-                      className={`w-3 h-3 rounded-full ${stage.dotColor} ${
-                        isTarget ? 'shadow-[0_0_12px_rgba(255,255,255,0.8)] scale-110' : ''
-                      } transition-transform`}
-                    />
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                      {count}
-                    </span>
-                  </div>
-
-                  {/* Tile Center: Stage Name */}
-                  <div className="text-center my-auto">
-                    <h4
-                      className={`text-sm font-extrabold tracking-tight leading-tight transition-colors ${
-                        isTarget ? theme.text : 'text-white'
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        stages.find((s) => s.key === activeStage)?.dotColor
                       }`}
-                    >
-                      {stage.label}
-                    </h4>
-                    {isCurrent && (
-                      <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                        Current
-                      </span>
-                    )}
+                    />
+                    <span className="hidden xs:inline">Roll</span>
                   </div>
 
-                  {/* Tile Footer / Drop Cue */}
-                  <div className="text-center">
-                    {isTarget ? (
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider animate-pulse ${theme.text}`}>
-                        <Check className="w-3 h-3 stroke-[3]" />
-                        <span>Move to {stage.label}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[9.5px] text-slate-500 font-medium">Stage {idx + 1}</span>
-                    )}
-                  </div>
+                  {/* Right Roller Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRoll(lead, nextStage.key, 'right');
+                    }}
+                    className="flex-1 flex items-center justify-end gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 active:scale-95 transition-all cursor-pointer text-[11px] font-bold text-slate-300 min-w-0 text-right"
+                    title={`Roll forward to ${nextStage.label}`}
+                  >
+                    <span className="truncate">{nextStage.label}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* ── LIFTED GHOST CARD FOLLOWING FINGER ── */}
-          <div
-            style={{
-              position: 'fixed',
-              left: 0,
-              top: 0,
-              width: `${Math.min(dragState.cardRect.width, 340)}px`,
-              transform: isDropping
-                ? `translate3d(${window.innerWidth / 2 - Math.min(dragState.cardRect.width, 340) / 2}px, ${window.innerHeight / 2 - 50}px, 0) scale(0.35)`
-                : `translate3d(${dragState.ghostX - Math.min(dragState.cardRect.width, 340) / 2}px, ${dragState.ghostY - 48}px, 0) rotate(-2.5deg) scale(1.04)`,
-              opacity: isDropping ? 0 : 1,
-              transition: isDropping ? 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease-in' : 'none',
-              pointerEvents: 'none',
-              zIndex: 70,
-              willChange: 'transform, opacity',
-            }}
-            className="p-3.5 rounded-2xl bg-slate-900/98 border-2 border-cyan-400 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_25px_rgba(34,211,238,0.35)] backdrop-blur-2xl"
-          >
-            <div className="flex items-center justify-between gap-1.5">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <GripVertical className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <h4 className="text-sm font-bold text-white truncate">
-                  {dragState.lead.participantName}
-                </h4>
               </div>
-              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shrink-0">
-                {dragState.lead.leadCode || `#${dragState.lead.id.slice(-6)}`}
-              </span>
             </div>
-            <p className="text-xs text-slate-300 font-medium truncate mt-1">
-              {dragState.lead.trainingType || dragState.lead.topic || 'Training Platform'}
-            </p>
-            <div className="mt-2 flex items-center justify-between text-[10px] text-cyan-300 font-bold border-t border-slate-800 pt-1.5">
-              <span>Moving prospect...</span>
-              <span className="font-mono">{targetStageKey ? stages.find((s) => s.key === targetStageKey)?.label : 'Drag to Stage'}</span>
-            </div>
-          </div>
-        </div>
+          );
+        })
       )}
-    </>
+    </div>
   );
 }

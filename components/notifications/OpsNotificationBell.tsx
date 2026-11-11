@@ -132,13 +132,12 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
         title="Recent Activity & Notifications"
         aria-label="Recent Activity Notifications"
       >
-        <Bell className="w-4 h-4 text-slate-200 group-hover:text-cyan-300 transition-colors" />
+        <Bell className="w-4 h-4 text-slate-200 group-hover:text-white transition-colors" />
 
-        {/* Unread Glow Ping Badge */}
+        {/* Unread Badge — Plain White Text (Zero glowing neon) */}
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,1)]" />
+          <span className="absolute -top-1 -right-1 text-white font-bold text-[10px] leading-none pointer-events-none select-none tracking-tight">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>

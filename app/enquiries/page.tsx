@@ -697,18 +697,18 @@ export default function EnquiriesPage() {
               onClick={() => handleSyncExcel()}
               disabled={syncing}
               title="Sync latest enquiries from Outlook Microsoft Graph"
-              className="h-9 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
+              className="h-7 sm:h-10 flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0"
             >
-              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 ${syncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing Outlook...' : 'Sync Outlook'}</span>
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={syncing}
               title="Upload custom data file"
-              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+              className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
             >
-              <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             {/* Desktop Navigation Drawer Button */}
             <div className="hidden xl:block shrink-0">
@@ -794,11 +794,10 @@ export default function EnquiriesPage() {
             return (
               <div
                 key={card.label}
-                className={`relative p-3.5 sm:p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border ${card.border} shadow-lg ${card.glow} min-h-[110px] sm:min-h-0 flex flex-col justify-between transition-all ${
+                className={`relative p-3.5 sm:p-5 rounded-2xl bg-slate-900/70 backdrop-blur-md border border-slate-700/50 shadow-md shadow-black/20 min-h-[110px] sm:min-h-0 flex flex-col justify-between transition-all ${
                   isCardActive ? 'z-40 ring-1 ring-cyan-500/40' : 'z-10 hover:z-30'
                 }`}
               >
-                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full ${card.iconBg} blur-2xl opacity-60 pointer-events-none rounded-2xl overflow-hidden`} />
 
                 {/* Mobile-only Top Row: Full-width Label + Compact Icon */}
                 <div className="flex sm:hidden items-center justify-between w-full mb-1">
@@ -995,18 +994,18 @@ export default function EnquiriesPage() {
 
               {/* ── Desktop Table (>= md) ── */}
               <div className="hidden md:block overflow-x-auto flex-1">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[1360px] table-fixed text-left text-xs border-collapse">
                   <thead className="bg-slate-950/70 text-slate-500 uppercase tracking-widest font-semibold border-b border-slate-800/80 sticky top-0 backdrop-blur-xl z-10">
                     <tr>
-                      <th className="py-4 px-5 text-[10px]">Lead & Contact</th>
-                      <th className="py-4 px-4 text-[10px]">Country</th>
-                      <th className="py-4 px-4 text-[10px]">Type</th>
-                      <th className="py-4 px-4 text-[10px]">Course / Service</th>
-                      <th className="py-4 px-4 text-[10px]">Date</th>
-                      <th className="py-4 px-4 text-[10px] w-[138px] min-w-[138px] whitespace-nowrap">Contact Status</th>
-                      <th className="py-4 px-4 text-[10px] w-[160px] min-w-[160px] whitespace-nowrap">Call Score</th>
-                      <th className="py-4 px-4 text-[10px]">Call Notes</th>
-                      <th className="py-4 px-5 text-[10px] text-right">Actions</th>
+                      <th className="w-[332px] py-4 pl-5 pr-3 text-[10px]">Lead & Contact</th>
+                      <th className="w-[104px] py-4 px-2.5 text-[10px]">Country</th>
+                      <th className="w-[112px] py-4 px-2.5 text-[10px]">Type</th>
+                      <th className="w-[162px] py-4 px-3 text-[10px]">Course / Service</th>
+                      <th className="w-[112px] py-4 px-2.5 text-[10px]">Date</th>
+                      <th className="w-[134px] py-4 px-2.5 text-[10px] whitespace-nowrap">Contact Status</th>
+                      <th className="w-[146px] py-4 px-2.5 text-[10px] whitespace-nowrap">Call Score</th>
+                      <th className="py-4 px-3 text-[10px]">Call Notes</th>
+                      <th className="w-[104px] py-4 pl-2.5 pr-5 text-[10px] text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/40">
@@ -1014,13 +1013,13 @@ export default function EnquiriesPage() {
                       <tr key={enquiry.id} className="group hover:bg-slate-800/40 transition-all duration-150">
 
                         {/* Lead & Contact */}
-                        <td className="py-4 px-5">
-                          <div className="flex items-center gap-3">
+                        <td className="py-4 pl-5 pr-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 flex items-center justify-center flex-shrink-0 text-cyan-400 font-bold text-xs">
                               {enquiry.participantName.charAt(0).toUpperCase()}
                             </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
                                 <p
                                   onClick={() => {
                                     setSelectedDetailEnquiry(enquiry);
@@ -1041,32 +1040,47 @@ export default function EnquiriesPage() {
                                   }}
                                 />
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                {enquiry.email && (
-                                  <a href={`mailto:${enquiry.email}`} className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors truncate max-w-[160px]">
-                                    <Mail className="w-3 h-3 flex-shrink-0" />{enquiry.email}
-                                  </a>
-                                )}
-                                {enquiry.phone && (
-                                  <span className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                                    <Phone className="w-3 h-3" />{enquiry.phone}
-                                  </span>
-                                )}
+                              <div className="grid grid-cols-[144px_minmax(0,1fr)] items-center gap-x-2 mt-0.5">
+                                <div className="min-w-0">
+                                  {enquiry.email ? (
+                                    <a
+                                      href={`mailto:${enquiry.email}`}
+                                      title={enquiry.email}
+                                      className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors max-w-full"
+                                    >
+                                      <Mail className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">{enquiry.email}</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-700">—</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  {enquiry.phone && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-mono tabular-nums whitespace-nowrap max-w-full">
+                                      <Phone className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">{enquiry.phone}</span>
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </td>
 
                         {/* Country */}
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-300 text-xs">
-                            <Globe className="w-3 h-3 text-cyan-400" />
-                            {enquiry.country || 'India'}
+                        <td className="py-4 px-2.5">
+                          <span
+                            title={enquiry.country || 'India'}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-300 text-xs max-w-full"
+                          >
+                            <Globe className="w-3 h-3 text-cyan-400 shrink-0" />
+                            <span className="truncate">{enquiry.country || 'India'}</span>
                           </span>
                         </td>
 
                         {/* Type */}
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-4 px-2.5 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
                             (enquiry.serviceType || '').toLowerCase() === 'job support' || (enquiry.trainingType || '').toLowerCase() === 'job support'
                               ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
@@ -1077,22 +1091,22 @@ export default function EnquiriesPage() {
                         </td>
 
                         {/* Course / Service */}
-                        <td className="py-4 px-4">
-                          <span className="font-semibold text-slate-200 text-xs truncate max-w-[180px] block" title={enquiry.trainingType || enquiry.topic}>
+                        <td className="py-4 px-3">
+                          <span className="font-semibold text-slate-200 text-xs truncate block" title={enquiry.trainingType || enquiry.topic}>
                             {enquiry.trainingType && enquiry.trainingType !== 'Job Support' ? enquiry.trainingType : (enquiry.topic || 'General')}
                           </span>
                         </td>
 
                         {/* Date */}
-                        <td className="py-4 px-4 whitespace-nowrap text-slate-500 text-[11px]">
+                        <td className="py-4 px-2.5 whitespace-nowrap text-slate-500 text-[11px]">
                           <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {(enquiry.dateSubmitted ? new Date(enquiry.dateSubmitted) : new Date(enquiry.messageTimestamp)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <Calendar className="w-3 h-3 shrink-0" />
+                            <span>{(enquiry.dateSubmitted ? new Date(enquiry.dateSubmitted) : new Date(enquiry.messageTimestamp)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           </div>
                         </td>
 
                         {/* Contact Status */}
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-4 px-2.5 whitespace-nowrap">
                           <StatusBadgeSelect
                             value={enquiry.contactStatus || 'Pending'}
                             onChange={val => handleUpdateStatus(enquiry.id, { contactStatus: val })}
@@ -1100,7 +1114,7 @@ export default function EnquiriesPage() {
                         </td>
 
                         {/* Call Score (Volume Meter) */}
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-4 px-2.5 whitespace-nowrap">
                           <CallVolumeMeter
                             enquiryId={enquiry.id}
                             initialScore={enquiry.callScore || null}
@@ -1112,7 +1126,7 @@ export default function EnquiriesPage() {
                         </td>
 
                         {/* Notes */}
-                        <td className="py-4 px-4 max-w-[200px]">
+                        <td className="py-4 px-3 min-w-0">
                           {enquiry.callFollowUpDate && (
                             <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold mb-1 truncate">
                               <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
@@ -1120,19 +1134,19 @@ export default function EnquiriesPage() {
                             </div>
                           )}
                           {enquiry.processedNotes ? (
-                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
+                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="block w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
                               💬 {enquiry.processedNotes}
                             </button>
                           ) : (
-                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note">
-                              <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors" />
+                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note whitespace-nowrap">
+                              <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors shrink-0" />
                               Add notes
                             </button>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-4 px-5 text-right">
+                        <td className="py-4 pl-2.5 pr-5 text-right">
                           <div className="flex items-center justify-end">
                             <button
                               onClick={() => {

@@ -39,7 +39,7 @@ export function JarvisArcReactor({
   className = '',
 }: JarvisArcReactorProps) {
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
+    <div className={`relative flex w-full items-center justify-center ${className}`}>
       <JarvisParticleSphere
         size={size}
         state={state}

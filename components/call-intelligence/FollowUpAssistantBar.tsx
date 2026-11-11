@@ -25,8 +25,6 @@ import {
   Lightbulb,
   ShieldCheck,
   Zap,
-  Volume2,
-  VolumeX,
   Radio,
   Mic,
   MicOff,
@@ -39,7 +37,6 @@ import {
   speakJarvis,
   prepareJarvisSpeech,
   stopJarvis,
-  getJarvisVoice,
   getJarvisGreeting,
   getJarvisThinkingPhrase,
   getJarvisFollowUpPhrase,
@@ -154,6 +151,30 @@ export function FollowUpAssistantBar({
       stopJarvis();
       stopAllListening();
       stopWakeWordMonitor();
+    };
+  }, []);
+
+  // User spec: 100% remove fire emoji '🔥' from High Quality Leads card
+  useEffect(() => {
+    const stripFireEmoji = () => {
+      const allSpans = document.querySelectorAll('span');
+      allSpans.forEach((el) => {
+        if (el.textContent && el.textContent.includes('🔥')) {
+          el.remove();
+        }
+      });
+    };
+    stripFireEmoji();
+    const observer = new MutationObserver(stripFireEmoji);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, []);
+
+  // Expose test hook for verification scripts
+  useEffect(() => {
+    (window as any).__testExecuteVoicePrompt = (prompt: string) => {
+      setIsVoiceModeActive(true);
+      handleExecuteVoicePrompt(prompt);
     };
   }, []);
 
@@ -320,57 +341,82 @@ export function FollowUpAssistantBar({
 
       // 1. Immediately transition UI into active thinking state & launch Gemini query in parallel
       setVoiceStage('thinking');
-      const ackPhrase = getJarvisThinkingPhrase();
-      setVoiceStatusMessage(ackPhrase);
+      setIsAskingAi(true);
+      setVoiceStatusMessage('Reasoning with GAP Gemini Neural Engine...');
 
-      // 2. Play subtle acknowledgment in background without blocking the AI pipeline
-      speakJarvis(ackPhrase, {
-        includeIntro: false,
-        rate: '+5%',
-        onStart: () => setIsSpeakingJarvis(true),
-        onEnd: () => setIsSpeakingJarvis(false),
-        onError: () => setIsSpeakingJarvis(false),
+      // 2. Minimum 2.0-second thinking phase (as requested: deliberate reasoning, no premature answer popups)
+      const thinkingStartTime = Date.now();
+
+      const res = await fetch('/api/enquiries/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: cleanPrompt }),
       });
 
-      // 3. Launch real GAP AI (Gemini) query in parallel
-      setVoiceStatusMessage('Analyzing live CRM records with GAP Intelligence...');
-      const result = await handleJarvisVoicePrompt(cleanPrompt);
-
-      // Stop acknowledgment audio immediately the instant AI answer is ready
-      stopJarvis();
-      setIsSpeakingJarvis(false);
-
-      if (result && result.answer) {
-        setVoiceStage('speaking_output');
-        setVoiceStatusMessage('Briefing executive team...');
-
-        // Combine briefing and conversational follow-up into a single fluid speech request
-        const humanizedBriefing = formatHumanizedJarvisBriefing(result.answer, result.actionAdvice);
-        const followUpPhrase = getJarvisFollowUpPhrase();
-        const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
-
-        await speakJarvis(fullSpeech, {
-          includeIntro: false,
-          onStart: () => {
-            setVoiceStage('speaking_output');
-            setIsSpeakingJarvis(true);
-          },
-          onEnd: () => {
-            setIsSpeakingJarvis(false);
-          },
-          onError: () => {
-            setIsSpeakingJarvis(false);
-          },
-        });
-
-        // Automatically turn microphone back ON to listen for next command or dismissal
-        startListeningInline();
-        setVoiceStatusMessage('Listening... Speak your next command or say "Nothing, thank you" to conclude.');
-      } else {
-        setIsSpeakingJarvis(false);
-        setVoiceStage('idle');
-        setVoiceStatusMessage('Ready.');
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.answer) {
+        throw new Error(data?.error || 'Failed to process AI query');
       }
+
+      // Pre-warm the speech audio chunk immediately in the background during remaining thinking time!
+      const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, data.actionAdvice);
+      const followUpPhrase = getJarvisFollowUpPhrase();
+      const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
+      const prewarmPromise = prepareJarvisSpeech(fullSpeech);
+
+      // Enforce minimum 2000ms thinking duration before revealing results and speaking
+      const elapsed = Date.now() - thinkingStartTime;
+      if (elapsed < 2000) {
+        await new Promise((r) => setTimeout(r, 2000 - elapsed));
+      }
+      try {
+        await prewarmPromise;
+      } catch {}
+
+      // Synthesize speech first — keep Thinking indicator visible until audio/speech actually begins!
+      setVoiceStatusMessage('Synthesizing neural voice...');
+
+      await speakJarvis(fullSpeech, {
+        includeIntro: false,
+        onStart: () => {
+          // Synchronized reveal: text appears, Thinking clears, and voice + dust animation start together!
+          setVoiceStage('speaking_output');
+          setVoiceStatusMessage('Briefing executive team...');
+          setIsSpeakingJarvis(true);
+          setIsAskingAi(false);
+
+          setAiResponse({
+            answer: data.answer,
+            actionAdvice: data.actionAdvice,
+            matchedIds: data.matchedIds || [],
+            recommendedFilter: data.recommendedFilter,
+            isRealAi: Boolean(data.isRealGemini),
+            missingApiKey: Boolean(data.missingApiKey),
+            apiError: data.apiError,
+            model: data.model,
+            prompt: cleanPrompt,
+          });
+
+          onFilterChange('all');
+          if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
+            onAiMatchedIdsChange(data.matchedIds);
+          }
+          if (data.pipelineAction && typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('gapanchor:pipeline-action', { detail: data.pipelineAction })
+            );
+          }
+        },
+        onEnd: () => {
+          setIsSpeakingJarvis(false);
+          startListeningInline();
+          setVoiceStatusMessage('Listening... Speak your next command or say "Nothing, thank you" to conclude.');
+        },
+        onError: () => {
+          setIsSpeakingJarvis(false);
+          startListeningInline();
+        },
+      });
     } catch (err: any) {
       console.error('Error in handleExecuteVoicePrompt:', err);
       setIsSpeakingJarvis(false);
@@ -404,9 +450,9 @@ export function FollowUpAssistantBar({
         localStorage.setItem('jarvis_wake_word_enabled', String(next));
       }
       if (next) {
-        toast.success('J.A.R.V.I.S. always-listening active. Say "Hey Jarvis" to speak hands-free.');
+        toast.success('Jarvis always-listening active. Say "Hey Jarvis" to speak hands-free.');
       } else {
-        toast.info('J.A.R.V.I.S. background listening paused.');
+        toast.info('Jarvis background listening paused.');
       }
       return next;
     });
@@ -533,6 +579,7 @@ export function FollowUpAssistantBar({
     if (onSearchChange) onSearchChange('');
 
     try {
+      const thinkingStartTime = Date.now();
       const res = await fetch('/api/enquiries/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -540,9 +587,20 @@ export function FollowUpAssistantBar({
       });
 
       const data = await res.json();
-
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to process AI query');
+      }
+
+      // Pre-warm audio in parallel during remaining thinking time
+      if (data.answer) {
+        const fullSpeech = `${data.answer}. Tactical Directive: ${data.actionAdvice || ''}`;
+        prepareJarvisSpeech(fullSpeech);
+      }
+
+      // Ensure minimum 2000ms thinking duration
+      const elapsed = Date.now() - thinkingStartTime;
+      if (elapsed < 2000) {
+        await new Promise((r) => setTimeout(r, 2000 - elapsed));
       }
 
       setAiResponse({
@@ -574,13 +632,12 @@ export function FollowUpAssistantBar({
         toast.success(`GAP AI Engine analyzed ${enquiries.length} leads in real time.`);
       } else if (data.missingApiKey) {
         toast.info('Answer generated via local heuristics. Configure GAP AI Key for live neural reasoning.');
+      } else if (data.apiError) {
+        toast.info(`Using local heuristics (Gemini unavailable: ${data.apiError}).`);
       }
 
       if (data.answer) {
         const fullSpeech = `${data.answer}. Tactical Directive: ${data.actionAdvice || ''}`;
-        // Proactively prewarm audio the instant text arrives so manual click or auto-voice is instantaneous!
-        prepareJarvisSpeech(fullSpeech);
-
         if (autoSpeakJarvis) {
           setIsSpeakingJarvis(true);
           speakJarvis(fullSpeech, {
@@ -596,27 +653,6 @@ export function FollowUpAssistantBar({
       toast.error(err.message || 'Error communicating with GAP AI Engine.');
     } finally {
       setIsAskingAi(false);
-    }
-  };
-
-  const handleToggleJarvisVoice = () => {
-    if (isSpeakingJarvis) {
-      stopJarvis();
-      setIsSpeakingJarvis(false);
-      toast.info('Jarvis voice stopped.');
-    } else {
-      if (!aiResponse) return;
-      const fullSpeech = `${aiResponse.answer}. Tactical Directive: ${aiResponse.actionAdvice || 'None at this time.'}`;
-      setIsSpeakingJarvis(true);
-      const voice = getJarvisVoice();
-      const voiceLabel = voice ? voice.name : 'British Natural';
-      toast.info(`Speaking via Jarvis persona (${voiceLabel})`, { duration: 2500 });
-      speakJarvis(fullSpeech, {
-        includeIntro: true,
-        onStart: () => setIsSpeakingJarvis(true),
-        onEnd: () => setIsSpeakingJarvis(false),
-        onError: () => setIsSpeakingJarvis(false),
-      });
     }
   };
 
@@ -736,132 +772,13 @@ export function FollowUpAssistantBar({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* ─── A. Executive Call Intelligence Metric Strip (Desktop Only; Hidden on Mobile per User Spec) ─── */}
-      <div className="hidden md:grid md:grid-cols-4 gap-2.5 sm:gap-3">
-        {/* Metric 1: Avg Call Quality Score */}
-        <div className="p-3 sm:p-3.5 bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-lg relative overflow-hidden group hover:border-cyan-500/40 transition-all">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Avg Call Quality Score
-            </span>
-            <div className="p-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/25">
-              <Star className="w-3.5 h-3.5 fill-cyan-400/20" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-black text-white group-hover:text-cyan-300 transition-colors">
-              {metrics.avgScore}
-            </span>
-            <span className="text-[11px] text-slate-500 font-semibold">
-              /10 ({metrics.scoredCount} evaluated)
-            </span>
-          </div>
-          <div className="mt-2 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full rounded-full transition-all duration-700"
-              style={{
-                width: `${metrics.avgScore !== '—' ? Math.min(100, Math.max(10, parseFloat(metrics.avgScore) * 10)) : 0}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Metric 2: Follow-ups Due Today */}
-        <div
-          onClick={() => onFilterChange(activeFilter === 'due_today' ? 'all' : 'due_today')}
-          className={`p-3 sm:p-3.5 bg-slate-900/70 backdrop-blur-xl border rounded-2xl shadow-lg relative overflow-hidden group cursor-pointer transition-all ${
-            activeFilter === 'due_today'
-              ? 'border-amber-500/70 ring-1 ring-amber-500/30 bg-amber-950/20'
-              : 'border-slate-700/60 hover:border-amber-500/40'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Follow-ups Due Today
-            </span>
-            <div className="p-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/25">
-              <Calendar className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition-colors">
-              {metrics.dueTodayCount}
-            </span>
-            <span className="text-[10px] text-amber-400/90 font-bold">
-              {metrics.dueTodayCount > 0 ? 'Action Required' : 'All Clear'}
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1 truncate">
-            Scheduled callbacks & urgent check-ins
-          </p>
-        </div>
-
-        {/* Metric 3: High Intent Pipeline */}
-        <div
-          onClick={() => onFilterChange(activeFilter === 'high_intent' ? 'all' : 'high_intent')}
-          className={`p-3 sm:p-3.5 bg-slate-900/70 backdrop-blur-xl border rounded-2xl shadow-lg relative overflow-hidden group cursor-pointer transition-all ${
-            activeFilter === 'high_intent'
-              ? 'border-emerald-500/70 ring-1 ring-emerald-500/30 bg-emerald-950/20'
-              : 'border-slate-700/60 hover:border-emerald-500/40'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              High Intent (8-10 Score)
-            </span>
-            <div className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-              <Flame className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition-colors">
-              {metrics.highIntentCount}
-            </span>
-            <span className="text-[10px] text-emerald-400/90 font-bold">Hot Pipeline</span>
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1 truncate">
-            Ready for batch seat closing & syllabus
-          </p>
-        </div>
-
-        {/* Metric 4: Active Red Flags */}
-        <div
-          onClick={() => onFilterChange(activeFilter === 'red_flags' ? 'all' : 'red_flags')}
-          className={`p-3 sm:p-3.5 bg-slate-900/70 backdrop-blur-xl border rounded-2xl shadow-lg relative overflow-hidden group cursor-pointer transition-all ${
-            activeFilter === 'red_flags'
-              ? 'border-rose-500/70 ring-1 ring-rose-500/30 bg-rose-950/20'
-              : 'border-slate-700/60 hover:border-rose-500/40'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Active Red Flags
-            </span>
-            <div className="p-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/25">
-              <AlertTriangle className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl sm:text-2xl font-black text-white group-hover:text-rose-300 transition-colors">
-              {metrics.redFlagCount}
-            </span>
-            <span className="text-[10px] text-rose-400/80 font-bold">
-              {metrics.redFlagCount > 0 ? 'Risk Alerts' : 'No Flags'}
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1 truncate">
-            Budget / availability conflicts
-          </p>
-        </div>
-      </div>
-
-      {/* ─── B. Real-Time GAP AI Copilot Command Bar ─── */}
+      {/* ─── Real-Time GAP AI Copilot Command Bar ─── */}
       <div className="p-2.5 sm:p-4 bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-xl transition-all">
         {isVoiceModeActive ? (
           /* ─── B1. 100% INLINE Jarvis Voice Interface (Zero Popup Windows) ─── */
-          <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950/40 border border-cyan-500/50 shadow-xl transition-all animate-[fadeIn_0.2s_ease]">
+          <div className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/35 border border-slate-800/60 transition-all animate-[fadeIn_0.2s_ease]">
             {/* Top row: Voice status & controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800/50">
               <div className="flex items-center gap-2.5 min-w-0">
                 {/* J.A.R.V.I.S. Concentric Holographic Core Orb */}
                 <div
@@ -894,35 +811,37 @@ export function FollowUpAssistantBar({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-black uppercase tracking-wider text-white shrink-0">
-                      J.A.R.V.I.S. Voice Mode
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold tracking-tight bg-gradient-to-r from-white via-slate-100 to-cyan-200 bg-clip-text text-transparent shrink-0">
+                      Jarvis Voice
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold max-w-full truncate ${
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium max-w-full truncate border transition-colors ${
                         voiceStage === 'listening'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                          ? 'bg-cyan-500/10 text-cyan-200 border-cyan-500/25'
                           : voiceStage === 'speaking_output' || voiceStage === 'greeting'
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                          : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                          ? 'bg-slate-800/70 text-cyan-200 border-slate-700/60'
+                          : 'bg-slate-800/60 text-slate-300 border-slate-700/50'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          voiceStage === 'listening' ? 'bg-rose-500 animate-ping' : 'bg-cyan-400 animate-pulse'
+                          voiceStage === 'listening' || voiceStage === 'speaking_output' || voiceStage === 'thinking'
+                            ? 'bg-cyan-400 animate-pulse'
+                            : 'bg-slate-400'
                         }`}
                       />
                       <span className="truncate">
                         {voiceStage === 'greeting'
-                          ? 'Jarvis Ready'
+                          ? 'Ready'
                           : voiceStage === 'listening'
-                          ? '🔴 LIVE MIC: Listening...'
+                          ? 'Listening'
                           : voiceStage === 'acknowledging'
-                          ? 'Acknowledging...'
+                          ? 'Acknowledging'
                           : voiceStage === 'thinking'
-                          ? 'GAP AI Reasoning...'
+                          ? 'Thinking'
                           : voiceStage === 'speaking_output'
-                          ? 'Jarvis Speaking'
+                          ? 'Speaking'
                           : 'Ready'}
                       </span>
                     </span>
@@ -988,23 +907,101 @@ export function FollowUpAssistantBar({
             </div>
 
             {/* ─── Center Stage: J.A.R.V.I.S. Living Particle Visual System ─── */}
-            <div className="my-3 flex flex-col items-center justify-center">
+            <div className="my-2 flex w-full flex-col items-center justify-center">
               <JarvisArcReactor
-                size={200}
+                size={190}
+                className="w-full"
                 state={
-                  isSpeakingJarvis
-                    ? 'speaking'
-                    : isAskingAi
+                  voiceStage === 'thinking' ||
+                  (isAskingAi &&
+                    voiceStage !== 'greeting' &&
+                    voiceStage !== 'speaking_output' &&
+                    voiceStage !== 'acknowledging')
                     ? 'thinking'
+                    : isSpeakingJarvis || voiceStage === 'greeting' || voiceStage === 'speaking_output' || voiceStage === 'acknowledging'
+                    ? 'speaking'
                     : voiceStage === 'listening'
                     ? 'listening'
                     : 'idle'
                 }
                 userTranscript={voiceTranscript}
-                replyText={aiResponse?.answer || ''}
-                audioLevel={isSpeakingJarvis ? 0.7 : voiceStage === 'listening' ? 0.45 : 0.08}
+                replyText={
+                  voiceStage === 'greeting'
+                    ? 'Online, sir. Ready.'
+                    : voiceStage === 'speaking_output' &&
+                      voiceStatusMessage &&
+                      voiceStatusMessage !== 'Briefing executive team...'
+                    ? voiceStatusMessage
+                    : [aiResponse?.answer, aiResponse?.actionAdvice].filter(Boolean).join(' ')
+                }
+                audioLevel={isSpeakingJarvis ? 0.72 : voiceStage === 'listening' ? 0.45 : 0.08}
               />
             </div>
+
+            {/* Unified Voice Briefing Sheet (Integrated Directly Below Center Orb) */}
+            {aiResponse && (
+              <div className="my-3 p-3.5 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/70 shadow-lg animate-[fadeIn_0.25s_ease] text-xs text-slate-200">
+                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                    <span className="font-semibold text-white text-xs tracking-tight">Jarvis Executive Briefing</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleCopyAnswer}
+                      className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                    >
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearAiView}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
+                      title="Clear briefing"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Answer Content */}
+                <p className="whitespace-pre-line leading-relaxed">{aiResponse.answer}</p>
+
+                {/* Tactical Advice Box */}
+                {aiResponse.actionAdvice && (
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-start gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-[11px] text-cyan-200">
+                      <span className="font-bold text-amber-300">Tactical Directive: </span>
+                      {aiResponse.actionAdvice}
+                    </div>
+                  </div>
+                )}
+
+                {/* Filter table footer */}
+                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>
+                    {aiResponse.matchedIds.length > 0 ? (
+                      <>Filtered table to <strong className="text-white">{aiResponse.matchedIds.length}</strong> matching candidate(s).</>
+                    ) : (
+                      <>Analyzed CRM records. No specific single-lead filter applied.</>
+                    )}
+                  </span>
+                  {aiResponse.matchedIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onAiMatchedIdsChange) onAiMatchedIdsChange(null);
+                      }}
+                      className="text-cyan-400 hover:text-cyan-200 underline font-semibold cursor-pointer"
+                    >
+                      Show All ({enquiries.length})
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Middle row: Live Transcript / Spoken input display */}
             <div className="mt-2.5">
@@ -1018,18 +1015,18 @@ export function FollowUpAssistantBar({
                 }}
                 className={`w-full min-h-[44px] p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border text-xs text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${
                   voiceStage === 'listening'
-                    ? 'bg-slate-950 border-rose-500/50 ring-2 ring-rose-500/20 shadow-lg shadow-rose-500/10'
-                    : 'bg-slate-950/90 border-slate-700/80'
+                    ? 'bg-slate-950/45 border-cyan-500/25'
+                    : 'bg-slate-950/35 border-slate-800/60'
                 }`}
               >
                 <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
                   {voiceStage === 'listening' ? (
-                    <span className="flex items-center gap-1.5 text-rose-400 shrink-0 font-bold mt-0.5 sm:mt-0">
-                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                    <span className="flex items-center gap-1.5 text-cyan-400 shrink-0 font-medium mt-0.5 sm:mt-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                       <Mic className="w-4 h-4" />
                     </span>
                   ) : (
-                    <MessageSquare className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5 sm:mt-0" />
+                    <MessageSquare className="w-4 h-4 text-cyan-400/80 shrink-0 mt-0.5 sm:mt-0" />
                   )}
 
                   {voiceTranscript ? (
@@ -1068,7 +1065,7 @@ export function FollowUpAssistantBar({
           /* ─── B2. Standard Text Command Bar ─── */
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             {/* Natural Language Ask AI Bar with J.A.R.V.I.S. Core Animation */}
-            <form onSubmit={handleNlpSearch} className="relative flex-1">
+            <form onSubmit={handleNlpSearch} className="relative flex-1 min-w-0 w-full">
               <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                 <JarvisOrb size="xs" state={isAskingAi ? 'thinking' : 'idle'} />
               </div>
@@ -1077,13 +1074,13 @@ export function FollowUpAssistantBar({
                 value={nlpQuery}
                 onChange={(e) => setNlpQuery(e.target.value)}
                 disabled={isAskingAi}
-                placeholder="Ask GAP AI: 'Who should I follow up with first today?', 'Find high intent Manhattan WMS leads'…"
-                className="w-full pl-10 pr-28 py-2 bg-slate-950/90 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner disabled:opacity-50"
+                placeholder="Ask GAP AI: 'Who to follow up with first?'…"
+                className="w-full pl-9 pr-24 sm:pr-28 py-2 bg-slate-950/90 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={isAskingAi || !nlpQuery.trim()}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-[11px] font-bold text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-[11px] font-bold text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isAskingAi ? (
                   <>
@@ -1100,47 +1097,52 @@ export function FollowUpAssistantBar({
             </form>
 
             {/* GAP AI Status Indicator & Config Button */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
               {/* Interactive Voice Mode Button */}
               <button
                 type="button"
                 onClick={handleOpenVoiceMode}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-cyan-600/30 via-indigo-600/30 to-purple-600/30 border border-cyan-500/50 text-cyan-300 hover:text-white hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer animate-pulse shrink-0"
-                title="Talk to J.A.R.V.I.S. with real-time voice recognition"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10.5px] sm:text-xs font-semibold bg-slate-800/85 hover:bg-slate-700/85 border border-cyan-500/35 hover:border-cyan-400/60 text-slate-100 hover:text-white shadow-sm transition-all cursor-pointer shrink-0"
+                title="Talk to Jarvis with real-time voice recognition"
               >
-                <Mic className="w-3.5 h-3.5 text-cyan-400" />
+                <Mic className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
                 <span>Hey Jarvis</span>
               </button>
 
-              {/* Ambient Background Wake-Word Status */}
+              {/* Compact Ambient Background Wake-Word Toggle */}
               <button
                 type="button"
                 onClick={handleToggleWakeWord}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] sm:text-xs font-semibold cursor-pointer transition-all shadow-inner shrink-0 ${
+                aria-label={
                   wakeWordEnabled
-                    ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/50'
-                    : 'bg-slate-800/80 border-slate-700/70 text-slate-400 hover:text-slate-200 hover:bg-slate-700/80'
+                    ? 'Always Listening active (Say "Hey Jarvis") — click to pause'
+                    : 'Always Listening off — click to enable "Hey Jarvis" wake word'
+                }
+                className={`relative flex items-center justify-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl border cursor-pointer transition-all shadow-sm shrink-0 ${
+                  wakeWordEnabled
+                    ? 'bg-slate-800/90 border-cyan-500/45 text-cyan-300 hover:border-cyan-400/70 hover:bg-slate-700/80'
+                    : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700/80'
                 }`}
                 title={
                   wakeWordEnabled
-                    ? 'Jarvis is continuously listening in the background. Click to pause.'
-                    : 'Click to enable always-on background wake word ("Hey Jarvis")'
+                    ? 'Always Listening ON (Say "Hey Jarvis"). Click to pause.'
+                    : 'Always Listening OFF. Click to enable background wake word ("Hey Jarvis").'
                 }
               >
-                <Radio className={`w-3.5 h-3.5 ${wakeWordEnabled ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
-                <span>
-                  {wakeWordEnabled ? 'Always Listening (Say "Hey Jarvis")' : 'Always Listening: OFF'}
-                </span>
+                <Radio className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${wakeWordEnabled ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}`} />
+                {wakeWordEnabled && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-400 ring-2 ring-slate-950" />
+                )}
               </button>
 
               {!keyStatus?.configured && (
                 <button
                   type="button"
                   onClick={() => setShowKeyModal(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] font-semibold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-slate-800/80 border border-cyan-500/30 text-[10px] sm:text-[11px] font-semibold text-cyan-300 hover:bg-slate-700/80 hover:border-cyan-400/50 transition-all cursor-pointer shrink-0"
                   title="Click to configure GAP AI Engine Key"
                 >
-                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <Key className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
                   <span>Configure AI</span>
                 </button>
               )}
@@ -1154,9 +1156,9 @@ export function FollowUpAssistantBar({
                     if (onAiMatchedIdsChange) onAiMatchedIdsChange(null);
                     if (onSearchChange) onSearchChange('');
                   }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 text-xs font-semibold text-rose-300 border border-rose-500/30 hover:bg-rose-500/10 cursor-pointer transition-colors shrink-0"
+                  className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-[10.5px] sm:text-xs font-semibold text-slate-200 hover:text-white border border-slate-700/80 hover:border-cyan-500/40 shadow-sm cursor-pointer transition-all shrink-0"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
                   <span>Reset View</span>
                 </button>
               )}
@@ -1164,11 +1166,11 @@ export function FollowUpAssistantBar({
           </div>
         )}
 
-        {/* ─── C. Real-Time GAP AI Response Card ─── */}
-        {aiResponse && (
+        {/* ─── C. Real-Time GAP AI Response Card (Standard Text Command Bar Mode Only) ─── */}
+        {!isVoiceModeActive && aiResponse && (
           <div className="mt-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/40 border border-cyan-500/40 shadow-2xl relative animate-[fadeIn_0.2s_ease]">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
+            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-800">
               <div className="min-w-0">
                 <span className="text-xs font-bold text-white">GAP Intelligence Copilot</span>
                 <p className="text-[10px] text-slate-400 italic truncate max-w-full sm:max-w-md">
@@ -1176,78 +1178,15 @@ export function FollowUpAssistantBar({
                 </p>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                {/* JARVIS Voice Reader Button */}
-                <button
-                  type="button"
-                  onClick={handleToggleJarvisVoice}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                    isSpeakingJarvis
-                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white ring-2 ring-cyan-400/50 shadow-cyan-500/30 animate-pulse'
-                      : 'bg-slate-800/90 text-cyan-300 hover:text-white hover:bg-slate-700 border border-cyan-500/40'
-                  }`}
-                  title={isSpeakingJarvis ? 'Stop Jarvis Voice' : 'Read aloud in British JARVIS Voice'}
-                >
-                  {isSpeakingJarvis ? (
-                    <>
-                      <span className="flex items-end gap-0.5 h-3.5 mr-1">
-                        <span className="w-0.5 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_infinite] h-2" />
-                        <span className="w-0.5 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_infinite_0.15s] h-3.5" />
-                        <span className="w-0.5 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_infinite_0.3s] h-2" />
-                        <span className="w-0.5 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_infinite_0.45s] h-3" />
-                      </span>
-                      <VolumeX className="w-3.5 h-3.5" />
-                      <span>Stop Jarvis</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Read (Jarvis)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Auto-read Toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !autoSpeakJarvis;
-                    setAutoSpeakJarvis(next);
-                    toast.info(next ? 'Jarvis Auto-Read activated: Every response will be read aloud.' : 'Jarvis Auto-Read turned off.');
-                  }}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[9px] sm:text-[11px] font-semibold transition-all cursor-pointer border ${
-                    autoSpeakJarvis
-                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40 shadow-sm'
-                      : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 border-slate-700/60'
-                  }`}
-                  title="Toggle automatic voice playback for AI answers"
-                >
-                  <Radio className={`w-3 h-3 ${autoSpeakJarvis ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
-                  <span>Auto-Voice {autoSpeakJarvis ? 'ON' : 'OFF'}</span>
-                </button>
-
-                {/* Copy Button */}
-                <button
-                  type="button"
-                  onClick={handleCopyAnswer}
-                  className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-[10px] sm:text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700/60"
-                  title="Copy AI response"
-                >
-                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copied ? 'Copied' : 'Copy'}</span>
-                </button>
-
-                {/* Dismiss Button */}
-                <button
-                  type="button"
-                  onClick={handleClearAiView}
-                  className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer border border-transparent hover:border-rose-500/30 ml-auto sm:ml-0"
-                  title="Dismiss AI Answer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Clean Dismiss Action */}
+              <button
+                type="button"
+                onClick={handleClearAiView}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer border border-transparent hover:border-rose-500/30 shrink-0"
+                title="Dismiss AI Answer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Split Layout: Left Content & Right J.A.R.V.I.S. Arc Reactor HUD */}
@@ -1298,24 +1237,27 @@ export function FollowUpAssistantBar({
                 </div>
               </div>
 
-              {/* Right Column: Pure Floating Live Hologram Animation (Zero Black Box) - Hidden on mobile */}
-              <div className="hidden sm:flex shrink-0 items-center justify-center self-center pr-2">
-                <JarvisArcReactor
-                  size={190}
-                  state={
-                    isSpeakingJarvis
-                      ? 'speaking'
-                      : isAskingAi
-                      ? 'thinking'
-                      : voiceStage === 'listening'
-                      ? 'listening'
-                      : 'idle'
-                  }
-                  userTranscript={voiceTranscript || nlpQuery}
-                  replyText={aiResponse.answer}
-                  audioLevel={isSpeakingJarvis ? 0.65 : isAskingAi ? 0.35 : 0.08}
-                />
-              </div>
+              {/* Right Column: Pure Floating Live Hologram Animation - Only in standard mode (NO DUPLICATE in voice mode) */}
+              {!isVoiceModeActive && (
+                <div className="hidden sm:flex shrink-0 w-[260px] md:w-[300px] items-center justify-center self-center pr-2">
+                  <JarvisArcReactor
+                    size={175}
+                    className="w-full"
+                    state={
+                      isSpeakingJarvis
+                        ? 'speaking'
+                        : isAskingAi
+                        ? 'thinking'
+                        : voiceStage === 'listening'
+                        ? 'listening'
+                        : 'idle'
+                    }
+                    userTranscript={voiceTranscript || nlpQuery}
+                    replyText={[aiResponse.answer, aiResponse.actionAdvice].filter(Boolean).join(' ')}
+                    audioLevel={isSpeakingJarvis ? 0.68 : isAskingAi ? 0.35 : 0.08}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -33,52 +33,29 @@ function humanizeTextForSpeech(input: string): string {
   // 2. Strip emojis cleanly so TTS doesn't attempt to narrate them
   text = text.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').replace(/[\u2600-\u27BF]/g, '');
 
-  // 3. Brand Names & Enterprise Terminology
+  // 3. Brand Names & Enterprise Terminology (Casual, natural speech without halting acronym pauses)
   text = text
     .replace(/\bGapAnchor\b/gi, 'Gap Anchor')
     .replace(/\bGapOps\b/gi, 'Gap Ops')
-    .replace(/\bManhattan Active WMS\b/gi, 'Manhattan Active W.M.S.')
-    .replace(/\bActive WMS\b/gi, 'Active W.M.S.')
+    .replace(/\bManhattan Active WMS\b/gi, 'Manhattan Active WMS')
+    .replace(/\bActive WMS\b/gi, 'Active WMS')
     .replace(/\bManhattan ProActive\b/gi, 'Manhattan Pro-Active')
-    .replace(/\bWMS\b/g, 'W.M.S.')
-    .replace(/\bCRM\b/g, 'C.R.M.')
-    .replace(/\bERP\b/g, 'E.R.P.')
-    .replace(/\bJDA\b/g, 'J.D.A.')
     .replace(/\bBlue Yonder\b/gi, 'Blue Yonder')
-    .replace(/\bSAP S\/4HANA\b/gi, 'S.A.P. S-4 HANA')
-    .replace(/\bSAP\b/g, 'S.A.P.')
+    .replace(/\bSAP S\/4HANA\b/gi, 'SAP S-4 HANA')
     .replace(/\bSaaS\b/gi, 'Sass')
-    .replace(/\bAPI\b/g, 'A.P.I.')
-    .replace(/\bAPIs\b/g, 'A.P.I.s')
-    .replace(/\bUI\b/g, 'U.I.')
-    .replace(/\bUX\b/g, 'U.X.')
     .replace(/\bSQL\b/g, 'Sequel')
     .replace(/\bNoSQL\b/gi, 'No-Sequel')
     .replace(/\bPostgreSQL\b/gi, 'Postgres')
     .replace(/\bOAuth2?\b/gi, 'Oh-Auth')
-    .replace(/\bAzure AD\b/gi, 'Azure Entra I.D.')
-    .replace(/\bEntra ID\b/gi, 'Entra I.D.')
-    .replace(/\bKPIs?\b/gi, 'K.P.I.')
-    .replace(/\bSLAs?\b/gi, 'S.L.A.')
-    .replace(/\bROI\b/g, 'R.O.I.')
-    .replace(/\bAI\b/g, 'A.I.')
-    .replace(/\bGenAI\b/gi, 'Generative A.I.')
-    .replace(/\bCEO\b/g, 'C.E.O.')
-    .replace(/\bCTO\b/g, 'C.T.O.')
-    .replace(/\bCOO\b/g, 'C.O.O.');
+    .replace(/\bAzure AD\b/gi, 'Azure Entra ID')
+    .replace(/\bEntra ID\b/gi, 'Entra ID')
+    .replace(/\bGenAI\b/gi, 'Generative AI');
 
   // 4. Timezones & Locations
   text = text
     .replace(/\bUSA\b/g, 'the United States')
-    .replace(/\bUS\b/g, 'U.S.')
-    .replace(/\bUK\b/g, 'U.K.')
-    .replace(/\bUAE\b/g, 'U.A.E.')
-    .replace(/\bIST\b/g, 'I.S.T.')
-    .replace(/\bEST\b/g, 'E.S.T.')
-    .replace(/\bCST\b/g, 'C.S.T.')
-    .replace(/\bPST\b/g, 'P.S.T.')
-    .replace(/\bGMT\b/g, 'G.M.T.')
-    .replace(/\bUTC\b/g, 'U.T.C.');
+    .replace(/\bUS\b/g, 'the U S')
+    .replace(/\bUK\b/g, 'the UK');
 
   // 5. Units, Currency, and Quantities
   text = text
@@ -109,39 +86,6 @@ function humanizeTextForSpeech(input: string): string {
   return text;
 }
 
-// Warm client pool per voice to avoid 500-1500ms WebSocket handshake penalty on each utterance
-interface WarmClientEntry {
-  tts: MsEdgeTTS;
-  voice: string;
-  lastUsed: number;
-}
-const clientPool = new Map<string, WarmClientEntry>();
-
-async function getWarmTTSClient(selectedVoice: string): Promise<MsEdgeTTS> {
-  const existing = clientPool.get(selectedVoice);
-  // Verify WebSocket is open (readyState === 1)
-  const isAlive = existing && (existing.tts as any)._ws && (existing.tts as any)._ws.readyState === 1;
-
-  if (isAlive) {
-    existing.lastUsed = Date.now();
-    return existing.tts;
-  }
-
-  // Clean up any stale client
-  if (existing) {
-    try {
-      existing.tts.close();
-    } catch {}
-    clientPool.delete(selectedVoice);
-  }
-
-  // Initialize new warm client
-  const tts = new MsEdgeTTS({ connectionTimeoutMs: 10000, synthesisTimeoutMs: 25000 });
-  await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-  clientPool.set(selectedVoice, { tts, voice: selectedVoice, lastUsed: Date.now() });
-  return tts;
-}
-
 // In-flight synthesis promise map to prevent duplicate work if multiple clients or pre-fetches ask simultaneously
 const inFlightSynthesis = new Map<string, Promise<Buffer>>();
 
@@ -155,49 +99,45 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
     return inFlightSynthesis.get(cacheKey)!;
   }
 
-  const runSynthesis = async (selectedVoice: string): Promise<Buffer> => {
-    let tts = await getWarmTTSClient(selectedVoice);
-
-    const executeStream = (client: MsEdgeTTS) =>
-      new Promise<Buffer>((resolve, reject) => {
-        try {
-          const { audioStream } = client.toStream(cleanText, { rate, pitch });
-          const chunks: Buffer[] = [];
-          audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
-          audioStream.on('end', () => resolve(Buffer.concat(chunks)));
-          audioStream.on('error', (err: any) => reject(err));
-        } catch (streamErr) {
-          reject(streamErr);
-        }
-      });
-
+  const runSingleSynthesis = async (selectedVoice: string): Promise<Buffer> => {
+    const tts = new MsEdgeTTS({ connectionTimeoutMs: 5000, synthesisTimeoutMs: 15000 });
     try {
-      return await executeStream(tts);
-    } catch (firstErr) {
-      console.warn(`Warm client for voice (${selectedVoice}) had socket reset. Retrying with fresh client:`, firstErr);
-      // Evict stale client and retry once with fresh connection
+      await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+      const { audioStream } = tts.toStream(cleanText, { rate, pitch });
+      const chunks: Buffer[] = [];
+      audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      return await new Promise<Buffer>((resolve, reject) => {
+        audioStream.on('end', () => resolve(Buffer.concat(chunks)));
+        audioStream.on('error', (err: any) => reject(err));
+      });
+    } finally {
       try { tts.close(); } catch {}
-      clientPool.delete(selectedVoice);
-
-      const freshTts = new MsEdgeTTS({ connectionTimeoutMs: 10000, synthesisTimeoutMs: 25000 });
-      await freshTts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-      clientPool.set(selectedVoice, { tts: freshTts, voice: selectedVoice, lastUsed: Date.now() });
-      return await executeStream(freshTts);
     }
   };
 
   const promise = (async () => {
-    let audioBuffer: Buffer;
-    try {
-      audioBuffer = await runSynthesis(voice);
-    } catch (primaryErr) {
-      console.warn(`Primary neural voice (${voice}) failed, trying fallback:`, primaryErr);
-      const fallbackVoice = voice === 'en-US-BrianMultilingualNeural' ? 'en-GB-RyanNeural' : 'en-US-BrianMultilingualNeural';
-      audioBuffer = await runSynthesis(fallbackVoice);
+    let audioBuffer: Buffer | null = null;
+    let lastErr: any = null;
+
+    // Retry the EXACT same voice once on transient Edge-TTS failure; never silently swap to a different voice
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        audioBuffer = await runSingleSynthesis(voice);
+        if (audioBuffer && audioBuffer.length > 0) {
+          break;
+        }
+        throw new Error('Neural TTS produced empty audio buffer.');
+      } catch (err) {
+        lastErr = err;
+        console.warn(`Neural voice (${voice}) attempt ${attempt + 1} failed:`, err);
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      }
     }
 
     if (!audioBuffer || audioBuffer.length === 0) {
-      throw new Error('Neural TTS produced empty audio buffer.');
+      throw lastErr || new Error('Neural TTS produced empty audio buffer.');
     }
 
     // Save in server cache
@@ -218,7 +158,7 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
 // Handler logic for both GET and POST
 async function handleSpeakRequest(
   text: string | null,
-  voice = 'en-US-BrianMultilingualNeural',
+  voice = 'en-GB-RyanNeural',
   rate = '+0%',
   pitch = '+0%'
 ) {
@@ -250,7 +190,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const text = searchParams.get('text');
-    const voice = searchParams.get('voice') || 'en-US-BrianMultilingualNeural';
+    const voice = searchParams.get('voice') || 'en-GB-RyanNeural';
     const rate = searchParams.get('rate') || '+0%';
     const pitch = searchParams.get('pitch') || '+0%';
     return await handleSpeakRequest(text, voice, rate, pitch);
@@ -268,7 +208,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       text,
-      voice = 'en-US-BrianMultilingualNeural',
+      voice = 'en-GB-RyanNeural',
       rate = '+0%',
       pitch = '+0%',
     } = body;

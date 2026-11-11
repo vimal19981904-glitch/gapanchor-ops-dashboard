@@ -1,7 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import NavigationDrawer, { NavMenuIcon } from '@/components/NavigationDrawer';
+import { OpsNotificationBell } from '@/components/navigation/OpsNotificationBell';
 
 import PageTransition from '@/components/PageTransition';
 
@@ -19,6 +21,43 @@ const NavigationContext = createContext<NavigationContextType>({
   toggleNav: () => {},
 });
 
+function DrawerBellPortal({ isOpen }: { isOpen: boolean }) {
+  const [targetEl, setTargetEl] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTargetEl(null);
+      const existing = document.getElementById('ops-bell-portal-mount');
+      if (existing) existing.remove();
+      return;
+    }
+
+    const attachMount = () => {
+      const closeBtn = document.querySelector('button[title="Close navigation"]');
+      if (!closeBtn || !closeBtn.parentElement) return false;
+
+      let mount = document.getElementById('ops-bell-portal-mount');
+      if (!mount) {
+        mount = document.createElement('div');
+        mount.id = 'ops-bell-portal-mount';
+        mount.className = 'ml-auto mr-1 sm:mr-1.5 flex items-center shrink-0';
+        closeBtn.parentElement.insertBefore(mount, closeBtn);
+      }
+      setTargetEl(mount);
+      return true;
+    };
+
+    if (!attachMount()) {
+      const timer = setTimeout(attachMount, 16);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !targetEl) return null;
+
+  return createPortal(<OpsNotificationBell />, targetEl);
+}
+
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,6 +69,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     <NavigationContext.Provider value={{ isOpen, openNav, closeNav, toggleNav }}>
       <PageTransition>{children}</PageTransition>
       <NavigationDrawer isOpen={isOpen} onClose={closeNav} />
+      <DrawerBellPortal isOpen={isOpen} />
     </NavigationContext.Provider>
   );
 }

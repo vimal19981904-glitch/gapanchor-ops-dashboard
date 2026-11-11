@@ -31,6 +31,11 @@ export interface ComprehensiveLeadProfile {
   name: string;
   phone: string;
   email: string | null;
+  country: string | null;
+  serviceType: string | null;
+  lastMessage: string | null;
+  dateOfEntry: string | null;
+  source: string | null;
   course: string;
   score: number | null;
   leadQuality: string;
@@ -45,6 +50,78 @@ export interface ComprehensiveLeadProfile {
   quotes?: string[];
   timeline?: string | null;
   budget?: string | null;
+}
+
+export interface OperationsIntelligenceSnapshot {
+  allLeads: ComprehensiveLeadProfile[];
+  latestEnquiries: Array<{
+    id: string;
+    leadCode: string;
+    name: string;
+    email: string | null;
+    phone: string;
+    country: string | null;
+    serviceType: string | null;
+    course: string;
+    lastMessage: string | null;
+    dateOfEntry: string | null;
+    contactStatus: string;
+    status: string;
+    notes: string | null;
+    callScore: number | null;
+  }>;
+  activeSessions: Array<{
+    id: string;
+    title: string;
+    platform: string;
+    trainer: string;
+    date: string;
+    time: string | null;
+    status: string;
+    trainerTotalCost: number;
+    trainerAmountPaid: number;
+    trainerAmountDue: number;
+    participantsCount: number;
+    participants: Array<{
+      name: string;
+      amountDue: number;
+      amountPaid: number;
+      paymentStatus: string;
+      notes: string | null;
+    }>;
+  }>;
+  financialTransactions: Array<{
+    id: string;
+    date: string;
+    type: string;
+    sourceOrCategory: string;
+    platform: string | null;
+    amount: number;
+    paymentMethod: string;
+    notes: string | null;
+  }>;
+  trainerRegistrations: Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    primaryCourse: string;
+    status: string;
+    experienceYears: number;
+    totalBatches: number;
+    jobSupportLeads: number;
+    notes: string | null;
+    receivedDate: string | null;
+  }>;
+  aggregates: {
+    totalLeads: number;
+    totalSessions: number;
+    totalTrainers: number;
+    totalTransactions: number;
+    topCountries: Array<{ country: string; count: number }>;
+    topCourses: Array<{ course: string; count: number }>;
+  };
 }
 
 /**
@@ -180,7 +257,7 @@ export function detectPipelineActionType(prompt: string): JarvisPipelineActionRe
 export async function getComprehensiveLeadContext(prisma: PrismaClient): Promise<ComprehensiveLeadProfile[]> {
   const [enquiries, leadCalls, transcriptSnapshot] = await Promise.all([
     prisma.$queryRawUnsafe<any[]>(
-      'SELECT id, "leadCode", "participantName", phone, email, country, "serviceType", "trainingType", topic, "leadQuality", "contactStatus", status, "processedNotes", "callScore", "callFollowUpDate", "hasRedFlag", "redFlagReason", "lastMessage", "messageTimestamp" FROM "Enquiry" ORDER BY "messageTimestamp" DESC LIMIT 200;'
+      'SELECT id, "leadCode", "participantName", phone, email, country, "serviceType", "trainingType", topic, "leadQuality", "contactStatus", status, "processedNotes", "callScore", "callFollowUpDate", "hasRedFlag", "redFlagReason", "lastMessage", "messageTimestamp", source FROM "Enquiry" ORDER BY "messageTimestamp" DESC LIMIT 600;'
     ),
     prisma.leadCall.findMany({
       orderBy: [{ callDate: 'desc' }],
@@ -260,6 +337,11 @@ export async function getComprehensiveLeadContext(prisma: PrismaClient): Promise
       name: enq.participantName,
       phone: enq.phone,
       email: enq.email,
+      country: enq.country || 'India',
+      serviceType: enq.serviceType || 'Training',
+      lastMessage: enq.lastMessage || null,
+      dateOfEntry: enq.messageTimestamp ? new Date(enq.messageTimestamp).toISOString() : null,
+      source: enq.source || 'outlook',
       course,
       score: effectiveScore,
       leadQuality: enq.leadQuality,
@@ -276,6 +358,138 @@ export async function getComprehensiveLeadContext(prisma: PrismaClient): Promise
       budget: latestCall?.budget || relatedTr?.budget || null,
     };
   });
+}
+
+/**
+ * Loads the complete multi-entity operational context across all:
+ * 1. Leads / Enquiries (with full contact info, initial query, and dates)
+ * 2. Recent Enquiries (most recent 15 incoming)
+ * 3. Sessions & SessionParticipants (batches, trainer payouts, participant payment status)
+ * 4. Transactions (revenue & expenses)
+ * 5. TrainerRegistrations (work with us applicants)
+ * 6. Aggregate platform & demographic metrics
+ */
+export async function getComprehensiveOperationsSnapshot(
+  prisma: PrismaClient
+): Promise<OperationsIntelligenceSnapshot> {
+  const [allLeads, rawSessions, rawTransactions, rawTrainers] = await Promise.all([
+    getComprehensiveLeadContext(prisma),
+    prisma.session.findMany({
+      take: 15,
+      orderBy: { date: 'desc' },
+      include: { participants: true },
+    }),
+    prisma.transaction.findMany({
+      take: 15,
+      orderBy: { date: 'desc' },
+    }),
+    prisma.trainerRegistration.findMany({
+      take: 15,
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  // Extract latest incoming enquiries
+  const latestEnquiries = allLeads.slice(0, 15).map((l) => ({
+    id: l.id,
+    leadCode: l.leadCode,
+    name: l.name,
+    email: l.email,
+    phone: l.phone,
+    country: l.country,
+    serviceType: l.serviceType,
+    course: l.course,
+    lastMessage: l.lastMessage,
+    dateOfEntry: l.dateOfEntry,
+    contactStatus: l.contactStatus,
+    status: l.status,
+    notes: l.notes,
+    callScore: l.score,
+  }));
+
+  const activeSessions = rawSessions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    platform: s.platform,
+    trainer: s.trainer,
+    date: s.date.toISOString().split('T')[0],
+    time: s.time,
+    status: s.status,
+    trainerTotalCost: s.trainerTotalCost,
+    trainerAmountPaid: s.trainerAmountPaid,
+    trainerAmountDue: s.trainerAmountDue,
+    participantsCount: s.participantsCount,
+    participants: s.participants.map((p) => ({
+      name: p.participantName,
+      amountDue: p.amountDue,
+      amountPaid: p.amountPaid,
+      paymentStatus: p.paymentStatus,
+      notes: p.notes,
+    })),
+  }));
+
+  const financialTransactions = rawTransactions.map((t) => ({
+    id: t.id,
+    date: t.date.toISOString().split('T')[0],
+    type: t.type,
+    sourceOrCategory: t.sourceOrCategory,
+    platform: t.platform,
+    amount: t.amount,
+    paymentMethod: t.paymentMethod,
+    notes: t.notes,
+  }));
+
+  const trainerRegistrations = rawTrainers.map((tr) => ({
+    id: tr.id,
+    name: tr.name,
+    email: tr.email,
+    phone: tr.phone,
+    role: tr.role,
+    primaryCourse: tr.primaryCourse,
+    status: tr.status,
+    experienceYears: tr.experienceYears,
+    totalBatches: tr.totalBatches,
+    jobSupportLeads: tr.jobSupportLeads,
+    notes: tr.notes ? tr.notes.slice(0, 150) : null,
+    receivedDate: tr.receivedDate ? tr.receivedDate.toISOString().split('T')[0] : null,
+  }));
+
+  // Aggregates calculation
+  const countryCounts = new Map<string, number>();
+  const courseCounts = new Map<string, number>();
+
+  for (const l of allLeads) {
+    const c = l.country || 'India';
+    countryCounts.set(c, (countryCounts.get(c) || 0) + 1);
+    const crs = l.course || 'Manhattan WMS';
+    courseCounts.set(crs, (courseCounts.get(crs) || 0) + 1);
+  }
+
+  const topCountries = Array.from(countryCounts.entries())
+    .map(([country, count]) => ({ country, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const topCourses = Array.from(courseCounts.entries())
+    .map(([course, count]) => ({ course, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    allLeads,
+    latestEnquiries,
+    activeSessions,
+    financialTransactions,
+    trainerRegistrations,
+    aggregates: {
+      totalLeads: allLeads.length,
+      totalSessions: rawSessions.length,
+      totalTrainers: rawTrainers.length,
+      totalTransactions: rawTransactions.length,
+      topCountries,
+      topCourses,
+    },
+  };
 }
 
 /**

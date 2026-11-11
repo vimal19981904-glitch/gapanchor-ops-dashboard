@@ -482,3 +482,35 @@
   animation: smoothBackdropFadeIn 0.8s ease-out forwards !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE VIEW TOAST OPTIMIZATION — Micro DB Saving Toasts (< 0.5s)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  [data-sonner-toaster] {
+    bottom: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+  }
+
+  [data-sonner-toaster] [data-sonner-toast] {
+    max-width: 320px !important;
+    font-size: 11px !important;
+    padding: 6px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  /* Micro compact pill for Database Saving notifications */
+  [data-sonner-toaster] [data-sonner-toast].micro-db-toast {
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+    max-height: 32px !important;
+    min-height: 26px !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+    opacity: 0.95 !important;
+    transform: scale(0.92) !important;
+    gap: 6px !important;
+  }
+}
+
+

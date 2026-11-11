@@ -16,26 +16,26 @@ export interface JarvisVoiceProfile {
 
 export const JARVIS_VOICE_PROFILES: JarvisVoiceProfile[] = [
   {
-    id: 'en-US-BrianMultilingualNeural',
-    name: 'Brian (ChatGPT Human)',
-    label: 'Brian • ChatGPT Conversational',
-    tagline: 'Ultra-expressive, natural human pacing & vocal fry',
-    accent: 'US Conversational',
-    gender: 'Male',
-    recommended: true,
-  },
-  {
     id: 'en-GB-RyanNeural',
     name: 'Ryan (Jarvis British)',
     label: 'Ryan • Classic Jarvis British',
     tagline: 'Aristocratic British cadence (Paul Bettany persona)',
     accent: 'UK Aristocratic',
     gender: 'Male',
+    recommended: true,
   },
   {
-    id: 'en-US-AndrewMultilingualNeural',
-    name: 'Andrew (Modern AI)',
-    label: 'Andrew • Modern Conversational',
+    id: 'en-US-BrianMultilingualNeural',
+    name: 'Brian (ChatGPT Human)',
+    label: 'Brian • ChatGPT Conversational',
+    tagline: 'Ultra-expressive, natural human pacing & vocal fry',
+    accent: 'US Conversational',
+    gender: 'Male',
+  },
+  {
+    id: 'en-US-GuyNeural',
+    name: 'Guy (US Executive)',
+    label: 'Guy • Natural Conversational',
     tagline: 'Warm, clear, executive briefing tone',
     accent: 'US Executive',
     gender: 'Male',
@@ -50,7 +50,7 @@ export const JARVIS_VOICE_PROFILES: JarvisVoiceProfile[] = [
   },
 ];
 
-const DEFAULT_VOICE_ID = 'en-US-BrianMultilingualNeural';
+const DEFAULT_VOICE_ID = 'en-GB-RyanNeural';
 const STORAGE_KEY = 'jarvis_active_voice_id';
 
 export interface JarvisSpeechOptions {
@@ -63,6 +63,16 @@ export interface JarvisSpeechOptions {
   pitch?: string;
 }
 
+export interface JarvisSpeechProgress {
+  isPlaying: boolean;
+  sessionId: number;
+  chunkText: string;
+  chunkIndex: number;
+  totalChunks: number;
+  progress: number;
+  spokenWordIndex: number;
+}
+
 // In-memory Blob URL cache for instant zero-latency playback of common phrases
 const audioCache = new Map<string, string>();
 // In-flight fetches to deduplicate concurrent requests
@@ -71,6 +81,124 @@ let currentAudio: HTMLAudioElement | null = null;
 let isAudioPlaying = false;
 let activePlaybackSessionId = 0;
 const voiceChangeListeners = new Set<(voice: JarvisVoiceProfile) => void>();
+
+const liveSpeechState = {
+  chunkText: '',
+  chunkIndex: 0,
+  totalChunks: 0,
+  chunkStartMs: 0,
+  estimatedDurationMs: 1200,
+  fallbackCharIndex: -1,
+};
+
+let audioCtx: AudioContext | null = null;
+let analyserNode: AnalyserNode | null = null;
+let audioSourceNode: MediaElementAudioSourceNode | null = null;
+let lastSourceAudio: HTMLAudioElement | null = null;
+
+/**
+ * Returns real-time word/chunk playback progress for 60fps canvas word-dust synchronization
+ */
+export function getLiveSpeechProgress(): JarvisSpeechProgress {
+  if (!isAudioPlaying || !liveSpeechState.chunkText) {
+    return {
+      isPlaying: false,
+      sessionId: activePlaybackSessionId,
+      chunkText: '',
+      chunkIndex: 0,
+      totalChunks: 0,
+      progress: 0,
+      spokenWordIndex: -1,
+    };
+  }
+
+  const words = liveSpeechState.chunkText.trim().split(/\s+/).filter(Boolean);
+  let progress = 0;
+
+  if (currentAudio && Number.isFinite(currentAudio.duration) && currentAudio.duration > 0.1) {
+    progress = Math.min(1, Math.max(0, currentAudio.currentTime / currentAudio.duration));
+  } else if (liveSpeechState.fallbackCharIndex >= 0 && liveSpeechState.chunkText.length > 0) {
+    progress = Math.min(1, Math.max(0, liveSpeechState.fallbackCharIndex / liveSpeechState.chunkText.length));
+  } else {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    progress = Math.min(
+      0.98,
+      Math.max(0, (now - liveSpeechState.chunkStartMs) / Math.max(400, liveSpeechState.estimatedDurationMs))
+    );
+  }
+
+  const spokenWordIndex =
+    words.length > 0 ? Math.min(words.length - 1, Math.floor(progress * words.length)) : -1;
+
+  return {
+    isPlaying: true,
+    sessionId: activePlaybackSessionId,
+    chunkText: liveSpeechState.chunkText,
+    chunkIndex: liveSpeechState.chunkIndex,
+    totalChunks: liveSpeechState.totalChunks,
+    progress,
+    spokenWordIndex,
+  };
+}
+
+/**
+ * Returns real-time speech frequency energy (0.0 to 1.0) for particle sphere undulation
+ */
+export function getLiveAudioFrequency(): number {
+  if (!isAudioPlaying) return 0;
+
+  if (analyserNode) {
+    try {
+      const data = new Uint8Array(analyserNode.frequencyBinCount);
+      analyserNode.getByteFrequencyData(data);
+      let sum = 0;
+      const count = Math.min(32, data.length);
+      for (let i = 2; i < count; i++) {
+        sum += data[i];
+      }
+      const avg = sum / Math.max(1, count - 2);
+      const level = Math.min(1.0, avg / 110.0);
+      if (level > 0.05) return level;
+    } catch {}
+  }
+
+  // Organic vocal frequency synthesizer:
+  // Produces dynamic water-droplet / bubble undulating frequencies (speech rhythm)
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) * 0.001;
+  const f1 = Math.sin(now * 9.5);
+  const f2 = Math.cos(now * 16.2);
+  const f3 = Math.sin(now * 24.0);
+  const breath = Math.sin(now * 3.8) * 0.4 + 0.6;
+  const energy = Math.max(0.15, (f1 * 0.4 + f2 * 0.35 + f3 * 0.25 + 0.5) * breath);
+  return Math.min(1.0, energy);
+}
+
+function attachAudioAnalyser(audio: HTMLAudioElement) {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    if (!analyserNode) {
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 128;
+      analyserNode.smoothingTimeConstant = 0.65;
+    }
+    if (audio !== lastSourceAudio) {
+      lastSourceAudio = audio;
+      try {
+        audioSourceNode = audioCtx.createMediaElementSource(audio);
+        audioSourceNode.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      } catch {}
+    }
+  } catch {}
+}
 
 /**
  * Returns all available curated human voice profiles
@@ -160,25 +288,48 @@ async function fetchAudioBlobUrl(
   if (inFlight) return inFlight;
 
   const promise = (async () => {
-    const res = await fetch('/api/ai/speak', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        voice: voiceId,
-        rate,
-        pitch,
-      }),
-    });
+    let lastError: any = null;
 
-    if (!res.ok) {
-      throw new Error(`Neural speech service returned status: ${res.status}`);
+    // Retry once on the exact same voiceId with generous 14s timeout so slow chunks never swap voices
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(
+        () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
+        14000
+      );
+
+      try {
+        const res = await fetch('/api/ai/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice: voiceId,
+            rate,
+            pitch,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error(`Neural speech service returned status: ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        audioCache.set(cacheKey, url);
+        return url;
+      } catch (err) {
+        lastError = err;
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    audioCache.set(cacheKey, url);
-    return url;
+    throw lastError || new Error('Neural speech fetch failed');
   })().finally(() => {
     inFlightClientFetches.delete(cacheKey);
   });
@@ -189,8 +340,7 @@ async function fetchAudioBlobUrl(
 
 /**
  * Proactively pre-warms audio for an AI answer in the background as soon
- * as text arrives on screen. When user clicks "Read" or auto-voice triggers,
- * latency is near 0ms because audio is already synthesized and cached in memory.
+ * as text arrives on screen. Sequential chunk warming avoids flooding Edge-TTS sockets.
  */
 export async function prepareJarvisSpeech(text: string, voiceId?: string): Promise<void> {
   if (typeof window === 'undefined' || !text) return;
@@ -202,13 +352,19 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
   if (chunks.length === 0) return;
 
   try {
-    // Pre-fetch the first chunk immediately for instantaneous playback
+    // Await ONLY chunk 0 so speaking starts right away, then warm remaining chunks sequentially
+    // in the background without flooding Edge-TTS WebSockets
     await fetchAudioBlobUrl(chunks[0], activeVoice);
-    // Pre-fetch remaining chunks concurrently in background
     if (chunks.length > 1) {
-      chunks.slice(1).forEach((chunk) => {
-        fetchAudioBlobUrl(chunk, activeVoice).catch(() => {});
-      });
+      void (async () => {
+        for (let i = 1; i < chunks.length; i++) {
+          try {
+            await fetchAudioBlobUrl(chunks[i], activeVoice);
+          } catch {
+            // Best-effort sequential prewarm; speakJarvis handles chunk playback retries
+          }
+        }
+      })();
     }
   } catch (err) {
     console.debug('Background speech prewarm notice:', err);
@@ -334,15 +490,34 @@ function sanitizeForSpeech(text: string): string {
 /**
  * Plays a single audio url and resolves when completed.
  */
-function playAudioChunk(audioUrl: string, sessionId: number): Promise<void> {
+function playAudioChunk(
+  audioUrl: string,
+  sessionId: number,
+  chunkText: string,
+  chunkIndex: number,
+  totalChunks: number
+): Promise<void> {
   return new Promise((resolve, reject) => {
     if (sessionId !== activePlaybackSessionId) {
       resolve();
       return;
     }
 
+    const wordCount = Math.max(1, chunkText.trim().split(/\s+/).length);
+    liveSpeechState.chunkText = chunkText;
+    liveSpeechState.chunkIndex = chunkIndex;
+    liveSpeechState.totalChunks = totalChunks;
+    liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    liveSpeechState.estimatedDurationMs = Math.max(750, (wordCount / 2.65) * 1000);
+    liveSpeechState.fallbackCharIndex = -1;
+
     const audio = new Audio(audioUrl);
     currentAudio = audio;
+    attachAudioAnalyser(audio);
+
+    audio.onplaying = () => {
+      liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    };
 
     audio.onended = () => {
       if (currentAudio === audio) currentAudio = null;
@@ -384,6 +559,7 @@ export function speakJarvis(
 
     const cleanBody = sanitizeForSpeech(text);
     if (!cleanBody) {
+      if (options.onEnd) options.onEnd();
       resolve();
       return;
     }
@@ -394,7 +570,7 @@ export function speakJarvis(
     const includeIntro = options.includeIntro !== false;
 
     isAudioPlaying = true;
-    if (options.onStart) options.onStart();
+    let hasFiredStart = false;
 
     try {
       // Chunk the body into natural sentences
@@ -406,42 +582,103 @@ export function speakJarvis(
       }
       playlist.push(...bodyChunks);
 
-      // Pre-dispatch all chunks so subsequent sentences are synthesized concurrently
-      const chunkPromises = playlist.map((chunk) =>
-        fetchAudioBlobUrl(chunk, activeVoice, rate, pitch)
-      );
+      // Seed initial text immediately so animations align from frame 0
+      if (playlist.length > 0) {
+        liveSpeechState.chunkText = playlist[0];
+        liveSpeechState.chunkIndex = 0;
+        liveSpeechState.totalChunks = playlist.length;
+        liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      }
 
-      // Sequentially play each chunk seamlessly as it becomes ready
+      // Pipeline lookahead cleanly (max 1 chunk ahead) so we don't flood Edge-TTS or cause mid-reply timeouts
+      const chunkPromises: (Promise<string> | null)[] = new Array(playlist.length).fill(null);
+      const getChunkAudio = (idx: number): Promise<string> => {
+        if (!chunkPromises[idx]) {
+          const p = fetchAudioBlobUrl(playlist[idx], activeVoice, rate, pitch);
+          p.catch(() => {});
+          chunkPromises[idx] = p;
+        }
+        return chunkPromises[idx]!;
+      };
+
+      // Sequentially play each chunk cleanly using ONLY activeVoice
       for (let i = 0; i < playlist.length; i++) {
         if (sessionId !== activePlaybackSessionId) break;
 
-        const audioUrl = await chunkPromises[i];
+        let audioUrl: string;
+        try {
+          audioUrl = await getChunkAudio(i);
+        } catch (chunkErr) {
+          // If neural voice already started speaking, NEVER fall back to a second browser voice mid-reply
+          if (hasFiredStart) {
+            console.warn(`Skipping chunk ${i} on active neural voice (${activeVoice}) to avoid voice switch:`, chunkErr);
+            continue;
+          }
+          throw chunkErr;
+        }
+
         if (sessionId !== activePlaybackSessionId) break;
 
-        await playAudioChunk(audioUrl, sessionId);
+        // Prefetch ONLY the immediate next chunk while the current one starts playing
+        if (i + 1 < playlist.length) {
+          getChunkAudio(i + 1);
+        }
+
+        // Fire onStart at the EXACT millisecond the first sound chunk actually starts playing!
+        if (!hasFiredStart && options.onStart) {
+          hasFiredStart = true;
+          options.onStart();
+        }
+
+        await playAudioChunk(audioUrl, sessionId, playlist[i], i, playlist.length);
       }
 
       if (sessionId === activePlaybackSessionId) {
         isAudioPlaying = false;
         currentAudio = null;
+        liveSpeechState.chunkText = '';
         if (options.onEnd) options.onEnd();
       }
       resolve();
     } catch (err: any) {
-      console.warn('Neural speech streaming error, attempting local fallback:', err);
+      if (hasFiredStart) {
+        // Already spoke in the active neural voice; conclude cleanly without switching voices
+        console.warn('Neural speech ended cleanly after mid-stream interruption/error:', err);
+        if (sessionId === activePlaybackSessionId) {
+          isAudioPlaying = false;
+          currentAudio = null;
+          liveSpeechState.chunkText = '';
+          if (options.onEnd) options.onEnd();
+        }
+        resolve();
+        return;
+      }
+
+      console.warn('Neural speech unavailable before start, attempting single local fallback:', err);
       if (sessionId === activePlaybackSessionId) {
         speakJarvisLocalFallback(cleanBody, {
           ...options,
+          onStart: () => {
+            if (sessionId !== activePlaybackSessionId) return;
+            isAudioPlaying = true;
+            if (options.onStart) options.onStart();
+          },
           onEnd: () => {
-            isAudioPlaying = false;
-            currentAudio = null;
-            if (options.onEnd) options.onEnd();
+            if (sessionId === activePlaybackSessionId) {
+              isAudioPlaying = false;
+              currentAudio = null;
+              liveSpeechState.chunkText = '';
+              if (options.onEnd) options.onEnd();
+            }
             resolve();
           },
           onError: (fallbackErr) => {
-            isAudioPlaying = false;
-            currentAudio = null;
-            if (options.onError) options.onError(fallbackErr);
+            if (sessionId === activePlaybackSessionId) {
+              isAudioPlaying = false;
+              currentAudio = null;
+              liveSpeechState.chunkText = '';
+              if (options.onError) options.onError(fallbackErr);
+            }
             resolve();
           },
         });
@@ -475,16 +712,33 @@ function speakJarvisLocalFallback(text: string, options: JarvisSpeechOptions): v
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
 
+  const wordsCount = Math.max(1, text.trim().split(/\s+/).length);
+  liveSpeechState.chunkText = text;
+  liveSpeechState.chunkIndex = 0;
+  liveSpeechState.totalChunks = 1;
+  liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  liveSpeechState.estimatedDurationMs = Math.max(850, (wordsCount / 2.65) * 1000);
+  liveSpeechState.fallbackCharIndex = 0;
+
+  utterance.onboundary = (event) => {
+    if (event.name === 'word') {
+      liveSpeechState.fallbackCharIndex = event.charIndex;
+    }
+  };
+
   utterance.onstart = () => {
     isAudioPlaying = true;
+    liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (options.onStart) options.onStart();
   };
   utterance.onend = () => {
     isAudioPlaying = false;
+    liveSpeechState.chunkText = '';
     if (options.onEnd) options.onEnd();
   };
   utterance.onerror = (e) => {
     isAudioPlaying = false;
+    liveSpeechState.chunkText = '';
     if (options.onError) options.onError(e);
   };
 
@@ -500,6 +754,8 @@ function speakJarvisLocalFallback(text: string, options: JarvisSpeechOptions): v
 export function stopJarvis(): void {
   activePlaybackSessionId++;
   isAudioPlaying = false;
+  liveSpeechState.chunkText = '';
+  liveSpeechState.fallbackCharIndex = -1;
   if (currentAudio) {
     try {
       currentAudio.pause();
@@ -555,26 +811,18 @@ export function formatHumanizedJarvisBriefing(answer: string, actionAdvice?: str
     .replace(/\bleads\b/gi, 'candidates')
     .replace(/\blead\b/gi, 'candidate');
 
-  // 2. Smooth Enterprise Acronyms into Natural Spoken English
+  // 2. Smooth Enterprise Acronyms into Natural, Fluid Spoken English (No choppy dot pauses)
   clean = clean
     .replace(/\bGapAnchor\b/gi, 'Gap Anchor')
     .replace(/\bGapOps\b/gi, 'Gap Ops')
-    .replace(/\bManhattan Active WMS\b/gi, 'Manhattan Active W.M.S.')
-    .replace(/\bActive WMS\b/gi, 'Active W.M.S.')
+    .replace(/\bManhattan Active WMS\b/gi, 'Manhattan Active WMS')
+    .replace(/\bActive WMS\b/gi, 'Active WMS')
     .replace(/\bManhattan ProActive\b/gi, 'Manhattan Pro-Active')
-    .replace(/\bWMS\b/g, 'W.M.S.')
-    .replace(/\bCRM\b/g, 'C.R.M.')
-    .replace(/\bERP\b/g, 'E.R.P.')
-    .replace(/\bJDA\b/g, 'J.D.A.')
     .replace(/\bBlue Yonder\b/gi, 'Blue Yonder')
-    .replace(/\bSAP S\/4HANA\b/gi, 'S.A.P. S-4 HANA')
-    .replace(/\bSAP\b/g, 'S.A.P.')
-    .replace(/\bUSA\b/g, 'North America')
-    .replace(/\bUS\b/g, 'U.S.')
-    .replace(/\bIST\b/g, 'I.S.T.')
-    .replace(/\bEST\b/g, 'E.S.T.')
-    .replace(/\bPST\b/g, 'P.S.T.')
-    .replace(/\bAI\b/g, 'A.I.')
+    .replace(/\bSAP S\/4HANA\b/gi, 'SAP S-4 HANA')
+    .replace(/\bUSA\b/g, 'the United States')
+    .replace(/\bUS\b/g, 'the U S')
+    .replace(/\bUK\b/g, 'the UK')
     .replace(/\b(\d+)\/10\b/g, '$1 out of 10')
     .replace(/\b1st\b/gi, 'first')
     .replace(/\b2nd\b/gi, 'second')

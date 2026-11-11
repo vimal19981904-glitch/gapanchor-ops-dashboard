@@ -57,12 +57,12 @@ export function TeamsSyncControls({ onSyncComplete, compact = false, className =
       type="button"
       onClick={handleSyncTeams}
       disabled={syncing}
-      className={`h-9 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0 ${
+      className={`h-7 sm:h-10 flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap shrink-0 ${
         compact ? '!h-7 !px-2 !py-1 !text-[11px]' : ''
       } ${className}`}
       title="Sync completed Teams call transcripts from OneDrive"
     >
-      <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 ${syncing ? 'animate-spin' : ''}`} />
+      <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 text-indigo-400 ${syncing ? 'animate-spin' : ''}`} />
       <span>{syncing ? 'Syncing Teams...' : 'Sync Teams Calls'}</span>
     </button>
   );
