@@ -37,6 +37,8 @@ import {
   speakJarvis,
   prepareJarvisSpeech,
   stopJarvis,
+  unlockJarvisAudio,
+  getLiveAudioFrequency,
   getJarvisGreeting,
   getJarvisThinkingPhrase,
   getJarvisFollowUpPhrase,
@@ -56,9 +58,13 @@ import {
   stopWakeWordMonitor,
   startActivePromptListening,
   stopActivePromptListening,
+  submitActiveRecorderNow,
   stopAllListening,
   isSpeechRecognitionSupported,
+  isAnyVoiceInputSupported,
   isActionablePrompt,
+  isJarvisSelfEchoOrFiller,
+  JarvisListeningMode,
 } from '@/lib/jarvis-listener';
 import { JarvisOrb } from '@/components/call-intelligence/JarvisOrb';
 import { JarvisArcReactor } from '@/components/call-intelligence/JarvisArcReactor';
@@ -112,7 +118,9 @@ export function FollowUpAssistantBar({
   // JARVIS Voice State
   const [isSpeakingJarvis, setIsSpeakingJarvis] = useState(false);
   const [autoSpeakJarvis, setAutoSpeakJarvis] = useState(false);
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(true);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+  const [listeningMode, setListeningMode] = useState<JarvisListeningMode>('speech_api');
+  const [liveAudioLevel, setLiveAudioLevel] = useState(0);
 
   // Inline JARVIS Voice Interface State (100% Inline — Zero Popup Windows)
   const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
@@ -129,6 +137,7 @@ export function FollowUpAssistantBar({
   const [activeVoice, setActiveVoiceState] = useState<JarvisVoiceProfile>(getActiveVoice());
   const [showVoiceMenu, setShowVoiceMenu] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
+  const hasSpokenInCurrentTurnRef = useRef(false);
 
   // Subscribe to voice changes across components
   useEffect(() => {
@@ -137,12 +146,30 @@ export function FollowUpAssistantBar({
     return unsub;
   }, []);
 
-  // Always initialize wakeWordEnabled to true on mount so background listening is active upon refresh
+  // Only enable background wake-word on mount when mic permission is ALREADY granted,
+  // preventing unprompted HTTPS load failures or mic lock collisions on fresh visits.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setWakeWordEnabled(true);
-      localStorage.setItem('jarvis_wake_word_enabled', 'true');
+    if (typeof window === 'undefined') return;
+    const savedPref = localStorage.getItem('jarvis_wake_word_enabled');
+    if (savedPref === 'false') {
+      setWakeWordEnabled(false);
+      return;
     }
+
+    let cancelled = false;
+    if (navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'microphone' as PermissionName })
+        .then((perm) => {
+          if (!cancelled && perm.state === 'granted') {
+            setWakeWordEnabled(true);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Stop voice and all listeners on component unmount
@@ -193,76 +220,107 @@ export function FollowUpAssistantBar({
   }, []);
 
   // ─── Inline Voice Mode Core Handlers ───
+  const stripJarvisGreetingPrefix = (raw: string) =>
+    raw
+      .replace(/^(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*)/i, '')
+      .replace(/^(?:right\s+away\s*,?\s*sir\.?\s*)/i, '')
+      .trim();
+
   const startListeningInline = () => {
     stopJarvis();
     setIsSpeakingJarvis(false);
-    if (!isSpeechRecognitionSupported()) {
-      toast.error('Voice input requires Google Chrome or Microsoft Edge.');
+    setLiveAudioLevel(0);
+
+    if (!isAnyVoiceInputSupported()) {
+      toast.error('Voice input requires Chrome, Edge, Safari, or a modern HTTPS browser.');
       setVoiceStage('idle');
-      setVoiceStatusMessage('Speech recognition is not supported in this browser.');
+      setVoiceStatusMessage('Voice capture is not supported in this browser.');
       return;
     }
 
+    hasSpokenInCurrentTurnRef.current = false;
     setVoiceStage('listening');
     setVoiceTranscript('');
-    setVoiceStatusMessage('Listening to you... Speak your command now.');
+    setVoiceStatusMessage('Connecting microphone...');
 
     startActivePromptListening({
       onStart: () => {
         setVoiceStage('listening');
+        setVoiceStatusMessage('Listening to you... Speak your command now.');
+      },
+      onModeChange: (mode) => {
+        setListeningMode(mode);
+      },
+      onAudioLevel: (lvl) => {
+        setLiveAudioLevel(lvl);
+      },
+      onProcessingAudio: () => {
+        setLiveAudioLevel(0);
+        setVoiceStage('thinking');
+        setVoiceStatusMessage('Transcribing your voice...');
       },
       onInterim: (text) => {
-        // Instant Barge-In: if user speaks any word, immediately stop Jarvis from talking!
-        if (text && text.trim().length > 0) {
-          stopJarvis();
-          setIsSpeakingJarvis(false);
+        const cleaned = stripJarvisGreetingPrefix(text);
+        if (!cleaned || isJarvisSelfEchoOrFiller(cleaned)) {
+          return;
         }
-        setVoiceTranscript(text);
+        hasSpokenInCurrentTurnRef.current = true;
+        // Instant Barge-In: if user speaks genuine words, immediately stop Jarvis!
+        stopJarvis();
+        setIsSpeakingJarvis(false);
+        setVoiceTranscript(cleaned);
       },
       onFinal: (finalText) => {
-        handleExecuteVoicePrompt(finalText);
+        const cleaned = stripJarvisGreetingPrefix(finalText) || finalText.trim();
+        hasSpokenInCurrentTurnRef.current = true;
+        setLiveAudioLevel(0);
+        handleExecuteVoicePrompt(cleaned);
       },
       onError: (errText) => {
-        if (errText.includes('Microphone access denied')) {
-          toast.error(errText);
-          setVoiceStage('idle');
-          setVoiceStatusMessage('Microphone access denied. Please click mic icon in address bar to allow.');
-        } else {
-          console.warn('Speech notice:', errText);
-        }
+        setLiveAudioLevel(0);
+        setVoiceStage('idle');
+        setVoiceStatusMessage(errText);
+        toast.error(errText);
       },
       onEnd: () => {
-        // Handled via onFinal
-      },
-    });
-  };
-
-  const startGreetingSequence = () => {
-    setVoiceStage('greeting');
-    setVoiceStatusMessage('Online, sir. Ready.');
-    speakJarvis('Online, sir. Ready.', {
-      includeIntro: false,
-      onStart: () => setIsSpeakingJarvis(true),
-      onEnd: () => {
-        setIsSpeakingJarvis(false);
-        startListeningInline();
-      },
-      onError: () => {
-        setIsSpeakingJarvis(false);
-        startListeningInline();
+        setLiveAudioLevel(0);
       },
     });
   };
 
   const handleOpenVoiceMode = () => {
+    // Synchronously unlock Web Audio / SpeechSynthesis AND activate microphone inside the user click gesture!
+    unlockJarvisAudio();
+    pauseWakeWordMonitor();
     setIsVoiceModeActive(true);
-    startGreetingSequence();
+    startListeningInline();
+
+    // Non-blocking spoken greeting only if the user hasn't started speaking yet
+    if (!hasSpokenInCurrentTurnRef.current) {
+      speakJarvis('Online, sir. Ready.', {
+        includeIntro: false,
+        onStart: () => {
+          if (!hasSpokenInCurrentTurnRef.current) {
+            setIsSpeakingJarvis(true);
+          } else {
+            stopJarvis();
+          }
+        },
+        onEnd: () => {
+          setIsSpeakingJarvis(false);
+        },
+        onError: () => {
+          setIsSpeakingJarvis(false);
+        },
+      });
+    }
   };
 
   const handleCloseVoiceMode = () => {
     stopJarvis();
     stopAllListening();
     setIsSpeakingJarvis(false);
+    setLiveAudioLevel(0);
     setIsVoiceModeActive(false);
     setVoiceStage('idle');
     setVoiceTranscript('');
@@ -271,11 +329,13 @@ export function FollowUpAssistantBar({
 
   const handlePauseListening = () => {
     stopAllListening();
+    setLiveAudioLevel(0);
     setVoiceStage('idle');
-    setVoiceStatusMessage('Microphone paused. Tap Resume Mic or choose a quick prompt.');
+    setVoiceStatusMessage('Microphone paused. Tap Tap to Speak or choose a quick prompt.');
   };
 
   const handleResumeListening = () => {
+    unlockJarvisAudio();
     startListeningInline();
   };
 
@@ -305,8 +365,6 @@ export function FollowUpAssistantBar({
     // Prevent executing accidental single-syllable noises, coughs, or self-echoes
     if (!isActionablePrompt(cleanPrompt)) {
       console.log('Filtered non-actionable voice fragment:', cleanPrompt);
-      setVoiceStage('listening');
-      setVoiceStatusMessage('Listening to you... Speak your command now.');
       startListeningInline();
       return;
     }
@@ -319,10 +377,11 @@ export function FollowUpAssistantBar({
 
     try {
       stopAllListening();
+      setLiveAudioLevel(0);
       setVoiceTranscript(cleanPrompt);
       setNlpQuery(cleanPrompt);
 
-      // Check if the user is saying thank you or concluding (e.g. "Nothing Jarvis, thank you for your help")
+      // Check if the user is saying thank you or concluding
       if (isDismissalOrThankYou(cleanPrompt)) {
         setVoiceStage('speaking_output');
         const signOff = getJarvisSignOffPhrase();
@@ -344,7 +403,6 @@ export function FollowUpAssistantBar({
       setIsAskingAi(true);
       setVoiceStatusMessage('Reasoning with GAP Gemini Neural Engine...');
 
-      // 2. Minimum 2.0-second thinking phase (as requested: deliberate reasoning, no premature answer popups)
       const thinkingStartTime = Date.now();
 
       const res = await fetch('/api/enquiries/ask-ai', {
@@ -358,13 +416,11 @@ export function FollowUpAssistantBar({
         throw new Error(data?.error || 'Failed to process AI query');
       }
 
-      // Pre-warm the speech audio chunk immediately in the background during remaining thinking time!
       const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, data.actionAdvice);
       const followUpPhrase = getJarvisFollowUpPhrase();
       const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
       const prewarmPromise = prepareJarvisSpeech(fullSpeech);
 
-      // Enforce minimum 2000ms thinking duration before revealing results and speaking
       const elapsed = Date.now() - thinkingStartTime;
       if (elapsed < 2000) {
         await new Promise((r) => setTimeout(r, 2000 - elapsed));
@@ -373,77 +429,110 @@ export function FollowUpAssistantBar({
         await prewarmPromise;
       } catch {}
 
-      // Synthesize speech first — keep Thinking indicator visible until audio/speech actually begins!
+      let revealed = false;
+      const revealBriefing = (audioStarted: boolean) => {
+        if (revealed) return;
+        revealed = true;
+        setVoiceStage(audioStarted ? 'speaking_output' : 'idle');
+        setVoiceStatusMessage(audioStarted ? 'Briefing executive team...' : 'Executive briefing ready.');
+        setIsAskingAi(false);
+
+        setAiResponse({
+          answer: data.answer,
+          actionAdvice: data.actionAdvice,
+          matchedIds: data.matchedIds || [],
+          recommendedFilter: data.recommendedFilter,
+          isRealAi: Boolean(data.isRealGemini),
+          missingApiKey: Boolean(data.missingApiKey),
+          apiError: data.apiError,
+          model: data.model,
+          prompt: cleanPrompt,
+        });
+
+        onFilterChange('all');
+        if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
+          onAiMatchedIdsChange(data.matchedIds);
+        }
+        if (data.pipelineAction && typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('gapanchor:pipeline-action', { detail: data.pipelineAction })
+          );
+        }
+      };
+
       setVoiceStatusMessage('Synthesizing neural voice...');
 
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {
-          // Synchronized reveal: text appears, Thinking clears, and voice + dust animation start together!
-          setVoiceStage('speaking_output');
-          setVoiceStatusMessage('Briefing executive team...');
           setIsSpeakingJarvis(true);
-          setIsAskingAi(false);
-
-          setAiResponse({
-            answer: data.answer,
-            actionAdvice: data.actionAdvice,
-            matchedIds: data.matchedIds || [],
-            recommendedFilter: data.recommendedFilter,
-            isRealAi: Boolean(data.isRealGemini),
-            missingApiKey: Boolean(data.missingApiKey),
-            apiError: data.apiError,
-            model: data.model,
-            prompt: cleanPrompt,
-          });
-
-          onFilterChange('all');
-          if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
-            onAiMatchedIdsChange(data.matchedIds);
-          }
-          if (data.pipelineAction && typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('gapanchor:pipeline-action', { detail: data.pipelineAction })
-            );
-          }
+          revealBriefing(true);
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);
+          revealBriefing(false);
           startListeningInline();
-          setVoiceStatusMessage('Listening... Speak your next command or say "Nothing, thank you" to conclude.');
         },
         onError: () => {
           setIsSpeakingJarvis(false);
+          revealBriefing(false);
           startListeningInline();
         },
       });
     } catch (err: any) {
       console.error('Error in handleExecuteVoicePrompt:', err);
       setIsSpeakingJarvis(false);
+      setIsAskingAi(false);
       setVoiceStage('idle');
-      setVoiceStatusMessage('Request encountered an issue.');
+      const errMsg = err?.message || 'Request encountered an issue.';
+      setVoiceStatusMessage(errMsg);
+      toast.error(errMsg);
     } finally {
+      setIsAskingAi(false);
       isExecutingPromptRef.current = false;
     }
+  };
+
+  // Always-fresh refs so wake-word listener never fires stale closures
+  const latestVoiceHandlersRef = useRef({
+    openVoiceMode: handleOpenVoiceMode,
+    executeVoicePrompt: handleExecuteVoicePrompt,
+  });
+  latestVoiceHandlersRef.current = {
+    openVoiceMode: handleOpenVoiceMode,
+    executeVoicePrompt: handleExecuteVoicePrompt,
   };
 
   // Background Always-On Wake Word Monitor ("Hey Jarvis")
   useEffect(() => {
     if (wakeWordEnabled && !isVoiceModeActive) {
-      startWakeWordMonitor((trailingPrompt?: string) => {
-        setIsVoiceModeActive(true);
-        if (trailingPrompt && trailingPrompt.trim().length > 0) {
-          handleExecuteVoicePrompt(trailingPrompt.trim());
-        } else {
-          startGreetingSequence();
+      startWakeWordMonitor(
+        (trailingPrompt?: string) => {
+          if (trailingPrompt && trailingPrompt.trim().length > 0) {
+            pauseWakeWordMonitor();
+            setIsVoiceModeActive(true);
+            latestVoiceHandlersRef.current.executeVoicePrompt(trailingPrompt.trim());
+          } else {
+            latestVoiceHandlersRef.current.openVoiceMode();
+          }
+        },
+        (err: any) => {
+          const code = err?.error;
+          if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'service-unavailable') {
+            setWakeWordEnabled(false);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('jarvis_wake_word_enabled', 'false');
+            }
+          }
         }
-      });
+      );
     } else {
       pauseWakeWordMonitor();
     }
   }, [wakeWordEnabled, isVoiceModeActive]);
 
   const handleToggleWakeWord = () => {
+    unlockJarvisAudio();
     setWakeWordEnabled((prev) => {
       const next = !prev;
       if (typeof window !== 'undefined') {
@@ -573,6 +662,7 @@ export function FollowUpAssistantBar({
     e.preventDefault();
     if (!nlpQuery.trim() || isAskingAi) return;
 
+    unlockJarvisAudio();
     const query = nlpQuery.trim();
     setIsAskingAi(true);
 
@@ -934,7 +1024,7 @@ export function FollowUpAssistantBar({
                     ? voiceStatusMessage
                     : [aiResponse?.answer, aiResponse?.actionAdvice].filter(Boolean).join(' ')
                 }
-                audioLevel={isSpeakingJarvis ? 0.72 : voiceStage === 'listening' ? 0.45 : 0.08}
+                audioLevel={isSpeakingJarvis ? 0.72 : voiceStage === 'listening' ? Math.max(0.32, liveAudioLevel) : 0.08}
               />
             </div>
 
@@ -1008,15 +1098,18 @@ export function FollowUpAssistantBar({
               <div
                 onClick={() => {
                   if (isSpeakingJarvis) {
+                    unlockJarvisAudio();
                     stopJarvis();
                     setIsSpeakingJarvis(false);
                     startListeningInline();
+                  } else if (voiceStage === 'idle') {
+                    handleResumeListening();
                   }
                 }}
                 className={`w-full min-h-[44px] p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border text-xs text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${
                   voiceStage === 'listening'
                     ? 'bg-slate-950/45 border-cyan-500/25'
-                    : 'bg-slate-950/35 border-slate-800/60'
+                    : 'bg-slate-950/35 border-slate-800/60 cursor-pointer'
                 }`}
               >
                 <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
@@ -1036,13 +1129,31 @@ export function FollowUpAssistantBar({
                   ) : (
                     <span className="text-slate-400 italic flex-1 text-[11px] sm:text-xs">
                       {voiceStage === 'listening'
-                        ? 'Listening to your voice... Speak anytime (e.g. "Find high intent candidates")'
+                        ? listeningMode === 'recorder'
+                          ? 'Listening via Audio Capture... Speak your question, then pause or tap Send Voice.'
+                          : voiceStatusMessage || 'Listening to your voice... Speak anytime (e.g. "Find high intent candidates")'
+                        : voiceStage === 'thinking'
+                        ? voiceStatusMessage || 'Processing your request...'
                         : isSpeakingJarvis
                         ? 'Jarvis is speaking... Tap here to interrupt and speak.'
-                        : 'Microphone paused. Click Tap to Speak.'}
+                        : voiceStatusMessage || 'Microphone paused. Click Tap to Speak.'}
                     </span>
                   )}
                 </div>
+
+                {voiceStage === 'listening' && listeningMode === 'recorder' && !voiceTranscript && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitActiveRecorderNow();
+                    }}
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-200 hover:text-white text-xs font-semibold shrink-0 flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <span>Send Voice</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
                 {voiceTranscript && voiceTranscript.trim().length > 3 && (
                   <button

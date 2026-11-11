@@ -73,13 +73,19 @@ export interface JarvisSpeechProgress {
   spokenWordIndex: number;
 }
 
-// In-memory Blob URL cache for instant zero-latency playback of common phrases
+// In-memory audio caches for instant zero-latency playback of common phrases
 const audioCache = new Map<string, string>();
+const audioArrayBufferCache = new Map<string, ArrayBuffer>();
 // In-flight fetches to deduplicate concurrent requests
-const inFlightClientFetches = new Map<string, Promise<string>>();
+const inFlightClientFetches = new Map<string, Promise<ArrayBuffer>>();
 let currentAudio: HTMLAudioElement | null = null;
+let currentBufferSource: AudioBufferSourceNode | null = null;
+let activeBufferStartCtxTime = 0;
+let activeBufferDuration = 0;
 let isAudioPlaying = false;
 let activePlaybackSessionId = 0;
+let neuralTtsCooldownUntil = 0;
+let hasUnlockedSpeechSynthesis = false;
 const voiceChangeListeners = new Set<(voice: JarvisVoiceProfile) => void>();
 
 const liveSpeechState = {
@@ -95,6 +101,61 @@ let audioCtx: AudioContext | null = null;
 let analyserNode: AnalyserNode | null = null;
 let audioSourceNode: MediaElementAudioSourceNode | null = null;
 let lastSourceAudio: HTMLAudioElement | null = null;
+
+function ensureAudioContextUnlocked(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+    if (!analyserNode) {
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 128;
+      analyserNode.smoothingTimeConstant = 0.65;
+      analyserNode.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Call synchronously inside user click/tap handlers ("Hey Jarvis", "Ask AI", etc.)
+ * so Web Audio & SpeechSynthesis stay unlocked after async network fetches on Safari/iOS/HTTPS.
+ */
+export function unlockJarvisAudio(): void {
+  if (typeof window === 'undefined') return;
+
+  const ctx = ensureAudioContextUnlocked();
+  if (ctx) {
+    try {
+      const silentBuffer = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = silentBuffer;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch {}
+  }
+
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.getVoices();
+      if (!hasUnlockedSpeechSynthesis && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        hasUnlockedSpeechSynthesis = true;
+        const primer = new SpeechSynthesisUtterance(' ');
+        primer.volume = 0;
+        primer.rate = 2;
+        window.speechSynthesis.speak(primer);
+      }
+    } catch {}
+  }
+}
 
 /**
  * Returns real-time word/chunk playback progress for 60fps canvas word-dust synchronization
@@ -115,7 +176,10 @@ export function getLiveSpeechProgress(): JarvisSpeechProgress {
   const words = liveSpeechState.chunkText.trim().split(/\s+/).filter(Boolean);
   let progress = 0;
 
-  if (currentAudio && Number.isFinite(currentAudio.duration) && currentAudio.duration > 0.1) {
+  if (currentBufferSource && audioCtx && activeBufferDuration > 0.1) {
+    const elapsed = Math.max(0, audioCtx.currentTime - activeBufferStartCtxTime);
+    progress = Math.min(1, Math.max(0, elapsed / activeBufferDuration));
+  } else if (currentAudio && Number.isFinite(currentAudio.duration) && currentAudio.duration > 0.1) {
     progress = Math.min(1, Math.max(0, currentAudio.currentTime / currentAudio.duration));
   } else if (liveSpeechState.fallbackCharIndex >= 0 && liveSpeechState.chunkText.length > 0) {
     progress = Math.min(1, Math.max(0, liveSpeechState.fallbackCharIndex / liveSpeechState.chunkText.length));
@@ -174,30 +238,15 @@ export function getLiveAudioFrequency(): number {
 }
 
 function attachAudioAnalyser(audio: HTMLAudioElement) {
-  if (typeof window === 'undefined') return;
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    if (!audioCtx) {
-      audioCtx = new AudioContextClass();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-    if (!analyserNode) {
-      analyserNode = audioCtx.createAnalyser();
-      analyserNode.fftSize = 128;
-      analyserNode.smoothingTimeConstant = 0.65;
-    }
-    if (audio !== lastSourceAudio) {
-      lastSourceAudio = audio;
-      try {
-        audioSourceNode = audioCtx.createMediaElementSource(audio);
-        audioSourceNode.connect(analyserNode);
-        analyserNode.connect(audioCtx.destination);
-      } catch {}
-    }
-  } catch {}
+  const ctx = ensureAudioContextUnlocked();
+  if (!ctx || !analyserNode) return;
+  if (audio !== lastSourceAudio) {
+    lastSourceAudio = audio;
+    try {
+      audioSourceNode = ctx.createMediaElementSource(audio);
+      audioSourceNode.connect(analyserNode);
+    } catch {}
+  }
 }
 
 /**
@@ -232,8 +281,10 @@ export function setActiveVoice(voiceId: string): JarvisVoiceProfile {
     try {
       localStorage.setItem(STORAGE_KEY, profile.id);
     } catch {}
-    // Clear audio blob cache so newly spoken phrases use the newly selected voice
+    // Clear audio caches so newly spoken phrases use the newly selected voice
     audioCache.clear();
+    audioArrayBufferCache.clear();
+    neuralTtsCooldownUntil = 0;
   }
   voiceChangeListeners.forEach((listener) => {
     try {
@@ -271,65 +322,65 @@ export function getJarvisVoice(): { name: string; id: string } {
 }
 
 /**
- * Fetches and caches audio blob for a specific text fragment.
- * Uses in-flight deduplication to avoid redundant HTTP requests.
+ * Fetches and caches audio ArrayBuffer for a specific text fragment.
+ * Uses in-flight deduplication and a fast circuit breaker so serverless TTS failures
+ * switch seamlessly to unlocked local speech synthesis instead of stalling.
  */
-async function fetchAudioBlobUrl(
+async function fetchAudioBuffer(
   text: string,
   voiceId: string,
   rate = '+0%',
   pitch = '+0%'
-): Promise<string> {
+): Promise<ArrayBuffer> {
+  if (Date.now() < neuralTtsCooldownUntil) {
+    throw new Error('Neural TTS in temporary cooldown');
+  }
+
   const cacheKey = `${voiceId}__${text}`;
-  const existing = audioCache.get(cacheKey);
-  if (existing) return existing;
+  const existingBuf = audioArrayBufferCache.get(cacheKey);
+  if (existingBuf) return existingBuf;
 
   const inFlight = inFlightClientFetches.get(cacheKey);
   if (inFlight) return inFlight;
 
   const promise = (async () => {
-    let lastError: any = null;
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
+      6000
+    );
 
-    // Retry once on the exact same voiceId with generous 14s timeout so slow chunks never swap voices
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const controller = new AbortController();
-      const timer = setTimeout(
-        () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
-        14000
-      );
+    try {
+      const res = await fetch('/api/ai/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: voiceId,
+          rate,
+          pitch,
+        }),
+        signal: controller.signal,
+      });
 
-      try {
-        const res = await fetch('/api/ai/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text,
-            voice: voiceId,
-            rate,
-            pitch,
-          }),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(`Neural speech service returned status: ${res.status}`);
-        }
-
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        audioCache.set(cacheKey, url);
-        return url;
-      } catch (err) {
-        lastError = err;
-        if (attempt === 0) {
-          await new Promise((r) => setTimeout(r, 250));
-        }
-      } finally {
-        clearTimeout(timer);
+      if (!res.ok) {
+        throw new Error(`Neural speech service returned status: ${res.status}`);
       }
-    }
 
-    throw lastError || new Error('Neural speech fetch failed');
+      const buffer = await res.arrayBuffer();
+      if (!buffer || buffer.byteLength === 0) {
+        throw new Error('Neural speech service returned empty audio.');
+      }
+
+      neuralTtsCooldownUntil = 0;
+      audioArrayBufferCache.set(cacheKey, buffer);
+      return buffer;
+    } catch (err) {
+      neuralTtsCooldownUntil = Date.now() + 60_000;
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   })().finally(() => {
     inFlightClientFetches.delete(cacheKey);
   });
@@ -343,7 +394,7 @@ async function fetchAudioBlobUrl(
  * as text arrives on screen. Sequential chunk warming avoids flooding Edge-TTS sockets.
  */
 export async function prepareJarvisSpeech(text: string, voiceId?: string): Promise<void> {
-  if (typeof window === 'undefined' || !text) return;
+  if (typeof window === 'undefined' || !text || Date.now() < neuralTtsCooldownUntil) return;
   const cleanBody = sanitizeForSpeech(text);
   if (!cleanBody) return;
 
@@ -354,14 +405,15 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
   try {
     // Await ONLY chunk 0 so speaking starts right away, then warm remaining chunks sequentially
     // in the background without flooding Edge-TTS WebSockets
-    await fetchAudioBlobUrl(chunks[0], activeVoice);
+    await fetchAudioBuffer(chunks[0], activeVoice);
     if (chunks.length > 1) {
       void (async () => {
         for (let i = 1; i < chunks.length; i++) {
+          if (Date.now() < neuralTtsCooldownUntil) break;
           try {
-            await fetchAudioBlobUrl(chunks[i], activeVoice);
+            await fetchAudioBuffer(chunks[i], activeVoice);
           } catch {
-            // Best-effort sequential prewarm; speakJarvis handles chunk playback retries
+            break;
           }
         }
       })();
@@ -423,50 +475,38 @@ export function chunkTextForPipelinedSpeech(
 }
 
 /**
- * Pre-warms and caches common fixed phrases (Greetings, Thinking, and Intro phrases)
- * into memory so they play with 0ms delay.
+ * Pre-warms lightweight essential Jarvis cues without flooding serverless Edge-TTS on page load.
  */
 export async function prewarmJarvisVoiceCache(): Promise<void> {
   if (typeof window === 'undefined') return;
+  if (window.location.pathname === '/login') return;
+  if (Date.now() < neuralTtsCooldownUntil) return;
 
   const activeVoice = getActiveVoice();
   const phrases = [
+    'Online, sir. Ready.',
     'Right away, sir.',
-    'Right away, sir. Checking the pipeline now.',
-    'Certainly, sir.',
-    'Understood, sir.',
-    getJarvisGreeting(),
-    'Good morning, sir. What can I do for you?',
-    'Good afternoon, sir. What can I do for you?',
-    'Good evening, sir. What can I do for you?',
-    getJarvisThinkingPhrase(),
-    'One minute, sir. Checking the details now.',
-    'One moment, sir. Checking the pipeline now.',
-    'Checking details now, sir.',
-    getJarvisFollowUpPhrase(),
-    'Anything else I can assist you with, sir?',
-    getJarvisSignOffPhrase(),
-    'Very good, sir. Standing by whenever you need me.',
   ];
 
   for (const phrase of phrases) {
     const cacheKey = `${activeVoice.id}__${phrase}`;
-    if (!audioCache.has(cacheKey)) {
+    if (!audioArrayBufferCache.has(cacheKey)) {
       try {
-        await fetchAudioBlobUrl(phrase, activeVoice.id);
+        await fetchAudioBuffer(phrase, activeVoice.id);
       } catch (err) {
         console.debug('Voice prewarm notice for phrase:', phrase, err);
+        break;
       }
     }
   }
 }
 
-// Automatically prewarm once on client-side idle
+// Automatically prewarm lightweight cues once on client-side idle
 if (typeof window !== 'undefined') {
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => prewarmJarvisVoiceCache());
   } else {
-    setTimeout(() => prewarmJarvisVoiceCache(), 800);
+    setTimeout(() => prewarmJarvisVoiceCache(), 1200);
   }
 }
 
@@ -488,28 +528,84 @@ function sanitizeForSpeech(text: string): string {
 }
 
 /**
- * Plays a single audio url and resolves when completed.
+ * Plays a single audio buffer cleanly, preferring unlocked Web Audio (works reliably on iOS/HTTPS after async fetch)
+ * and falling back to HTMLAudioElement if Web Audio decode isn't available.
  */
-function playAudioChunk(
-  audioUrl: string,
+async function playAudioBufferChunk(
+  audioBufferData: ArrayBuffer,
+  cacheKey: string,
   sessionId: number,
   chunkText: string,
   chunkIndex: number,
-  totalChunks: number
+  totalChunks: number,
+  onFirstChunkPlaying?: () => void
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
+  if (sessionId !== activePlaybackSessionId) {
+    return;
+  }
+
+  const wordCount = Math.max(1, chunkText.trim().split(/\s+/).length);
+  liveSpeechState.chunkText = chunkText;
+  liveSpeechState.chunkIndex = chunkIndex;
+  liveSpeechState.totalChunks = totalChunks;
+  liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  liveSpeechState.estimatedDurationMs = Math.max(750, (wordCount / 2.65) * 1000);
+  liveSpeechState.fallbackCharIndex = -1;
+
+  const ctx = ensureAudioContextUnlocked();
+  if (ctx && analyserNode && ctx.state === 'running') {
+    try {
+      const decoded = await ctx.decodeAudioData(audioBufferData.slice(0));
+      if (sessionId !== activePlaybackSessionId) return;
+
+      await new Promise<void>((resolve) => {
+        const source = ctx.createBufferSource();
+        source.buffer = decoded;
+        source.connect(analyserNode!);
+        currentBufferSource = source;
+        activeBufferStartCtxTime = ctx.currentTime;
+        activeBufferDuration = decoded.duration || 0;
+        liveSpeechState.estimatedDurationMs = Math.max(400, (decoded.duration || 0) * 1000);
+
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          if (currentBufferSource === source) {
+            currentBufferSource = null;
+            activeBufferDuration = 0;
+          }
+          try { source.disconnect(); } catch {}
+          resolve();
+        };
+
+        const safetyTimer = setTimeout(finish, Math.max(2500, (decoded.duration || 1) * 1000 + 1500));
+        source.onended = () => {
+          clearTimeout(safetyTimer);
+          finish();
+        };
+
+        if (onFirstChunkPlaying) onFirstChunkPlaying();
+        source.start(0);
+      });
+      return;
+    } catch {
+      // Fall through to HTMLAudioElement playback
+    }
+  }
+
+  // Fallback: HTMLAudioElement playback
+  let audioUrl = audioCache.get(cacheKey);
+  if (!audioUrl) {
+    audioUrl = URL.createObjectURL(new Blob([audioBufferData], { type: 'audio/mpeg' }));
+    audioCache.set(cacheKey, audioUrl);
+  }
+
+  await new Promise<void>((resolve, reject) => {
     if (sessionId !== activePlaybackSessionId) {
       resolve();
       return;
     }
-
-    const wordCount = Math.max(1, chunkText.trim().split(/\s+/).length);
-    liveSpeechState.chunkText = chunkText;
-    liveSpeechState.chunkIndex = chunkIndex;
-    liveSpeechState.totalChunks = totalChunks;
-    liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    liveSpeechState.estimatedDurationMs = Math.max(750, (wordCount / 2.65) * 1000);
-    liveSpeechState.fallbackCharIndex = -1;
 
     const audio = new Audio(audioUrl);
     currentAudio = audio;
@@ -517,6 +613,7 @@ function playAudioChunk(
 
     audio.onplaying = () => {
       liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      if (onFirstChunkPlaying) onFirstChunkPlaying();
     };
 
     audio.onended = () => {
@@ -538,10 +635,7 @@ function playAudioChunk(
 
 /**
  * Speaks text using High-Fidelity 96kbps Neural Voice with ultra-low latency pipelining.
- * - If includeIntro is true, instantly plays the pre-warmed 'Right away, sir.' (0ms latency!)
- *   while fetching and buffering the rest of the text in parallel.
- * - Automatically splits multi-sentence answers into short chunks so playback begins
- *   within ~250-350ms instead of waiting seconds for full synthesis.
+ * Preserves a single consistent voice per full response and unlocks cleanly across HTTPS & mobile.
  */
 export function speakJarvis(
   text: string,
@@ -572,6 +666,13 @@ export function speakJarvis(
     isAudioPlaying = true;
     let hasFiredStart = false;
 
+    const notifyStartOnce = () => {
+      if (!hasFiredStart) {
+        hasFiredStart = true;
+        if (options.onStart) options.onStart();
+      }
+    };
+
     try {
       // Chunk the body into natural sentences
       const bodyChunks = chunkTextForPipelinedSpeech(cleanBody);
@@ -582,7 +683,6 @@ export function speakJarvis(
       }
       playlist.push(...bodyChunks);
 
-      // Seed initial text immediately so animations align from frame 0
       if (playlist.length > 0) {
         liveSpeechState.chunkText = playlist[0];
         liveSpeechState.chunkIndex = 0;
@@ -590,26 +690,23 @@ export function speakJarvis(
         liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
       }
 
-      // Pipeline lookahead cleanly (max 1 chunk ahead) so we don't flood Edge-TTS or cause mid-reply timeouts
-      const chunkPromises: (Promise<string> | null)[] = new Array(playlist.length).fill(null);
-      const getChunkAudio = (idx: number): Promise<string> => {
+      const chunkPromises: (Promise<ArrayBuffer> | null)[] = new Array(playlist.length).fill(null);
+      const getChunkBuffer = (idx: number): Promise<ArrayBuffer> => {
         if (!chunkPromises[idx]) {
-          const p = fetchAudioBlobUrl(playlist[idx], activeVoice, rate, pitch);
+          const p = fetchAudioBuffer(playlist[idx], activeVoice, rate, pitch);
           p.catch(() => {});
           chunkPromises[idx] = p;
         }
         return chunkPromises[idx]!;
       };
 
-      // Sequentially play each chunk cleanly using ONLY activeVoice
       for (let i = 0; i < playlist.length; i++) {
         if (sessionId !== activePlaybackSessionId) break;
 
-        let audioUrl: string;
+        let buffer: ArrayBuffer;
         try {
-          audioUrl = await getChunkAudio(i);
+          buffer = await getChunkBuffer(i);
         } catch (chunkErr) {
-          // If neural voice already started speaking, NEVER fall back to a second browser voice mid-reply
           if (hasFiredStart) {
             console.warn(`Skipping chunk ${i} on active neural voice (${activeVoice}) to avoid voice switch:`, chunkErr);
             continue;
@@ -619,34 +716,37 @@ export function speakJarvis(
 
         if (sessionId !== activePlaybackSessionId) break;
 
-        // Prefetch ONLY the immediate next chunk while the current one starts playing
         if (i + 1 < playlist.length) {
-          getChunkAudio(i + 1);
+          getChunkBuffer(i + 1);
         }
 
-        // Fire onStart at the EXACT millisecond the first sound chunk actually starts playing!
-        if (!hasFiredStart && options.onStart) {
-          hasFiredStart = true;
-          options.onStart();
-        }
-
-        await playAudioChunk(audioUrl, sessionId, playlist[i], i, playlist.length);
+        const cacheKey = `${activeVoice}__${playlist[i]}`;
+        await playAudioBufferChunk(
+          buffer,
+          cacheKey,
+          sessionId,
+          playlist[i],
+          i,
+          playlist.length,
+          notifyStartOnce
+        );
       }
 
       if (sessionId === activePlaybackSessionId) {
         isAudioPlaying = false;
         currentAudio = null;
+        currentBufferSource = null;
         liveSpeechState.chunkText = '';
         if (options.onEnd) options.onEnd();
       }
       resolve();
     } catch (err: any) {
       if (hasFiredStart) {
-        // Already spoke in the active neural voice; conclude cleanly without switching voices
         console.warn('Neural speech ended cleanly after mid-stream interruption/error:', err);
         if (sessionId === activePlaybackSessionId) {
           isAudioPlaying = false;
           currentAudio = null;
+          currentBufferSource = null;
           liveSpeechState.chunkText = '';
           if (options.onEnd) options.onEnd();
         }
@@ -656,7 +756,7 @@ export function speakJarvis(
 
       console.warn('Neural speech unavailable before start, attempting single local fallback:', err);
       if (sessionId === activePlaybackSessionId) {
-        speakJarvisLocalFallback(cleanBody, {
+        await speakJarvisLocalFallback(cleanBody, sessionId, {
           ...options,
           onStart: () => {
             if (sessionId !== activePlaybackSessionId) return;
@@ -667,6 +767,7 @@ export function speakJarvis(
             if (sessionId === activePlaybackSessionId) {
               isAudioPlaying = false;
               currentAudio = null;
+              currentBufferSource = null;
               liveSpeechState.chunkText = '';
               if (options.onEnd) options.onEnd();
             }
@@ -676,6 +777,7 @@ export function speakJarvis(
             if (sessionId === activePlaybackSessionId) {
               isAudioPlaying = false;
               currentAudio = null;
+              currentBufferSource = null;
               liveSpeechState.chunkText = '';
               if (options.onError) options.onError(fallbackErr);
             }
@@ -689,19 +791,45 @@ export function speakJarvis(
   });
 }
 
+async function resolveSpeechSynthesisVoices(): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+  const initial = window.speechSynthesis.getVoices();
+  if (initial.length > 0) return initial;
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      window.speechSynthesis.removeEventListener?.('voiceschanged', done);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    window.speechSynthesis.addEventListener?.('voiceschanged', done);
+    setTimeout(done, 150);
+  });
+}
+
 /**
- * Fallback to browser SpeechSynthesis in the rare event of offline network
+ * Fallback to browser SpeechSynthesis in the event of Edge-TTS block/timeout or offline network.
+ * Includes voice list hydration and a completion watchdog so UI never hangs if onend fails to fire.
  */
-function speakJarvisLocalFallback(text: string, options: JarvisSpeechOptions): void {
+async function speakJarvisLocalFallback(
+  text: string,
+  sessionId: number,
+  options: JarvisSpeechOptions
+): Promise<void> {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     if (options.onError) options.onError('Audio playback unsupported');
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
+  const voices = await resolveSpeechSynthesisVoices();
+  if (sessionId !== activePlaybackSessionId) {
+    return;
+  }
 
-  // Prefer modern natural / online voices if available in Chrome/Edge
+  const utterance = new SpeechSynthesisUtterance(text);
+
   const naturalVoice =
     voices.find((v) => (v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('en')) ||
     voices.find((v) => v.lang.toLowerCase().startsWith('en-gb')) ||
@@ -713,12 +841,53 @@ function speakJarvisLocalFallback(text: string, options: JarvisSpeechOptions): v
   utterance.pitch = 1.0;
 
   const wordsCount = Math.max(1, text.trim().split(/\s+/).length);
+  const estimatedDurationMs = Math.max(850, (wordsCount / 2.65) * 1000);
   liveSpeechState.chunkText = text;
   liveSpeechState.chunkIndex = 0;
   liveSpeechState.totalChunks = 1;
   liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
-  liveSpeechState.estimatedDurationMs = Math.max(850, (wordsCount / 2.65) * 1000);
+  liveSpeechState.estimatedDurationMs = estimatedDurationMs;
   liveSpeechState.fallbackCharIndex = 0;
+
+  let finished = false;
+  let startFired = false;
+
+  const cleanup = () => {
+    clearTimeout(startTimeout);
+    clearTimeout(finishWatchdog);
+  };
+
+  const finishSuccess = () => {
+    if (finished) return;
+    finished = true;
+    cleanup();
+    isAudioPlaying = false;
+    liveSpeechState.chunkText = '';
+    if (options.onEnd) options.onEnd();
+  };
+
+  const finishError = (err: any) => {
+    if (finished) return;
+    finished = true;
+    cleanup();
+    isAudioPlaying = false;
+    liveSpeechState.chunkText = '';
+    if (options.onError) options.onError(err);
+  };
+
+  // If Chrome/Safari blocks speechSynthesis silently after async fetch, fail fast in 900ms instead of hanging!
+  const startTimeout = setTimeout(() => {
+    if (!startFired && !finished) {
+      try { window.speechSynthesis.cancel(); } catch {}
+      finishError(new Error('Browser speech synthesis did not start'));
+    }
+  }, 900);
+
+  const finishWatchdog = setTimeout(() => {
+    if (!finished) {
+      finishSuccess();
+    }
+  }, estimatedDurationMs + 3500);
 
   utterance.onboundary = (event) => {
     if (event.name === 'word') {
@@ -727,28 +896,28 @@ function speakJarvisLocalFallback(text: string, options: JarvisSpeechOptions): v
   };
 
   utterance.onstart = () => {
+    if (finished || sessionId !== activePlaybackSessionId) return;
+    startFired = true;
+    clearTimeout(startTimeout);
     isAudioPlaying = true;
     liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (options.onStart) options.onStart();
   };
-  utterance.onend = () => {
-    isAudioPlaying = false;
-    liveSpeechState.chunkText = '';
-    if (options.onEnd) options.onEnd();
-  };
-  utterance.onerror = (e) => {
-    isAudioPlaying = false;
-    liveSpeechState.chunkText = '';
-    if (options.onError) options.onError(e);
-  };
+
+  utterance.onend = finishSuccess;
+  utterance.onerror = finishError;
 
   try {
     if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
-  } catch {}
-
-  window.speechSynthesis.speak(utterance);
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+    window.speechSynthesis.speak(utterance);
+  } catch (err) {
+    finishError(err);
+  }
 }
 
 export function stopJarvis(): void {
@@ -756,6 +925,15 @@ export function stopJarvis(): void {
   isAudioPlaying = false;
   liveSpeechState.chunkText = '';
   liveSpeechState.fallbackCharIndex = -1;
+  activeBufferDuration = 0;
+  if (currentBufferSource) {
+    try {
+      currentBufferSource.onended = null;
+      currentBufferSource.stop();
+      currentBufferSource.disconnect();
+    } catch {}
+    currentBufferSource = null;
+  }
   if (currentAudio) {
     try {
       currentAudio.pause();
@@ -769,6 +947,9 @@ export function stopJarvis(): void {
 }
 
 export function isJarvisSpeaking(): boolean {
+  if (currentBufferSource) {
+    return isAudioPlaying;
+  }
   if (currentAudio) {
     return !currentAudio.paused && !currentAudio.ended;
   }

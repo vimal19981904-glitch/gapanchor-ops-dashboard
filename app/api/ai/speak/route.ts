@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 10;
 
 // Server-side LRU cache for generated audio buffers to maximize speed and minimize edge calls
 const serverAudioCache = new Map<string, Buffer>();
@@ -100,7 +101,7 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
   }
 
   const runSingleSynthesis = async (selectedVoice: string): Promise<Buffer> => {
-    const tts = new MsEdgeTTS({ connectionTimeoutMs: 5000, synthesisTimeoutMs: 15000 });
+    const tts = new MsEdgeTTS({ connectionTimeoutMs: 3200, synthesisTimeoutMs: 6500 });
     try {
       await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
       const { audioStream } = tts.toStream(cleanText, { rate, pitch });
@@ -118,8 +119,9 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
   const promise = (async () => {
     let audioBuffer: Buffer | null = null;
     let lastErr: any = null;
+    const startMs = Date.now();
 
-    // Retry the EXACT same voice once on transient Edge-TTS failure; never silently swap to a different voice
+    // Retry once on transient failure ONLY if enough serverless budget remains; fail fast cleanly so client falls back without hanging
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         audioBuffer = await runSingleSynthesis(voice);
@@ -130,9 +132,11 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
       } catch (err) {
         lastErr = err;
         console.warn(`Neural voice (${voice}) attempt ${attempt + 1} failed:`, err);
-        if (attempt === 0) {
-          await new Promise((r) => setTimeout(r, 250));
+        if (attempt === 0 && Date.now() - startMs < 2500) {
+          await new Promise((r) => setTimeout(r, 150));
+          continue;
         }
+        break;
       }
     }
 

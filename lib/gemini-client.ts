@@ -21,8 +21,8 @@ export function getGeminiConfig(): { apiKey: string | null; model: string } {
 
 let cachedWorkingModel = 'gemini-3.5-flash-lite';
 
-export async function callGemini(
-  prompt: string,
+async function runGeminiGenerateContent(
+  contents: any[],
   options?: {
     apiKey?: string;
     model?: string;
@@ -56,7 +56,7 @@ export async function callGemini(
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
 
       const body: any = {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents,
         generationConfig: {
           temperature: options?.temperature ?? 0.2,
           candidateCount: 1,
@@ -93,4 +93,56 @@ export async function callGemini(
   }
 
   throw new Error(`Gemini API error across candidate models: ${lastErrorText}`);
+}
+
+export async function callGemini(
+  prompt: string,
+  options?: {
+    apiKey?: string;
+    model?: string;
+    jsonMode?: boolean;
+    temperature?: number;
+    maxOutputTokens?: number;
+  }
+): Promise<{ text: string; model: string }> {
+  return runGeminiGenerateContent([{ parts: [{ text: prompt }] }], options);
+}
+
+/**
+ * Transcribes spoken audio captured by MediaRecorder when native Web Speech API
+ * is unavailable, blocked on HTTPS/mobile, or returns empty frames.
+ */
+export async function transcribeAudioWithGemini(
+  base64Audio: string,
+  mimeType: string
+): Promise<{ transcript: string; model: string }> {
+  const cleanMime = (mimeType || 'audio/webm').split(';')[0].trim() || 'audio/webm';
+  const result = await runGeminiGenerateContent(
+    [
+      {
+        parts: [
+          {
+            text: 'Transcribe the exact English words spoken in this audio recording. Output ONLY the verbatim spoken text with normal punctuation and no extra commentary. If there is only silence, breathing, or background noise with no clear speech, respond with exactly: [SILENCE]',
+          },
+          {
+            inlineData: {
+              mimeType: cleanMime,
+              data: base64Audio,
+            },
+          },
+        ],
+      },
+    ],
+    {
+      temperature: 0.0,
+      maxOutputTokens: 256,
+    }
+  );
+
+  const cleaned = result.text
+    .replace(/\[SILENCE\]/gi, '')
+    .replace(/^["']|["']$/g, '')
+    .trim();
+
+  return { transcript: cleaned, model: result.model };
 }
