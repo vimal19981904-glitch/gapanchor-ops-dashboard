@@ -76,6 +76,15 @@ const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|ok|okay)\s+(?:jarvis|javis)\b/i;
 const ECHO_PHRASES = [
   /^sir$/i,
   /^ready$/i,
+  /^online$/i,
+  /^online\s*sir$/i,
+  /^online\s*sir\s*ready$/i,
+  /^online\s*ready$/i,
+  /^online\s*so$/i,
+  /^all\s*lines?\s*(?:are\s*)?ready$/i,
+  /^ready\s*sir$/i,
+  /^right\s*away\s*(?:sir)?$/i,
+  /^yes\s*sir$/i,
   /^jarvis$/i,
   /^hey jarvis$/i,
   /what can i do for you/i,
@@ -86,7 +95,8 @@ const ECHO_PHRASES = [
   /anything else i can assist/i,
   /standing by whenever/i,
   /briefing executive/i,
-  /online sir/i,
+  /online\s*,?\s*sir/i,
+  /online\s*,?\s*ready/i,
 ];
 
 /**
@@ -102,11 +112,17 @@ export function isJarvisSelfEchoOrFiller(text: string): boolean {
 /**
  * Determines whether a transcript represents a genuine, actionable user command.
  * Strips any accidental wake-word prefix (e.g. "Hey Jarvis, who should I call?")
+ * and strips any self-spoken greeting echoes ("Online, sir. Ready.").
  */
 export function isActionablePrompt(text: string): boolean {
   if (!text) return false;
   let cleaned = text.trim().replace(/[.,!?;:'"]/g, '').toLowerCase();
+  // Strip wake word prefix
   cleaned = cleaned.replace(/^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)\s*/i, '').trim();
+  // Strip greeting phrases if user speech echoed Jarvis greeting
+  cleaned = cleaned
+    .replace(/^(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?|online\s*,?\s*sir\.?|online\s*,?\s*ready\.?|right\s+away\s*,?\s*sir\.?|ready\s*,?\s*sir\.?|online\.?)\s*/i, '')
+    .trim();
 
   if (!cleaned) return false;
   if (cleaned.length < 2) return false;

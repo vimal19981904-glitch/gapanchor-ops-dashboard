@@ -112,18 +112,30 @@ export function JarvisVoiceModal({
     }
   }, [isOpen]);
 
+  const stripJarvisGreetingPrefix = (raw: string) =>
+    raw
+      .replace(
+        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
+        ''
+      )
+      .trim();
+
   const startGreetingSequence = () => {
-    // 1. Immediately activate microphone
-    startListeningForUserPrompt();
-    setStage('listening');
+    // Stage is greeting while Jarvis announces ready; mic is only opened on greeting completion to prevent self-echo capture
+    setStage('greeting');
     setTranscript('');
 
-    // 2. Short non-blocking audio cue that cancels if user speaks
     speakJarvis('Online, sir. Ready.', {
       includeIntro: false,
       onStart: () => setStage('greeting'),
-      onEnd: () => setStage('listening'),
-      onError: () => setStage('listening'),
+      onEnd: () => {
+        setStage('listening');
+        startListeningForUserPrompt();
+      },
+      onError: () => {
+        setStage('listening');
+        startListeningForUserPrompt();
+      },
     });
   };
 
@@ -168,14 +180,14 @@ export function JarvisVoiceModal({
   };
 
   const handleUserSpeechCompleted = async (finalText: string) => {
-    if (!finalText.trim()) {
-      setStage('idle');
+    if (!finalText || !finalText.trim()) {
+      setStage('listening');
       return;
     }
 
-    const clean = finalText.trim();
-    if (!isActionablePrompt(clean)) {
-      console.log('Ignored non-actionable speech fragment in modal:', clean);
+    const clean = stripJarvisGreetingPrefix(finalText.trim());
+    if (!clean || !isActionablePrompt(clean)) {
+      console.log('Ignored greeting echo or non-actionable speech fragment in modal:', finalText);
       startListeningForUserPrompt();
       return;
     }

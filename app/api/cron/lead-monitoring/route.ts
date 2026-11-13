@@ -59,16 +59,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // ─── 1. Run Graph Cloud Sync (5-min Intake from contact@gapanchor.com -> Demo enquiry!) ───
+    // ─── 1. Optional Graph Cloud Sync (Intake from contact@gapanchor.com -> Demo enquiry!) ───
     let graphSyncResult: any = null;
-    try {
-      graphSyncResult = await syncOutlookGraphEnquiries();
-    } catch (graphErr: any) {
-      console.error('Graph Sync failed during 5m cron:', graphErr.message);
-      graphSyncResult = { success: false, error: graphErr.message };
+    if (searchParams.get('sync') === 'true') {
+      try {
+        graphSyncResult = await syncOutlookGraphEnquiries();
+      } catch (graphErr: any) {
+        console.error('Graph Sync failed during cron:', graphErr.message);
+        graphSyncResult = { success: false, error: graphErr.message };
+      }
     }
 
-    // ─── 2. Run Lead SLA Breach Monitoring & Alerts ───
+    // ─── 2. Run Lead SLA Breach Monitoring & Mobile Push Alerts ───
     const result = await processPendingLeadsMonitoring();
     const recentLogs = await prisma.cronExecutionLog.findMany({
       take: 10,

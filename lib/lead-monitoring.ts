@@ -1,6 +1,28 @@
 import { prisma } from '@/lib/prisma';
 import { sendLeadAlertEmail, LeadEmailPayload } from '@/lib/email-service';
 
+export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void> {
+  try {
+    const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://gapanchor.com';
+    const title = `4h Pending SLA: ${payload.leadName}`;
+    const message = `Lead ${payload.leadName} has been in Pending status for ${payload.timeInPendingFormatted}!\nCourse: ${payload.courseOrService || 'General'}\nPhone: ${payload.leadPhone || 'N/A'}\nEmail: ${payload.leadEmail || 'N/A'}\n\nPlease contact them or update the enquiry status!`;
+
+    await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        Title: title,
+        Priority: 'urgent',
+        Tags: 'warning,hourglass_flowing_sand',
+        Click: `${baseUrl}/enquiries`,
+      },
+      body: message,
+    });
+  } catch (err: any) {
+    console.error('[NTFY SLA Alert] Failed to dispatch push notification:', err?.message || err);
+  }
+}
+
 export function formatTimeElapsed(milliseconds: number): string {
   const totalMinutes = Math.floor(milliseconds / (1000 * 60));
   const hours = Math.floor(totalMinutes / 60);
@@ -31,7 +53,7 @@ export async function processPendingLeadsMonitoring(): Promise<{
 
   try {
     const now = new Date();
-    const fourAndHalfHoursMs = 4.5 * 60 * 60 * 1000; // 4.5 Hours (270 minutes)
+    const fourHoursMs = 4.0 * 60 * 60 * 1000; // 4.0 Hours (240 minutes)
     const thirtyMinutesMs = 30 * 60 * 1000; // 30 Minutes
 
     // ─── 1. Register or update top 30 most recent Pending leads into LeadMonitoringAudit ────
@@ -115,14 +137,14 @@ export async function processPendingLeadsMonitoring(): Promise<{
 
       const elapsedMs = now.getTime() - new Date(audit.pendingStartTime).getTime();
 
-      // Threshold 1: Initial 4.5 Hours Inactivity Grace Period
-      if (elapsedMs >= fourAndHalfHoursMs) {
+      // Threshold 1: Initial 4.0 Hours Inactivity Grace Period
+      if (elapsedMs >= fourHoursMs) {
         const arrivalDate = enquiry.messageTimestamp ? new Date(enquiry.messageTimestamp) : new Date(audit.pendingStartTime);
-        const breachDate = new Date(arrivalDate.getTime() + fourAndHalfHoursMs);
+        const breachDate = new Date(arrivalDate.getTime() + fourHoursMs);
 
         const timeInPendingFormatted = formatTimeElapsed(elapsedMs);
         const leadArrivalTime = arrivalDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-        const slaBreachTime = `${breachDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (4.5h SLA Breached)`;
+        const slaBreachTime = `${breachDate.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} (4h SLA Breached)`;
         const alertTriggeredTime = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 
         const payload: LeadEmailPayload = {
@@ -144,60 +166,44 @@ export async function processPendingLeadsMonitoring(): Promise<{
         let authFailed = false;
         // Condition A: First Alert (after 4 hours)
         if (!audit.firstAlertSentAt) {
-          const emailResult = await sendLeadAlertEmail(payload);
-          if (emailResult.success) {
+          // Send push notification to mobile phone immediately
+          await sendNtfyLeadAlert(payload);
+          
+          // Non-blocking email attempt in background so SMTP timeouts never delay or fail the SLA check
+          sendLeadAlertEmail(payload).catch((err) =>
+            console.warn(`[Lead Alert] Email background dispatch failed:`, err?.message || err)
+          );
+
+          await prisma.leadMonitoringAudit.update({
+            where: { id: audit.id },
+            data: {
+              firstAlertSentAt: now,
+              lastAlertSentAt: now,
+              alertCount: { increment: 1 },
+            },
+          });
+          firstAlertsSentCount++;
+        }
+        // Condition B: Recurring Alert (every 30 minutes thereafter if still Pending)
+        else if (audit.lastAlertSentAt) {
+          const timeSinceLastAlertMs = now.getTime() - new Date(audit.lastAlertSentAt).getTime();
+          if (timeSinceLastAlertMs >= thirtyMinutesMs) {
+            // Send recurring mobile push notification
+            await sendNtfyLeadAlert(payload);
+            
+            // Non-blocking email attempt in background
+            sendLeadAlertEmail(payload).catch((err) =>
+              console.warn(`[Lead Alert] Email background dispatch failed:`, err?.message || err)
+            );
+
             await prisma.leadMonitoringAudit.update({
               where: { id: audit.id },
               data: {
-                firstAlertSentAt: now,
                 lastAlertSentAt: now,
                 alertCount: { increment: 1 },
               },
             });
-            firstAlertsSentCount++;
-          } else {
-            errorsEncountered.push(`Failed sending 1st alert for lead ${enquiry.id}: ${emailResult.error}`);
-            if (
-              emailResult.error?.includes('BadCredentials') ||
-              emailResult.error?.includes('Username and Password') ||
-              emailResult.error?.includes('Invalid login') ||
-              emailResult.error?.includes('Too many login attempts') ||
-              emailResult.error?.includes('535') ||
-              emailResult.error?.includes('454') ||
-              emailResult.error?.includes('EAUTH')
-            ) {
-              authFailed = true;
-            }
-          }
-        }
-        // Condition B: Recurring Alert (every 30 minutes thereafter)
-        else if (audit.lastAlertSentAt) {
-          const timeSinceLastAlertMs = now.getTime() - new Date(audit.lastAlertSentAt).getTime();
-          if (timeSinceLastAlertMs >= thirtyMinutesMs) {
-            const emailResult = await sendLeadAlertEmail(payload);
-            if (emailResult.success) {
-              await prisma.leadMonitoringAudit.update({
-                where: { id: audit.id },
-                data: {
-                  lastAlertSentAt: now,
-                  alertCount: { increment: 1 },
-                },
-              });
-              recurringAlertsSentCount++;
-            } else {
-              errorsEncountered.push(`Failed sending recurring alert for lead ${enquiry.id}: ${emailResult.error}`);
-              if (
-                emailResult.error?.includes('BadCredentials') ||
-                emailResult.error?.includes('Username and Password') ||
-                emailResult.error?.includes('Invalid login') ||
-                emailResult.error?.includes('Too many login attempts') ||
-                emailResult.error?.includes('535') ||
-                emailResult.error?.includes('454') ||
-                emailResult.error?.includes('EAUTH')
-              ) {
-                authFailed = true;
-              }
-            }
+            recurringAlertsSentCount++;
           }
         }
 

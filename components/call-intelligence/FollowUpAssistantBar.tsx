@@ -222,8 +222,10 @@ export function FollowUpAssistantBar({
   // ─── Inline Voice Mode Core Handlers ───
   const stripJarvisGreetingPrefix = (raw: string) =>
     raw
-      .replace(/^(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*)/i, '')
-      .replace(/^(?:right\s+away\s*,?\s*sir\.?\s*)/i, '')
+      .replace(
+        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
+        ''
+      )
       .trim();
 
   const startListeningInline = () => {
@@ -271,7 +273,13 @@ export function FollowUpAssistantBar({
         setVoiceTranscript(cleaned);
       },
       onFinal: (finalText) => {
-        const cleaned = stripJarvisGreetingPrefix(finalText) || finalText.trim();
+        const cleaned = stripJarvisGreetingPrefix(finalText);
+        if (!cleaned || !isActionablePrompt(cleaned)) {
+          console.log('Ignored greeting echo or empty user turn:', finalText);
+          setLiveAudioLevel(0);
+          setVoiceStatusMessage('Listening to you... Speak your command now.');
+          return;
+        }
         hasSpokenInCurrentTurnRef.current = true;
         setLiveAudioLevel(0);
         handleExecuteVoicePrompt(cleaned);
@@ -289,31 +297,33 @@ export function FollowUpAssistantBar({
   };
 
   const handleOpenVoiceMode = () => {
-    // Synchronously unlock Web Audio / SpeechSynthesis AND activate microphone inside the user click gesture!
+    // Synchronously unlock Web Audio / SpeechSynthesis inside the user click gesture!
     unlockJarvisAudio();
     pauseWakeWordMonitor();
     setIsVoiceModeActive(true);
-    startListeningInline();
+    hasSpokenInCurrentTurnRef.current = false;
+    setVoiceTranscript('');
+    setVoiceStage('greeting');
+    setVoiceStatusMessage('Online, sir. Ready.');
 
-    // Non-blocking spoken greeting only if the user hasn't started speaking yet
-    if (!hasSpokenInCurrentTurnRef.current) {
-      speakJarvis('Online, sir. Ready.', {
-        includeIntro: false,
-        onStart: () => {
-          if (!hasSpokenInCurrentTurnRef.current) {
-            setIsSpeakingJarvis(true);
-          } else {
-            stopJarvis();
-          }
-        },
-        onEnd: () => {
-          setIsSpeakingJarvis(false);
-        },
-        onError: () => {
-          setIsSpeakingJarvis(false);
-        },
-      });
-    }
+    // Spoken greeting plays first; microphone starts cleanly on completion to prevent self-echo capture!
+    speakJarvis('Online, sir. Ready.', {
+      includeIntro: false,
+      onStart: () => {
+        setIsSpeakingJarvis(true);
+        setVoiceStage('greeting');
+      },
+      onEnd: () => {
+        setIsSpeakingJarvis(false);
+        if (!hasSpokenInCurrentTurnRef.current) {
+          startListeningInline();
+        }
+      },
+      onError: () => {
+        setIsSpeakingJarvis(false);
+        startListeningInline();
+      },
+    });
   };
 
   const handleCloseVoiceMode = () => {
@@ -356,15 +366,14 @@ export function FollowUpAssistantBar({
       return;
     }
 
-    // Clean prompt: strip optional "Hey Jarvis" prefix so search engine gets clean inquiry
+    // Clean prompt: strip optional "Hey Jarvis" prefix and greeting echoes
     let cleanPrompt = promptText.trim().replace(/^(?:hey|hi|hello|ok|okay)?\s*jarvis[,.]?\s*/i, '').trim();
-    if (!cleanPrompt) {
-      cleanPrompt = promptText.trim();
-    }
+    cleanPrompt = stripJarvisGreetingPrefix(cleanPrompt);
 
-    // Prevent executing accidental single-syllable noises, coughs, or self-echoes
-    if (!isActionablePrompt(cleanPrompt)) {
-      console.log('Filtered non-actionable voice fragment:', cleanPrompt);
+    // Prevent executing accidental single-syllable noises, coughs, or greeting echoes
+    if (!cleanPrompt || !isActionablePrompt(cleanPrompt)) {
+      console.log('Filtered non-actionable voice fragment:', promptText);
+      setVoiceStatusMessage('Listening to you... Speak your command now.');
       startListeningInline();
       return;
     }
