@@ -5,15 +5,14 @@ export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void
   try {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
     const baseUrl = 'https://dashboard-green-psi-12.vercel.app';
-    const title = `4h Pending SLA: ${payload.leadName}`;
-    const message = `Lead ${payload.leadName} has been in Pending status for ${payload.timeInPendingFormatted}!\nCourse: ${payload.courseOrService || 'General'}\nPhone: ${payload.leadPhone || 'N/A'}\nEmail: ${payload.leadEmail || 'N/A'}\n\nPlease contact them or update the enquiry status!`;
+    const title = `---! 4h Pending SLA: ${payload.leadName}`;
+    const message = `Lead: ${payload.leadName}\nPending For: ${payload.timeInPendingFormatted}\nCourse: ${payload.courseOrService || 'General'}\nPhone: ${payload.leadPhone || 'N/A'}\nEmail: ${payload.leadEmail || 'N/A'}\nCountry: ${payload.country || 'N/A'}\n\nPlease contact or update status in CRM.`;
 
     await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       headers: {
         Title: title,
         Priority: 'urgent',
-        Tags: 'warning,hourglass_flowing_sand',
         Click: `${baseUrl}/enquiries`,
       },
       body: message,
