@@ -42,7 +42,7 @@ export function formatTimeElapsed(milliseconds: number): string {
   return `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}`;
 }
 
-export async function processPendingLeadsMonitoring(): Promise<{
+export async function processPendingLeadsMonitoring(forceAlert: boolean = false): Promise<{
   success: boolean;
   leadsCheckedCount: number;
   firstAlertsSentCount: number;
@@ -192,10 +192,10 @@ export async function processPendingLeadsMonitoring(): Promise<{
           });
           firstAlertsSentCount++;
         }
-        // Condition B: Recurring Alert (every 30 minutes thereafter if still Pending)
+        // Condition B: Recurring Alert (every 30 minutes thereafter if still Pending, or immediately if forceAlert=true)
         else if (audit.lastAlertSentAt) {
           const timeSinceLastAlertMs = now.getTime() - new Date(audit.lastAlertSentAt).getTime();
-          if (timeSinceLastAlertMs >= thirtyMinutesMs) {
+          if (forceAlert || timeSinceLastAlertMs >= thirtyMinutesMs) {
             // Send recurring mobile push notification
             await sendNtfyLeadAlert(payload);
             
