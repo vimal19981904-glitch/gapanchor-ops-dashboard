@@ -5,7 +5,9 @@ export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void
   try {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
     const baseUrl = 'https://dashboard-green-psi-12.vercel.app';
-    const title = `❗ 4h Pending SLA: ${payload.leadName}`;
+    const rawTitle = `❗ 4h Pending SLA: ${payload.leadName}`;
+    // Base64 encode Title using RFC 2047 so Node.js HTTP fetch never throws [ERR_INVALID_CHAR] for emojis
+    const safeTitle = '=?UTF-8?B?' + Buffer.from(rawTitle).toString('base64') + '?=';
     const message = [
       `Lead: ${payload.leadName}`,
       `Received: ${payload.leadArrivalTime}`,
@@ -17,15 +19,16 @@ export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void
       `Status: Still Pending (Follow-up Required)`,
     ].join('\n');
 
-    await fetch(`https://ntfy.sh/${topic}`, {
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       headers: {
-        Title: title,
+        Title: safeTitle,
         Priority: 'urgent',
         Click: `${baseUrl}/enquiries`,
       },
       body: message,
     });
+    console.log('[NTFY SLA Alert] Dispatched status:', res.status);
   } catch (err: any) {
     console.error('[NTFY SLA Alert] Failed to dispatch push notification:', err?.message || err);
   }
