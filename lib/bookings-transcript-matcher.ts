@@ -28,6 +28,81 @@ export interface BookingAppointment {
   joinWebUrl?: string; // Teams Meeting Link
 }
 
+const GENERIC_NAMES = new Set([
+  'transcript',
+  'meeting',
+  'recording',
+  'call',
+  'session',
+  'unknown',
+  'candidate',
+  'webvtt',
+  'speaker',
+  'user',
+  'guest',
+  'none',
+  'null',
+  'undefined',
+  'gapanchor',
+]);
+
+/**
+ * Extracts candidate speaker name directly from dialogue text or WEBVTT speaker cues
+ * e.g. "<v Akhilesh  Rana>" or "00:00:58.543 --> 00:00:59.183 joel Hello."
+ */
+export function extractSpeakerFromTranscript(text: string): string | null {
+  const isHostSpeaker = (name: string) => {
+    const n = name.toLowerCase().trim();
+    return (
+      n.includes('gapanchor') ||
+      n.includes('arul') ||
+      n.includes('sam') ||
+      n.includes('host') ||
+      n.includes('admin') ||
+      n.includes('trainer') ||
+      n.includes('ownership') ||
+      GENERIC_NAMES.has(n)
+    );
+  };
+
+  // 1. WEBVTT speaker tags: <v Speaker Name>
+  const vttRegex = /<v\s+([^>]+)>/gi;
+  let vttMatch: RegExpExecArray | null;
+  while ((vttMatch = vttRegex.exec(text)) !== null) {
+    const rawSpeaker = vttMatch[1].trim();
+    if (rawSpeaker && !isHostSpeaker(rawSpeaker)) {
+      return rawSpeaker.replace(/\s+/g, ' ');
+    }
+  }
+
+  // 2. Docx timestamp-prefixed speaker patterns:
+  // e.g. "00:00:58.543 --> 00:00:59.183 joel Hello." or "--&gt;"
+  const docxRegex = /\d{2}:\d{2}:\d{2}[\.,]\d{3}\s*(?:-->|--&gt;)\s*\d{2}:\d{2}:\d{2}[\.,]\d{3}\s+([^:\r\n<]+?)(?:\s+[A-Z0-9]|\s*:)/gi;
+  let docxMatch: RegExpExecArray | null;
+  while ((docxMatch = docxRegex.exec(text)) !== null) {
+    const rawSpeaker = docxMatch[1].trim();
+    if (rawSpeaker && rawSpeaker.length >= 2 && !isHostSpeaker(rawSpeaker)) {
+      return rawSpeaker
+        .replace(/\s+/g, ' ')
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+  }
+
+  // 3. Standard "Speaker Name: text" format
+  const colonRegex = /^([A-Za-z\s]{2,30}):\s+/gm;
+  let colonMatch: RegExpExecArray | null;
+  while ((colonMatch = colonRegex.exec(text)) !== null) {
+    const rawSpeaker = colonMatch[1].trim();
+    if (rawSpeaker && !isHostSpeaker(rawSpeaker)) {
+      return rawSpeaker.replace(/\s+/g, ' ');
+    }
+  }
+
+  return null;
+}
+
 /**
  * Extracts candidate name, date, and duration from Teams transcript header
  * e.g. "IT support _ Training - Shorya Garg-20261018_065728-Meeting Transcript"
@@ -54,8 +129,16 @@ export function extractTranscriptMetadata(rawTranscript: string, fallbackFileNam
     }
   }
 
-  // 1b. Fallback to filename if titleLine is WEBVTT or didn't provide a candidate name
-  if ((customerName === 'Unknown Candidate' || !customerName) && fallbackFileName) {
+  // 1b. If customerName is generic or unknown, extract candidate speaker from dialogue text
+  if (customerName === 'Unknown Candidate' || !customerName || GENERIC_NAMES.has(customerName.toLowerCase())) {
+    const speakerFromDialogue = extractSpeakerFromTranscript(rawTranscript);
+    if (speakerFromDialogue) {
+      customerName = speakerFromDialogue;
+    }
+  }
+
+  // 1c. Fallback to filename ONLY if it is not generic and dialogue didn't yield a name
+  if ((customerName === 'Unknown Candidate' || !customerName || GENERIC_NAMES.has(customerName.toLowerCase())) && fallbackFileName) {
     const cleaned = fallbackFileName
       .replace(/\.(docx|vtt|txt)$/i, '')
       .replace(/^(?:IT support\s*[_&]\s*Training|Training|Session|Meeting)\s*-\s*/i, '')
@@ -63,7 +146,8 @@ export function extractTranscriptMetadata(rawTranscript: string, fallbackFileNam
       .replace(/-Meeting Transcript.*$/i, '')
       .replace(/_\d+/g, '')
       .trim();
-    if (cleaned && cleaned.length > 1 && !cleaned.toLowerCase().includes('transcript')) {
+    const isGenericFile = /^(?:transcript|meeting|recording|call|session|webvtt|audio|video)(\s*\(\d+\)|\s*_\d+)?$/i.test(cleaned);
+    if (cleaned && cleaned.length > 1 && !isGenericFile && !GENERIC_NAMES.has(cleaned.toLowerCase())) {
       customerName = cleaned;
     }
   }
@@ -307,11 +391,11 @@ export async function resolveTargetEnquiry(
 
   // 5. Tier 2: Email Prefix / Handle Heuristic (e.g. aryasuriyanarayanan@gmail.com -> Arya Suriyanarayanan)
   const normName = candidateName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (normName.length >= 4 && normName !== 'unknowncandidate') {
+  if (normName.length >= 4 && !GENERIC_NAMES.has(normName) && !normName.startsWith('transcript')) {
     const recentEnquiries = await prisma.enquiry.findMany({
       where: {
         email: { not: null },
-        messageTimestamp: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) },
+        messageTimestamp: { gte: new Date(Date.now() - 60 * 24 * 3600 * 1000) },
       },
       orderBy: { messageTimestamp: 'desc' },
       take: 50,
@@ -336,13 +420,14 @@ export async function resolveTargetEnquiry(
     }
   }
 
-  // 6. Tier 3: First Name Token + Proximity (Pending/Open leads within 7 days)
+  // 6. Tier 3: First Name Token + Proximity (Pending/Open/In Touch/Talked leads within 60 days)
   const firstName = candidateName.split(/\s+/)[0].toLowerCase().trim();
-  if (firstName.length >= 3 && firstName !== 'unknown') {
+  const isGenericCandidate = GENERIC_NAMES.has(firstName) || /^(?:transcript|meeting|recording|call|session|webvtt)(\s*\(\d+\)|\s*_\d+)?$/i.test(candidateName);
+  if (firstName.length >= 3 && !isGenericCandidate) {
     const activeLeads = await prisma.enquiry.findMany({
       where: {
-        status: { in: ['Open', 'Pending', 'In Touch', 'Talked'] },
-        messageTimestamp: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
+        status: { in: ['Open', 'Pending', 'In Touch', 'Talked', 'negotiating'] },
+        messageTimestamp: { gte: new Date(Date.now() - 60 * 24 * 3600 * 1000) },
       },
       orderBy: { messageTimestamp: 'desc' },
     });
@@ -360,8 +445,8 @@ export async function resolveTargetEnquiry(
     }
   }
 
-  // 7. Tier 4: Exact Name Match
-  if (candidateName && candidateName !== 'Unknown Candidate') {
+  // 7. Tier 4: Exact Name Match (only for valid non-generic names)
+  if (candidateName && !isGenericCandidate && !GENERIC_NAMES.has(candidateName.toLowerCase())) {
     const enquiry = await prisma.enquiry.findFirst({
       where: { participantName: { equals: candidateName, mode: 'insensitive' } },
       orderBy: { messageTimestamp: 'desc' },

@@ -149,10 +149,15 @@ export async function POST(request: NextRequest) {
               .replace(/_\d+/g, '')
               .trim();
 
+            const isGenericFile =
+              !candidateNameFromFile ||
+              /^(?:transcript|meeting|recording|call|session|webvtt|audio|video)(\s*\(\d+\)|\s*_\d+)?$/i.test(candidateNameFromFile) ||
+              ['transcript', 'meeting', 'recording', 'call', 'session', 'unknown', 'candidate', 'webvtt'].includes(candidateNameFromFile.toLowerCase());
+
             transcriptItems.push({
               text,
               fileId: file,
-              candidateName: candidateNameFromFile && candidateNameFromFile.length > 1 ? candidateNameFromFile : undefined,
+              candidateName: !isGenericFile && candidateNameFromFile.length > 1 ? candidateNameFromFile : undefined,
             });
           }
         }
@@ -234,18 +239,46 @@ export async function POST(request: NextRequest) {
       });
 
       let targetEnquiry = resolved.enquiry;
-      const rawCandidateName = resolved.resolvedName || item.candidateName || (meta.customerName !== 'Unknown Candidate' ? meta.customerName : null);
+      let rawCandidateName = resolved.resolvedName || item.candidateName || (meta.customerName !== 'Unknown Candidate' ? meta.customerName : null);
       const candidateEmail = resolved.resolvedEmail || item.email || null;
       const candidatePhone = resolved.resolvedPhone || item.phone || null;
 
-      // SAFETY GUARD: If no existing lead found and candidate name cannot be identified, NEVER create a dummy "Unknown Candidate" lead!
+      const isGenericName = (name: string | null | undefined): boolean => {
+        if (!name || name.trim().length < 2) return true;
+        const lower = name.toLowerCase().trim();
+        return (
+          lower.includes('unknown') ||
+          lower === 'candidate' ||
+          lower === 'speaker' ||
+          lower.startsWith('transcript') ||
+          /^(?:transcript|meeting|recording|call|session|webvtt|audio|video)(\s*\(\d+\)|\s*_\d+)?$/i.test(lower)
+        );
+      };
+
+      // If still no target enquiry and the name is generic, run AI pre-analysis to extract the real candidate name
+      if (!targetEnquiry && isGenericName(rawCandidateName)) {
+        try {
+          const probe = await analyzeTranscript(item.text, 'Candidate');
+          if (probe?.candidateName && !isGenericName(probe.candidateName)) {
+            rawCandidateName = probe.candidateName;
+            const retryResolve = await resolveTargetEnquiry(prisma, { ...meta, customerName: probe.candidateName });
+            if (retryResolve.enquiry) {
+              targetEnquiry = retryResolve.enquiry;
+            }
+          }
+        } catch (e) {
+          console.warn('[Sync Transcripts] Probe analysis warning:', e);
+        }
+      }
+
+      // SAFETY GUARD: If no existing lead found and candidate name is generic or cannot be identified, NEVER create a dummy lead!
       if (!targetEnquiry) {
-        if (!rawCandidateName || rawCandidateName.toLowerCase().includes('unknown') || rawCandidateName.trim().length < 2) {
-          console.warn('[Sync Transcripts] Skipping file without identified candidate:', item.fileId);
+        if (isGenericName(rawCandidateName)) {
+          console.warn('[Sync Transcripts] Skipping file without identified candidate:', item.fileId, rawCandidateName);
           continue;
         }
 
-        const preAnalysis = await analyzeTranscript(item.text, rawCandidateName);
+        const preAnalysis = await analyzeTranscript(item.text, rawCandidateName!);
 
         targetEnquiry = await prisma.enquiry.create({
           data: {
