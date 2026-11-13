@@ -4,7 +4,7 @@ import { sendLeadAlertEmail, LeadEmailPayload } from '@/lib/email-service';
 export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void> {
   try {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://gapanchor.com';
+    const baseUrl = 'https://dashboard-green-psi-12.vercel.app';
     const title = `4h Pending SLA: ${payload.leadName}`;
     const message = `Lead ${payload.leadName} has been in Pending status for ${payload.timeInPendingFormatted}!\nCourse: ${payload.courseOrService || 'General'}\nPhone: ${payload.leadPhone || 'N/A'}\nEmail: ${payload.leadEmail || 'N/A'}\n\nPlease contact them or update the enquiry status!`;
 
