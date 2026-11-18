@@ -68,6 +68,7 @@ import {
 } from '@/lib/jarvis-listener';
 import { JarvisOrb } from '@/components/call-intelligence/JarvisOrb';
 import { JarvisArcReactor } from '@/components/call-intelligence/JarvisArcReactor';
+import { jarvisAudioFx } from '@/lib/jarvis-audio-fx';
 
 export interface FollowUpFilterOption {
   id: 'all' | 'due_today' | 'high_intent' | 'demo_followup' | 'email_pending' | 'red_flags' | 'has_notes';
@@ -303,27 +304,12 @@ export function FollowUpAssistantBar({
     setIsVoiceModeActive(true);
     hasSpokenInCurrentTurnRef.current = false;
     setVoiceTranscript('');
-    setVoiceStage('greeting');
-    setVoiceStatusMessage('Online, sir. Ready.');
+    setVoiceStage('listening');
+    setVoiceStatusMessage('JARVIS Online. Listening...');
 
-    // Spoken greeting plays first; microphone starts cleanly on completion to prevent self-echo capture!
-    speakJarvis('Online, sir. Ready.', {
-      includeIntro: false,
-      onStart: () => {
-        setIsSpeakingJarvis(true);
-        setVoiceStage('greeting');
-      },
-      onEnd: () => {
-        setIsSpeakingJarvis(false);
-        if (!hasSpokenInCurrentTurnRef.current) {
-          startListeningInline();
-        }
-      },
-      onError: () => {
-        setIsSpeakingJarvis(false);
-        startListeningInline();
-      },
-    });
+    // Instant zero-latency audio cue and immediate mic capture (no 3s blocking TTS delay)
+    jarvisAudioFx.playWakeTone();
+    startListeningInline();
   };
 
   const handleCloseVoiceMode = () => {
@@ -425,10 +411,10 @@ export function FollowUpAssistantBar({
         throw new Error(data?.error || 'Failed to process AI query');
       }
 
-      // 2. Immediately render the response card so the user sees their briefing instantly
+      // 2. Render response data into state while neural speech buffers
       setIsAskingAi(false);
-      setVoiceStage('speaking_output');
-      setVoiceStatusMessage('Briefing executive team...');
+      setVoiceStage('thinking');
+      setVoiceStatusMessage('Synthesizing neural briefing...');
 
       setAiResponse({
         answer: data.answer,

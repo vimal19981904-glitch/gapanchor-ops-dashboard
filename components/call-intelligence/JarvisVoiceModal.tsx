@@ -40,6 +40,7 @@ import {
   isActionablePrompt,
 } from '@/lib/jarvis-listener';
 import { JarvisArcReactor } from '@/components/call-intelligence/JarvisArcReactor';
+import { jarvisAudioFx } from '@/lib/jarvis-audio-fx';
 
 export type JarvisStage =
   | 'idle'
@@ -121,22 +122,11 @@ export function JarvisVoiceModal({
       .trim();
 
   const startGreetingSequence = () => {
-    // Stage is greeting while Jarvis announces ready; mic is only opened on greeting completion to prevent self-echo capture
-    setStage('greeting');
+    // Open mic immediately with instant zero-latency tone so user is never stalled
+    setStage('listening');
     setTranscript('');
-
-    speakJarvis('Online, sir. Ready.', {
-      includeIntro: false,
-      onStart: () => setStage('greeting'),
-      onEnd: () => {
-        setStage('listening');
-        startListeningForUserPrompt();
-      },
-      onError: () => {
-        setStage('listening');
-        startListeningForUserPrompt();
-      },
-    });
+    jarvisAudioFx.playWakeTone();
+    startListeningForUserPrompt();
   };
 
   const startListeningForUserPrompt = () => {

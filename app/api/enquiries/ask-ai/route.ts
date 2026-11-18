@@ -282,7 +282,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
           model,
           jsonMode: true,
           temperature: 0.1,
-          maxOutputTokens: 800,
+          maxOutputTokens: 2500,
         });
 
         const parsed = JSON.parse(geminiRes.text);

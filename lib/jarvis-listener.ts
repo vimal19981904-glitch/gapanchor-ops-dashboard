@@ -436,7 +436,8 @@ function spawnActivePromptRecognition(): any {
 
       if (isActionablePrompt(combined)) {
         const wordCount = combined.trim().split(/\s+/).length;
-        const debounceMs = wordCount >= 3 ? 650 : 850;
+        // Generous debounce (1200ms - 1600ms) allows natural human speech pauses without cutting user off mid-sentence
+        const debounceMs = wordCount >= 3 ? 1200 : 1600;
 
         autoSubmitTimeout = setTimeout(() => {
           if (isListeningSessionOpen && !activePromptDelivered) {

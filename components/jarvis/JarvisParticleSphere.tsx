@@ -843,8 +843,10 @@ export function JarvisParticleSphere({
       }
 
       // Handle SPEAKING: Word-by-Word Dust Pouring from Orb -> Swirling -> Locking into Words
-      const activeSpeechText =
-        liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : replyRef.current.trim();
+      // In live production mode, only bind speech text once audio is actively streaming/playing to prevent phantom premature word reveals
+      const activeSpeechText = isDevOpen
+        ? (liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : replyRef.current.trim())
+        : (liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : '');
 
       let targetAimX = 0;
 
@@ -911,8 +913,8 @@ export function JarvisParticleSphere({
               }
               floatWordPos = mapped;
             }
-          } else {
-            // Deterministic conversational cadence timer (Simulator / silent speaking preview)
+          } else if (isDevOpen) {
+            // Deterministic conversational cadence timer (Simulator / dev silent preview ONLY)
             let accT = 0;
             let mapped = totalWords;
             for (let wi = 0; wi < totalWords; wi++) {
@@ -924,6 +926,9 @@ export function JarvisParticleSphere({
               accT += wordDur;
             }
             floatWordPos = mapped;
+          } else {
+            // In live mode, wait strictly at word 0 until audio packets actively play
+            floatWordPos = 0;
           }
         }
 
