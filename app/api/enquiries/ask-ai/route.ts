@@ -14,6 +14,7 @@ import {
   getComprehensiveOperationsSnapshot,
   evaluateAllCandidatesPriorities,
   OperationsIntelligenceSnapshot,
+  ComprehensiveLeadProfile,
 } from '@/lib/jarvis-pipeline-controller';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,218 @@ function cleanOutput(text: string): string {
       return 'boss';
     });
   return sanitizeIndianCurrencyForSpeech(normalizedBoss);
+}
+
+interface DatabaseFilterMatch {
+  intentDetected: boolean;
+  filterType: 'transcript' | 'notes' | 'due' | 'country' | 'course' | 'status' | 'none';
+  categoryLabel: string;
+  matchedLeadIds: string[];
+  matchedLeads: ComprehensiveLeadProfile[];
+  uniqueCandidateNames: string[];
+  totalMatches: number;
+  recommendedFilter: string;
+  suggestedAnswer: string;
+  suggestedActionAdvice: string;
+}
+
+/**
+ * Scans ALL 502+ database enquiries to identify matching candidate subsets
+ * for filtering prompts (transcripts, notes, due dates, country, course, status).
+ * Prevents premature truncation so J.A.R.V.I.S. always evaluates the entire database.
+ */
+function detectAndEvaluateFullDatabaseFilter(
+  prompt: string,
+  opsContext: OperationsIntelligenceSnapshot,
+  transcriptSnapshot: TranscriptSnapshot
+): DatabaseFilterMatch {
+  const p = prompt.toLowerCase().trim();
+  const allLeads = opsContext.allLeads;
+
+  // 1. Transcript / Call Recording filter
+  const isTranscriptQuery =
+    /\b(transcript|transcripts|recording|recordings|cx|customer experience|call analysis)\b/i.test(p) ||
+    (/\bfiltrate\b/i.test(p) && (/\bcall\b/i.test(p) || /\bpeople\b/i.test(p) || /\blead\b/i.test(p) || /\btranscript/i.test(p))) ||
+    (/\bwho\s+(?:has|have)\s+call/i.test(p)) ||
+    (/\bwho\s+talked\b/i.test(p));
+
+  if (isTranscriptQuery) {
+    const transcriptEnquiryIds = new Set<string>();
+
+    for (const r of transcriptSnapshot.records) {
+      if (r.enquiryId) transcriptEnquiryIds.add(r.enquiryId);
+    }
+
+    for (const l of allLeads) {
+      if (l.transcriptSummary && l.transcriptSummary.trim().length > 0) {
+        transcriptEnquiryIds.add(l.id);
+      }
+    }
+
+    for (const r of transcriptSnapshot.records) {
+      const nameLower = (r.candidateName || '').toLowerCase().trim();
+      if (nameLower.length > 2) {
+        for (const l of allLeads) {
+          if (l.name.toLowerCase().trim() === nameLower) {
+            transcriptEnquiryIds.add(l.id);
+          }
+        }
+      }
+    }
+
+    const matchedLeads = allLeads.filter((l) => transcriptEnquiryIds.has(l.id));
+    const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
+
+    return {
+      intentDetected: true,
+      filterType: 'transcript',
+      categoryLabel: 'candidates with recorded call transcripts',
+      matchedLeadIds: matchedLeads.map((l) => l.id),
+      matchedLeads,
+      uniqueCandidateNames,
+      totalMatches: matchedLeads.length,
+      recommendedFilter: 'all',
+      suggestedAnswer: `Boss, I've scanned all ${allLeads.length} enquiries across our database and filtered the table to all ${uniqueCandidateNames.length} candidates with recorded call transcripts, including ${uniqueCandidateNames.slice(0, 6).join(', ')}. All call recording summaries, verbatim quotes, and interactive customer experience checklists are loaded for your review.`,
+      suggestedActionAdvice: 'Click Details on any candidate row to review their full call transcript, objection analysis, and follow-up directives.',
+    };
+  }
+
+  // 2. Call Notes filter
+  const isNotesQuery =
+    /\b(with notes|call notes|has notes|have notes|leads with notes|candidates with notes)\b/i.test(p) ||
+    (/\b(notes|remarks)\b/i.test(p) && /\b(filter|filtrate|show|list|find|who)\b/i.test(p));
+
+  if (isNotesQuery) {
+    const matchedLeads = allLeads.filter((l) => l.notes && l.notes.trim().length > 0);
+    const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
+
+    return {
+      intentDetected: true,
+      filterType: 'notes',
+      categoryLabel: 'candidates with CRM call notes',
+      matchedLeadIds: matchedLeads.map((l) => l.id),
+      matchedLeads,
+      uniqueCandidateNames,
+      totalMatches: matchedLeads.length,
+      recommendedFilter: 'has_notes',
+      suggestedAnswer: `Boss, I scanned all ${allLeads.length} database enquiries and filtered the table to all ${uniqueCandidateNames.length} candidates who have active call notes, including ${uniqueCandidateNames.slice(0, 6).join(', ')}.`,
+      suggestedActionAdvice: 'Review recent discussion remarks and update callback deadlines.',
+    };
+  }
+
+  // 3. Due / Overdue follow-up filter
+  const isDueQuery =
+    /\b(due today|overdue|callback due|pending callback|who is due|follow[\s-]?up due)\b/i.test(p) ||
+    (/\bdue\b/i.test(p) && /\b(filter|filtrate|show|list|who)\b/i.test(p));
+
+  if (isDueQuery) {
+    const matchedLeads = allLeads.filter((l) => l.isDue || Boolean(l.followUpDate));
+    const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
+
+    return {
+      intentDetected: true,
+      filterType: 'due',
+      categoryLabel: 'leads with upcoming or overdue follow-up dates',
+      matchedLeadIds: matchedLeads.map((l) => l.id),
+      matchedLeads,
+      uniqueCandidateNames,
+      totalMatches: matchedLeads.length,
+      recommendedFilter: 'due_today',
+      suggestedAnswer: `Boss, I evaluated all ${allLeads.length} enquiries and filtered the table to all ${uniqueCandidateNames.length} candidates with active follow-up deadlines, including ${uniqueCandidateNames.slice(0, 6).join(', ')}.`,
+      suggestedActionAdvice: 'Initiate WhatsApp and call outreach to lock in their demo bookings.',
+    };
+  }
+
+  // 4. Country filter
+  const countryKeywords: Record<string, string> = {
+    usa: 'USA',
+    'united states': 'USA',
+    india: 'India',
+    uk: 'UK',
+    'united kingdom': 'UK',
+    mexico: 'Mexico',
+    uae: 'United Arab Emirates',
+    dubai: 'United Arab Emirates',
+    'united arab emirates': 'United Arab Emirates',
+    france: 'France',
+    netherlands: 'Netherlands',
+    spain: 'Spain',
+    'saudi arabia': 'Saudi Arabia',
+    canada: 'Canada',
+    australia: 'Australia',
+  };
+
+  for (const [key, countryName] of Object.entries(countryKeywords)) {
+    const re = new RegExp(`\\b${key}\\b`, 'i');
+    if (re.test(p) && /\b(from|in|filter|filtrate|show|list|who|leads|candidates)\b/i.test(p)) {
+      const matchedLeads = allLeads.filter((l) => (l.country || '').toLowerCase().includes(key) || (l.country || '').toLowerCase().includes(countryName.toLowerCase()));
+      const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
+
+      if (matchedLeads.length > 0) {
+        return {
+          intentDetected: true,
+          filterType: 'country',
+          categoryLabel: `candidates from ${countryName}`,
+          matchedLeadIds: matchedLeads.map((l) => l.id),
+          matchedLeads,
+          uniqueCandidateNames,
+          totalMatches: matchedLeads.length,
+          recommendedFilter: 'all',
+          suggestedAnswer: `Boss, I scanned all ${allLeads.length} CRM enquiries and filtered the table to all ${uniqueCandidateNames.length} candidates from ${countryName}, including ${uniqueCandidateNames.slice(0, 5).join(', ')}.`,
+          suggestedActionAdvice: `Review timezone alignment for scheduled demo sessions in ${countryName}.`,
+        };
+      }
+    }
+  }
+
+  // 5. Course filter
+  const courseKeywords: Record<string, string> = {
+    'blue yonder': 'Blue Yonder WMS',
+    jda: 'Blue Yonder WMS (JDA)',
+    manhattan: 'Manhattan Active WMS',
+    'active wms': 'Manhattan Active WMS',
+    proactive: 'Manhattan ProActive WMS',
+    sap: 'SAP S/4HANA',
+    's/4hana': 'SAP S/4HANA',
+    kinaxis: 'Kinaxis RapidResponse',
+    oracle: 'Oracle SCM',
+  };
+
+  for (const [key, courseName] of Object.entries(courseKeywords)) {
+    const re = new RegExp(`\\b${key}\\b`, 'i');
+    if (re.test(p) && /\b(filter|filtrate|show|list|who|leads|candidates|track)\b/i.test(p)) {
+      const matchedLeads = allLeads.filter((l) => (l.course || '').toLowerCase().includes(key));
+      const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
+
+      if (matchedLeads.length > 0) {
+        return {
+          intentDetected: true,
+          filterType: 'course',
+          categoryLabel: `candidates for ${courseName}`,
+          matchedLeadIds: matchedLeads.map((l) => l.id),
+          matchedLeads,
+          uniqueCandidateNames,
+          totalMatches: matchedLeads.length,
+          recommendedFilter: 'all',
+          suggestedAnswer: `Boss, I scanned all ${allLeads.length} database enquiries and filtered the table to all ${uniqueCandidateNames.length} candidates interested in ${courseName}, including ${uniqueCandidateNames.slice(0, 5).join(', ')}.`,
+          suggestedActionAdvice: `Check upcoming batch schedule and trainer availability for ${courseName}.`,
+        };
+      }
+    }
+  }
+
+  return {
+    intentDetected: false,
+    filterType: 'none',
+    categoryLabel: 'none',
+    matchedLeadIds: [],
+    matchedLeads: [],
+    uniqueCandidateNames: [],
+    totalMatches: 0,
+    recommendedFilter: 'all',
+    suggestedAnswer: '',
+    suggestedActionAdvice: '',
+  };
 }
 
 export async function GET() {
@@ -104,6 +317,9 @@ export async function POST(req: NextRequest) {
       getComprehensiveOperationsSnapshot(prisma),
       getTranscriptKnowledgeSnapshot().catch(() => ({ records: [], highInterestCandidates: [], compactPromptContext: '', totalTranscripts: 0 })),
     ]);
+
+    // Full 502+ database filter intent evaluation (never truncated)
+    const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
 
     // ─── STAGE 3: If Gemini API Key Available: Real Neural Reasoning ───
     if (effectiveApiKey) {
@@ -249,6 +465,22 @@ ${JSON.stringify(opsContext.trainerRegistrations.slice(0, 6), null, 2)}
 
 8. DATABASE TOTALS & AGGREGATES:
 ${JSON.stringify(opsContext.aggregates, null, 2)}
+${fullDbFilter.intentDetected ? `
+9. COMPREHENSIVE FULL-DATABASE SCAN RESULTS (Evaluated ALL ${opsContext.allLeads.length} CRM Enquiries):
+User Request Category: "${fullDbFilter.categoryLabel}"
+Total Matching Candidates: ${fullDbFilter.uniqueCandidateNames.length} (${fullDbFilter.totalMatches} total enquiries across database)
+Matching Candidates Across Entire Database:
+${JSON.stringify(fullDbFilter.matchedLeads.map(l => ({
+  id: l.id,
+  name: l.name,
+  course: l.course,
+  country: l.country,
+  status: l.status,
+  score: l.score,
+  transcriptSummary: l.transcriptSummary ? l.transcriptSummary.slice(0, 250) : null,
+  notes: l.notes
+})), null, 2)}
+` : ''}
 ==============================
 
 OPERATIONAL INSTRUCTIONS & PERSONA:
@@ -281,6 +513,17 @@ OPERATIONAL INSTRUCTIONS & PERSONA:
 11. "matchedIds": Array of matching lead ID strings from the provided dataset (never invented IDs).
 12. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
 13. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
+${fullDbFilter.intentDetected ? `
+14. MANDATORY FULL-DATABASE QUERY DIRECTIVE:
+    - The user specifically requested: "${prompt}".
+    - We evaluated ALL ${opsContext.allLeads.length} enquiries across our CRM database and identified EXACTLY ${fullDbFilter.uniqueCandidateNames.length} matching candidates.
+    - You MUST:
+      * ALWAYS address the user as "boss".
+      * State explicitly that you evaluated all ${opsContext.allLeads.length} enquiries in the database.
+      * Clearly state that the table below is filtered to all ${fullDbFilter.uniqueCandidateNames.length} matching candidates.
+      * Mention key candidate names from this list (e.g. ${fullDbFilter.uniqueCandidateNames.slice(0, 7).join(', ')}).
+      * Never state there are only 4 candidates or truncate the real count.
+` : ''}
 
 Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", "recommendedFilter", optional "pipelineAction".`;
 
@@ -294,8 +537,20 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
         });
 
         const parsed = JSON.parse(geminiRes.text);
-        const cleanAnswer = cleanOutput(parsed.answer || 'Operational analysis complete, sir.');
+        const cleanAnswer = cleanOutput(parsed.answer || 'Operational analysis complete, boss.');
         const cleanAdvice = parsed.actionAdvice ? cleanOutput(parsed.actionAdvice) : null;
+
+        let finalMatchedIds: string[] = [];
+        if (fullDbFilter.intentDetected && fullDbFilter.matchedLeadIds.length > 0) {
+          // Guarantee that ALL matching candidates across the database are retained
+          const idSet = new Set([
+            ...fullDbFilter.matchedLeadIds,
+            ...(Array.isArray(parsed.matchedIds) ? parsed.matchedIds : []),
+          ]);
+          finalMatchedIds = Array.from(idSet);
+        } else if (Array.isArray(parsed.matchedIds)) {
+          finalMatchedIds = parsed.matchedIds;
+        }
 
         return NextResponse.json({
           success: true,
@@ -303,8 +558,8 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
           model: 'GAP Neural v2 (Gemini Flash)',
           answer: cleanAnswer,
           actionAdvice: cleanAdvice,
-          matchedIds: Array.isArray(parsed.matchedIds) ? parsed.matchedIds : [],
-          recommendedFilter: parsed.recommendedFilter || null,
+          matchedIds: finalMatchedIds,
+          recommendedFilter: fullDbFilter.intentDetected ? fullDbFilter.recommendedFilter : (parsed.recommendedFilter || null),
           pipelineAction: parsed.pipelineAction || null,
         });
       } catch (geminiErr: any) {
@@ -354,6 +609,17 @@ function fallbackComprehensiveOperations(
   opsContext: OperationsIntelligenceSnapshot,
   transcriptSnapshot: TranscriptSnapshot
 ) {
+  // 0a. Check comprehensive full-database filter intents (transcripts, notes, dues, country, course)
+  const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
+  if (fullDbFilter.intentDetected) {
+    return {
+      answer: fullDbFilter.suggestedAnswer,
+      actionAdvice: fullDbFilter.suggestedActionAdvice,
+      matchedIds: fullDbFilter.matchedLeadIds,
+      recommendedFilter: fullDbFilter.recommendedFilter,
+    };
+  }
+
   const q = prompt.toLowerCase();
   const fin = opsContext.aggregates.finance;
   const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
