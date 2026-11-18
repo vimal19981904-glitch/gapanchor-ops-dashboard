@@ -16,21 +16,13 @@ export interface JarvisVoiceProfile {
 
 export const JARVIS_VOICE_PROFILES: JarvisVoiceProfile[] = [
   {
-    id: 'en-GB-RyanNeural',
-    name: 'Ryan (Jarvis British)',
-    label: 'Ryan • Classic Jarvis British',
-    tagline: 'Aristocratic British cadence (Paul Bettany persona)',
-    accent: 'UK Aristocratic',
-    gender: 'Male',
-    recommended: true,
-  },
-  {
     id: 'en-US-BrianMultilingualNeural',
     name: 'Brian (ChatGPT Human)',
     label: 'Brian • ChatGPT Conversational',
     tagline: 'Ultra-expressive, natural human pacing & vocal fry',
     accent: 'US Conversational',
     gender: 'Male',
+    recommended: true,
   },
   {
     id: 'en-US-GuyNeural',
@@ -38,6 +30,14 @@ export const JARVIS_VOICE_PROFILES: JarvisVoiceProfile[] = [
     label: 'Guy • Natural Conversational',
     tagline: 'Warm, clear, executive briefing tone',
     accent: 'US Executive',
+    gender: 'Male',
+  },
+  {
+    id: 'en-GB-RyanNeural',
+    name: 'Ryan (Jarvis British)',
+    label: 'Ryan • Classic Jarvis British',
+    tagline: 'Aristocratic British cadence (Paul Bettany persona)',
+    accent: 'UK Aristocratic',
     gender: 'Male',
   },
   {
@@ -50,7 +50,7 @@ export const JARVIS_VOICE_PROFILES: JarvisVoiceProfile[] = [
   },
 ];
 
-const DEFAULT_VOICE_ID = 'en-GB-RyanNeural';
+const DEFAULT_VOICE_ID = 'en-US-BrianMultilingualNeural';
 const STORAGE_KEY = 'jarvis_active_voice_id';
 
 export interface JarvisSpeechOptions {
@@ -332,10 +332,6 @@ async function fetchAudioBuffer(
   rate = '+0%',
   pitch = '+0%'
 ): Promise<ArrayBuffer> {
-  if (Date.now() < neuralTtsCooldownUntil) {
-    throw new Error('Neural TTS in temporary cooldown');
-  }
-
   const cacheKey = `${voiceId}__${text}`;
   const existingBuf = audioArrayBufferCache.get(cacheKey);
   if (existingBuf) return existingBuf;
@@ -344,45 +340,53 @@ async function fetchAudioBuffer(
   if (inFlight) return inFlight;
 
   const promise = (async () => {
-    const controller = new AbortController();
-    const timer = setTimeout(
-      () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
-      3500
-    );
+    let lastErr: any = null;
 
-    try {
-      const res = await fetch('/api/ai/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voice: voiceId,
-          rate,
-          pitch,
-        }),
-        signal: controller.signal,
-      });
+    // Retry up to 2 attempts with a robust 14s timeout so Edge-TTS never gets cut off
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(
+        () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
+        14000
+      );
 
-      if (!res.ok) {
-        throw new Error(`Neural speech service returned status: ${res.status}`);
+      try {
+        const res = await fetch('/api/ai/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice: voiceId,
+            rate,
+            pitch,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error(`Neural speech service returned status: ${res.status}`);
+        }
+
+        const buffer = await res.arrayBuffer();
+        if (!buffer || buffer.byteLength === 0) {
+          throw new Error('Neural speech service returned empty audio.');
+        }
+
+        audioArrayBufferCache.set(cacheKey, buffer);
+        return buffer;
+      } catch (err: any) {
+        lastErr = err;
+        console.warn(`Neural voice (${voiceId}) chunk synthesis attempt ${attempt + 1} failed:`, err.message);
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 200));
+          continue;
+        }
+      } finally {
+        clearTimeout(timer);
       }
-
-      const buffer = await res.arrayBuffer();
-      if (!buffer || buffer.byteLength === 0) {
-        throw new Error('Neural speech service returned empty audio.');
-      }
-
-      neuralTtsCooldownUntil = 0;
-      audioArrayBufferCache.set(cacheKey, buffer);
-      return buffer;
-    } catch (err) {
-      // Short 5s circuit breaker cooldown so fallback local speech takes over immediately
-      // without locking out audio for 60 seconds
-      neuralTtsCooldownUntil = Date.now() + 5_000;
-      throw err;
-    } finally {
-      clearTimeout(timer);
     }
+
+    throw lastErr || new Error('Neural speech synthesis failed.');
   })().finally(() => {
     inFlightClientFetches.delete(cacheKey);
   });
@@ -396,7 +400,7 @@ async function fetchAudioBuffer(
  * as text arrives on screen. Sequential chunk warming avoids flooding Edge-TTS sockets.
  */
 export async function prepareJarvisSpeech(text: string, voiceId?: string): Promise<void> {
-  if (typeof window === 'undefined' || !text || Date.now() < neuralTtsCooldownUntil) return;
+  if (typeof window === 'undefined' || !text) return;
   const cleanBody = sanitizeForSpeech(text);
   if (!cleanBody) return;
 
@@ -411,7 +415,6 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
     if (chunks.length > 1) {
       void (async () => {
         for (let i = 1; i < chunks.length; i++) {
-          if (Date.now() < neuralTtsCooldownUntil) break;
           try {
             await fetchAudioBuffer(chunks[i], activeVoice);
           } catch {
@@ -886,10 +889,15 @@ async function speakJarvisLocalFallback(
 
   const utterance = new SpeechSynthesisUtterance(text);
 
+  const activeVoiceId = options.voiceId || getActiveVoice().id;
+  const isUk = activeVoiceId.toLowerCase().includes('gb') || activeVoiceId.toLowerCase().includes('uk') || activeVoiceId.toLowerCase().includes('ryan') || activeVoiceId.toLowerCase().includes('thomas');
+  const targetLang = isUk ? 'en-gb' : 'en-us';
+
   const naturalVoice =
-    voices.find((v) => (v.name.includes('Natural') || v.name.includes('Online')) && v.lang.startsWith('en')) ||
-    voices.find((v) => v.lang.toLowerCase().startsWith('en-gb')) ||
-    voices.find((v) => v.lang.toLowerCase().startsWith('en-us')) ||
+    voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLang) && (v.name.includes('Natural') || v.name.includes('Online'))) ||
+    voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLang)) ||
+    voices.find((v) => v.lang.toLowerCase().startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online'))) ||
+    voices.find((v) => v.lang.toLowerCase().startsWith('en')) ||
     voices[0];
 
   if (naturalVoice) utterance.voice = naturalVoice;

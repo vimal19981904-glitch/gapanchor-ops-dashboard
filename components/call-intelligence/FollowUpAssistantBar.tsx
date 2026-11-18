@@ -727,7 +727,7 @@ export function FollowUpAssistantBar({
         if (autoSpeakJarvis) {
           setIsSpeakingJarvis(true);
           speakJarvis(fullSpeech, {
-            includeIntro: true,
+            includeIntro: false,
             onStart: () => setIsSpeakingJarvis(true),
             onEnd: () => setIsSpeakingJarvis(false),
             onError: () => setIsSpeakingJarvis(false),

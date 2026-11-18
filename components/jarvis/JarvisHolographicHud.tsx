@@ -239,6 +239,7 @@ export function JarvisHolographicHud({
       ]);
       setUiState('briefing');
       speakJarvis(signOff, {
+        includeIntro: false,
         onStart: () => setUiState('briefing'),
         onEnd: () => {
           setUiState('idle');
@@ -306,17 +307,19 @@ export function JarvisHolographicHud({
 
       if (soundFxEnabled) jarvisAudioFx.playSuccessChime();
 
-      // Read Output in British Voice with ultra-low latency pipelining
+      // Read Output in consistent Neural Voice with ultra-low latency pipelining
       setUiState('briefing');
       const spokenScript = formatHumanizedJarvisBriefing(resultText, tacticalAdvice);
       prepareJarvisSpeech(spokenScript);
       speakJarvis(spokenScript, {
+        includeIntro: false,
         onStart: () => setUiState('briefing'),
         onEnd: () => {
           // Continuous follow-up prompt
           const followUp = getJarvisFollowUpPhrase();
           setTimeout(() => {
             speakJarvis(followUp, {
+              includeIntro: false,
               onStart: () => setUiState('briefing'),
               onEnd: () => {
                 setUiState('idle');
