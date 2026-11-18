@@ -43,10 +43,8 @@ async function runGeminiGenerateContent(
   const modelCandidates = [
     cachedWorkingModel,
     'gemini-3.5-flash-lite',
-    'gemini-3.5-flash',
-    'gemini-3.8-flash',
     requestedModel,
-    'gemini-flash-latest',
+    'gemini-3.5-flash',
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   let lastErrorText = '';
@@ -80,7 +78,9 @@ async function runGeminiGenerateContent(
       }
 
       const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textPart = parts.find((p: any) => p.text && !p.thought);
+      const text = textPart?.text || parts[0]?.text;
       if (!text) {
         continue;
       }
