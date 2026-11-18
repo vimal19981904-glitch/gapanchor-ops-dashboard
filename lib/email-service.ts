@@ -382,7 +382,7 @@ export async function sendPipelineDueAlertEmail(params: {
 <body style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 20px; color: #0f172a;">
   <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px;">
     <div style="border-bottom: 2px solid #ef4444; padding-bottom: 12px; margin-bottom: 16px;">
-      <h2 style="color: #b91c1c; margin: 0; font-size: 20px;">⚠️ Pipeline Due Alert: 3-Day SLA Exceeded</h2>
+      <h2 style="color: #b91c1c; margin: 0; font-size: 20px;">Pipeline Due Alert: 3-Day SLA Exceeded</h2>
       <p style="color: #64748b; margin: 4px 0 0; font-size: 13px;">Triggered via J.A.R.V.I.S. Operations Controller</p>
     </div>
     <p style="font-size: 14px; line-height: 1.5; color: #334155;">

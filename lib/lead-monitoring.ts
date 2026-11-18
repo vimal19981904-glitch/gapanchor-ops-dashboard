@@ -58,16 +58,16 @@ export async function sendNtfyPipelineDueAlert(params: {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
     const baseUrl = process.env.NEXTAUTH_URL || 'https://dashboard-green-psi-12.vercel.app';
     const count = params.totalCount;
-    const rawTitle = `⚠️ Pipeline Alert: ${count} Prospect${count > 1 ? 's' : ''} Overdue (> 3 Days)`;
+    const rawTitle = `Pipeline Alert: ${count} Prospect${count > 1 ? 's' : ''} Overdue (> 3 Days)`;
     const safeTitle = '=?UTF-8?B?' + Buffer.from(rawTitle).toString('base64') + '?=';
 
     const leadSummaries = params.overdueLeads
       .slice(0, 5)
-      .map((l) => `• ${l.name} (${l.course}) - Staged ${l.elapsedDays}d ago [${l.stage}] - Ph: ${l.phone}`)
+      .map((l) => `• ${l.name} (${l.course})`)
       .join('\n');
 
     const message = [
-      `🚨 PIPELINE SLA BREACH: ${count} PROSPECT(S) PENDING > 3 DAYS`,
+      `PIPELINE SLA BREACH: ${count} PROSPECT(S) PENDING > 3 DAYS`,
       `Employees must immediately review and contact these prospects:`,
       '',
       leadSummaries,
@@ -81,7 +81,6 @@ export async function sendNtfyPipelineDueAlert(params: {
       headers: {
         Title: safeTitle,
         Priority: 'urgent',
-        Tags: 'warning,alarm_clock',
         Click: `${baseUrl}/enquiries`,
       },
       body: message,

@@ -178,10 +178,17 @@ export function detectPipelineActionType(prompt: string): JarvisPipelineActionRe
   const p = prompt.toLowerCase().trim();
 
   // 0. Trigger Alert for Pipeline Dues (> 3 Days Overdue)
-  if (
-    (p.includes('trigger') || p.includes('send') || p.includes('fire') || p.includes('dispatch') || p.includes('notify') || p.includes('alert') || p.includes('check')) &&
-    (p.includes('pipeline due') || p.includes('pipeline dues') || p.includes('pipeline overdue') || p.includes('alert for the pipeline') || p.includes('alert for pipeline') || p.includes('pipeline alert') || p.includes('dues in pipeline') || p.includes('due in pipeline'))
-  ) {
+  const isPipelineDueAlertTrigger =
+    (/\b(notification|notifications|alert|alerts)\b/i.test(p) &&
+      /\b(send|push|ping|finger|trigger|fire|dispatch|shoot|call|out|pipeline|employee|team)\b/i.test(p)) ||
+    /\b(finger\s+notification|finger\s+the\s+notification|finger\s+a\s+notification)\b/i.test(p) ||
+    /\b(ping\s+a?\s*notification|ping\s+the\s+notification|ping\s+notifications)\b/i.test(p) ||
+    /\b(send\s+out\s+(?:a\s+)?notification|send\s+(?:a\s+)?notification|send\s+notifications)\b/i.test(p) ||
+    /\b(pipeline\s+(?:due|dues|overdue|alert|alerts|notification|notifications))\b/i.test(p) ||
+    (/\b(notify|alert)\b/i.test(p) && /\b(pipeline|employee|employees|team|past\s+three\s+days|3\s*days|overdue|due)\b/i.test(p)) ||
+    (/\b(?:past|over|more\s+than)\s+(?:three|3)\s+days\b/i.test(p) && /\b(notification|notify|alert|ping|finger|send|who|pipeline|taken care|due)\b/i.test(p));
+
+  if (isPipelineDueAlertTrigger) {
     return 'trigger_pipeline_due_alerts';
   }
 
@@ -725,9 +732,15 @@ export async function executeJarvisPipelineAction(
     // Active pipeline candidates (in evaluating, negotiating, aware, uncontacted, or with follow-up dates)
     const activeCandidates = allLeads.filter(
       (l) =>
-        ['evaluating', 'negotiating', 'aware', 'uncontacted', 'no_plan'].includes(l.status?.toLowerCase() || '') ||
-        ['Pending', 'Talked', 'In Touch'].includes(l.contactStatus) ||
-        Boolean(pushedTimestamps[l.id])
+        l.name &&
+        l.name.trim().length > 0 &&
+        l.name.length < 60 &&
+        !l.name.includes('<') &&
+        !l.name.includes('&nbsp;') &&
+        !l.name.includes('@') &&
+        (['evaluating', 'negotiating', 'aware', 'uncontacted', 'no_plan'].includes(l.status?.toLowerCase() || '') ||
+          ['Pending', 'Talked', 'In Touch'].includes(l.contactStatus) ||
+          Boolean(pushedTimestamps[l.id]))
     );
 
     // Identify overdue prospects (> 3 days)
@@ -781,7 +794,7 @@ export async function executeJarvisPipelineAction(
 
     const sampleNames = alertTargets
       .slice(0, 3)
-      .map((l) => `${l.name} (${l.elapsedDays}d in pipeline)`)
+      .map((l) => `${l.name} for ${l.course}`)
       .join(', ');
 
     const answer = isStrictBreach
