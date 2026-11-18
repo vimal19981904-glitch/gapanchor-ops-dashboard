@@ -34,6 +34,64 @@ export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void
   }
 }
 
+export interface PipelineDueAlertLead {
+  id: string;
+  name: string;
+  leadCode?: string;
+  course: string;
+  phone: string;
+  email?: string | null;
+  stage: string;
+  pushedAt?: string;
+  elapsedDays: number;
+}
+
+/**
+ * Dispatches high-priority mobile push notifications to employees via ntfy
+ * when pipeline prospects have exceeded the 3-day SLA without resolution.
+ */
+export async function sendNtfyPipelineDueAlert(params: {
+  overdueLeads: PipelineDueAlertLead[];
+  totalCount: number;
+}): Promise<void> {
+  try {
+    const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://dashboard-green-psi-12.vercel.app';
+    const count = params.totalCount;
+    const rawTitle = `⚠️ Pipeline Alert: ${count} Prospect${count > 1 ? 's' : ''} Overdue (> 3 Days)`;
+    const safeTitle = '=?UTF-8?B?' + Buffer.from(rawTitle).toString('base64') + '?=';
+
+    const leadSummaries = params.overdueLeads
+      .slice(0, 5)
+      .map((l) => `• ${l.name} (${l.course}) - Staged ${l.elapsedDays}d ago [${l.stage}] - Ph: ${l.phone}`)
+      .join('\n');
+
+    const message = [
+      `🚨 PIPELINE SLA BREACH: ${count} PROSPECT(S) PENDING > 3 DAYS`,
+      `Employees must immediately review and contact these prospects:`,
+      '',
+      leadSummaries,
+      params.overdueLeads.length > 5 ? `...and ${params.overdueLeads.length - 5} more.` : '',
+      '',
+      `Action: Open dashboard to update stages and advance enrollment.`,
+    ].filter(Boolean).join('\n');
+
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        Title: safeTitle,
+        Priority: 'urgent',
+        Tags: 'warning,alarm_clock',
+        Click: `${baseUrl}/enquiries`,
+      },
+      body: message,
+    });
+    console.log('[NTFY Pipeline Alert] Dispatched status:', res.status);
+  } catch (err: any) {
+    console.error('[NTFY Pipeline Alert] Failed to dispatch push notification:', err?.message || err);
+  }
+}
+
 export function formatTimeElapsed(milliseconds: number): string {
   const totalMinutes = Math.floor(milliseconds / (1000 * 60));
   const hours = Math.floor(totalMinutes / 60);

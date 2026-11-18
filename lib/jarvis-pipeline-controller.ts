@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getTranscriptKnowledgeSnapshot } from './transcript-knowledge-engine';
+import { sendNtfyPipelineDueAlert, PipelineDueAlertLead } from './lead-monitoring';
+import { sendPipelineDueAlertEmail } from './email-service';
 
 export interface JarvisPipelineActionResult {
   isPipelineAction: boolean;
@@ -12,6 +14,7 @@ export interface JarvisPipelineActionResult {
     | 'remove_lost'
     | 'remove_lead'
     | 'status_overview'
+    | 'trigger_pipeline_due_alerts'
     | 'none';
   targetStage?: 'no_plan' | 'uncontacted' | 'aware' | 'evaluating' | 'negotiating' | 'committed' | 'lost';
   leadIds: string[];
@@ -23,6 +26,7 @@ export interface JarvisPipelineActionResult {
   actionAdvice: string;
   recommendedFilter?: string;
   summary: string;
+  pushedTimestamps?: Record<string, string>;
 }
 
 export interface ComprehensiveLeadProfile {
@@ -172,6 +176,14 @@ export function getCourseCodePrefix(course?: string | null): string {
  */
 export function detectPipelineActionType(prompt: string): JarvisPipelineActionResult['actionType'] {
   const p = prompt.toLowerCase().trim();
+
+  // 0. Trigger Alert for Pipeline Dues (> 3 Days Overdue)
+  if (
+    (p.includes('trigger') || p.includes('send') || p.includes('fire') || p.includes('dispatch') || p.includes('notify') || p.includes('alert') || p.includes('check')) &&
+    (p.includes('pipeline due') || p.includes('pipeline dues') || p.includes('pipeline overdue') || p.includes('alert for the pipeline') || p.includes('alert for pipeline') || p.includes('pipeline alert') || p.includes('dues in pipeline') || p.includes('due in pipeline'))
+  ) {
+    return 'trigger_pipeline_due_alerts';
+  }
 
   // 1. Remove All Lost Enquiries / Leads from Pipeline
   if (
@@ -649,6 +661,51 @@ function resolveLeadFromPrompt(prompt: string, leads: ComprehensiveLeadProfile[]
 }
 
 /**
+ * Retrieves persisted pipeline pushed timestamps from IntegrationConfig.
+ */
+export async function getPipelinePushedTimestamps(prisma: PrismaClient): Promise<Record<string, string>> {
+  try {
+    const config = await prisma.integrationConfig.findUnique({
+      where: { service: 'pipeline_tracker' },
+    });
+    if (config?.metadata) {
+      return JSON.parse(config.metadata);
+    }
+  } catch (err) {
+    console.error('Error fetching pipeline timestamps:', err);
+  }
+  return {};
+}
+
+/**
+ * Persists pipeline pushed timestamps into IntegrationConfig so backend & frontend share exact tracking.
+ */
+export async function savePipelinePushedTimestamps(
+  prisma: PrismaClient,
+  newTimestamps: Record<string, string>
+): Promise<void> {
+  try {
+    const existing = await getPipelinePushedTimestamps(prisma);
+    const merged = { ...existing, ...newTimestamps };
+    await prisma.integrationConfig.upsert({
+      where: { service: 'pipeline_tracker' },
+      create: {
+        service: 'pipeline_tracker',
+        connected: true,
+        metadata: JSON.stringify(merged),
+        lastSynced: new Date(),
+      },
+      update: {
+        metadata: JSON.stringify(merged),
+        lastSynced: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error('Error saving pipeline timestamps:', err);
+  }
+}
+
+/**
  * Executes a pipeline action on behalf of Jarvis:
  * Resolves target leads, updates database state, and prepares spoken confirmation.
  */
@@ -659,6 +716,96 @@ export async function executeJarvisPipelineAction(
 ): Promise<JarvisPipelineActionResult> {
   const allLeads = await getComprehensiveLeadContext(prisma);
   const now = new Date();
+
+  // ─── 0. Trigger Alert for Pipeline Dues (> 3 Days Overdue) ───
+  if (actionType === 'trigger_pipeline_due_alerts') {
+    const pushedTimestamps = await getPipelinePushedTimestamps(prisma);
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+    // Active pipeline candidates (in evaluating, negotiating, aware, uncontacted, or with follow-up dates)
+    const activeCandidates = allLeads.filter(
+      (l) =>
+        ['evaluating', 'negotiating', 'aware', 'uncontacted', 'no_plan'].includes(l.status?.toLowerCase() || '') ||
+        ['Pending', 'Talked', 'In Touch'].includes(l.contactStatus) ||
+        Boolean(pushedTimestamps[l.id])
+    );
+
+    // Identify overdue prospects (> 3 days)
+    const overdueLeads: PipelineDueAlertLead[] = [];
+    const nonOverdueActiveLeads: PipelineDueAlertLead[] = [];
+
+    for (const lead of activeCandidates) {
+      const pushIso = pushedTimestamps[lead.id] || lead.dateOfEntry;
+      if (!pushIso) continue;
+      const pushTime = new Date(pushIso).getTime();
+      const elapsedMs = now.getTime() - pushTime;
+      const elapsedDays = Math.max(1, Math.round(elapsedMs / (1000 * 60 * 60 * 24)));
+
+      const item: PipelineDueAlertLead = {
+        id: lead.id,
+        name: lead.name,
+        leadCode: lead.leadCode,
+        course: lead.course,
+        phone: lead.phone,
+        email: lead.email,
+        stage: lead.status || lead.contactStatus || 'Active',
+        pushedAt: pushIso,
+        elapsedDays,
+      };
+
+      if (elapsedMs >= THREE_DAYS_MS) {
+        overdueLeads.push(item);
+      } else {
+        nonOverdueActiveLeads.push(item);
+      }
+    }
+
+    // Sort by longest waiting first
+    overdueLeads.sort((a, b) => b.elapsedDays - a.elapsedDays);
+
+    const alertTargets = overdueLeads.length > 0 ? overdueLeads : nonOverdueActiveLeads.slice(0, 5);
+    const count = alertTargets.length;
+    const isStrictBreach = overdueLeads.length > 0;
+
+    // Dispatch Mobile Push (NTFY)
+    await sendNtfyPipelineDueAlert({
+      overdueLeads: alertTargets,
+      totalCount: count,
+    });
+
+    // Dispatch Email Alert (SMTP) in background
+    sendPipelineDueAlertEmail({
+      overdueLeads: alertTargets,
+      totalCount: count,
+    }).catch((err) => console.warn('[Pipeline Due Alert] Email dispatch warning:', err?.message || err));
+
+    const sampleNames = alertTargets
+      .slice(0, 3)
+      .map((l) => `${l.name} (${l.elapsedDays}d in pipeline)`)
+      .join(', ');
+
+    const answer = isStrictBreach
+      ? `Right away, sir! I just audited the pipeline and flagged ${count} prospect${count > 1 ? 's' : ''} that have exceeded our 3-day SLA threshold: including ${sampleNames}. I have immediately fired off high-priority mobile push notifications to NTFY and an urgent operations email so the team gets instant visibility to jump on them.`
+      : `Alert dispatched, sir! While all current pipeline leads are within the 3-day threshold, I have sent an active pipeline status notification covering our top ${count} staged prospects—including ${sampleNames}—to employee mobile push and operations email for immediate visibility.`;
+
+    const actionAdvice = isStrictBreach
+      ? `High-priority mobile & email alerts sent for ${count} overdue prospect(s). Prioritize immediate follow-up to unblock pipeline.`
+      : `Live pipeline status alert sent to employee notification channels.`;
+
+    return {
+      isPipelineAction: true,
+      actionType: 'trigger_pipeline_due_alerts',
+      leadIds: alertTargets.map((l) => l.id),
+      leadNames: alertTargets.map((l) => l.name),
+      leadCodes: alertTargets.map((l) => l.leadCode || ''),
+      count,
+      answer,
+      actionAdvice,
+      recommendedFilter: 'due_today',
+      summary: `Triggered pipeline due alert for ${count} prospect(s)`,
+      pushedTimestamps,
+    };
+  }
 
   // ─── 1. Remove All Lost Enquiries from Pipeline Board ───
   if (actionType === 'remove_lost') {
@@ -750,6 +897,13 @@ export async function executeJarvisPipelineAction(
           contactStatus: 'Talked',
         },
       });
+
+      // Persist pushed timestamps
+      const newTimestamps: Record<string, string> = {};
+      leadIds.forEach((id) => {
+        newTimestamps[id] = now.toISOString();
+      });
+      await savePipelinePushedTimestamps(prisma, newTimestamps);
     }
 
     const namesList = leadNames.slice(0, 3).join(', ');
@@ -796,6 +950,14 @@ export async function executeJarvisPipelineAction(
       });
     }
 
+    if (leadIds.length > 0) {
+      const newTimestamps: Record<string, string> = {};
+      leadIds.forEach((id) => {
+        newTimestamps[id] = now.toISOString();
+      });
+      await savePipelinePushedTimestamps(prisma, newTimestamps);
+    }
+
     const keyHighlights = selected
       .slice(0, 4)
       .map((l) => `${l.name} [${l.leadCode}] (${l.course}${l.score ? ` - ${l.score}/10` : ''})`)
@@ -821,6 +983,14 @@ export async function executeJarvisPipelineAction(
     const top10 = allLeads.slice(0, 10);
     const leadIds = top10.map((l) => l.id);
     const namesSummary = top10.slice(0, 3).map((l) => `${l.name} [${l.leadCode}]`).join(', ') + (top10.length > 3 ? ` and ${top10.length - 3} others` : '');
+
+    if (leadIds.length > 0) {
+      const newTimestamps: Record<string, string> = {};
+      leadIds.forEach((id) => {
+        newTimestamps[id] = now.toISOString();
+      });
+      await savePipelinePushedTimestamps(prisma, newTimestamps);
+    }
 
     return {
       isPipelineAction: true,
@@ -887,6 +1057,10 @@ export async function executeJarvisPipelineAction(
           status: targetStage,
           contactStatus: 'Talked',
         },
+      });
+
+      await savePipelinePushedTimestamps(prisma, {
+        [matchedLead.id]: now.toISOString(),
       });
 
       return {

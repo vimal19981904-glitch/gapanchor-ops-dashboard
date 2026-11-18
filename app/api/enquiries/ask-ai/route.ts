@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
           removeLeadIds: actionResult.removeLeadIds,
           count: actionResult.count,
           summary: actionResult.summary,
+          pushedTimestamps: actionResult.pushedTimestamps,
         },
       });
     }

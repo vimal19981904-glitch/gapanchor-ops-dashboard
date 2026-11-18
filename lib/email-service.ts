@@ -337,3 +337,99 @@ export async function sendLeadAlertEmail(
 
   return { success: false, error: lastError, attempts };
 }
+
+/**
+ * Dispatches high-importance pipeline due alert email when prospects
+ * have remained staged in the pipeline for more than 3 days without progression.
+ */
+export async function sendPipelineDueAlertEmail(params: {
+  overdueLeads: Array<{
+    id: string;
+    name: string;
+    leadCode?: string;
+    course: string;
+    phone: string;
+    email?: string | null;
+    stage: string;
+    pushedAt?: string;
+    elapsedDays: number;
+  }>;
+  totalCount: number;
+}): Promise<{ success: boolean; note?: string; error?: string }> {
+  const recipient = process.env.ALERT_EMAIL_RECIPIENT || 'contact@gapanchor.com';
+  const dashboardLink = process.env.NEXTAUTH_URL
+    ? `${process.env.NEXTAUTH_URL}/enquiries`
+    : 'https://dashboard-green-psi-12.vercel.app/enquiries';
+
+  const subject = `[URGENT] Pipeline SLA Breach - ${params.totalCount} Prospects Overdue (> 3 Days)`;
+
+  const leadRows = params.overdueLeads
+    .map(
+      (l) => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 10px; font-weight: bold; color: #0f172a;">${l.name}</td>
+        <td style="padding: 10px; color: #334155;">${l.course}</td>
+        <td style="padding: 10px; color: #475569;">${l.phone}</td>
+        <td style="padding: 10px; color: #64748b; font-weight: 600;">${l.stage}</td>
+        <td style="padding: 10px; color: #dc2626; font-weight: bold;">${l.elapsedDays} day(s)</td>
+      </tr>`
+    )
+    .join('');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 20px; color: #0f172a;">
+  <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px;">
+    <div style="border-bottom: 2px solid #ef4444; padding-bottom: 12px; margin-bottom: 16px;">
+      <h2 style="color: #b91c1c; margin: 0; font-size: 20px;">⚠️ Pipeline Due Alert: 3-Day SLA Exceeded</h2>
+      <p style="color: #64748b; margin: 4px 0 0; font-size: 13px;">Triggered via J.A.R.V.I.S. Operations Controller</p>
+    </div>
+    <p style="font-size: 14px; line-height: 1.5; color: #334155;">
+      The following <strong>${params.totalCount} prospect(s)</strong> have been staged in the pipeline for more than <strong>3 days</strong> without conversion or stage progression. Immediate action is required to prevent deal stall:
+    </p>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+      <thead>
+        <tr style="background: #f1f5f9; text-align: left;">
+          <th style="padding: 10px; color: #475569;">Candidate</th>
+          <th style="padding: 10px; color: #475569;">Track</th>
+          <th style="padding: 10px; color: #475569;">Phone</th>
+          <th style="padding: 10px; color: #475569;">Stage</th>
+          <th style="padding: 10px; color: #475569;">In Pipeline</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${leadRows}
+      </tbody>
+    </table>
+    <div style="margin-top: 24px; text-align: center;">
+      <a href="${dashboardLink}" style="background-color: #0284c7; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">Open Pipeline Dashboard</a>
+    </div>
+    <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;">GapAnchor Operations Intelligence • Automated Pipeline Guard</p>
+  </div>
+</body>
+</html>
+  `;
+
+  // Dispatch via SMTP
+  try {
+    const transporter = createSmtpTransporter();
+    const senderUser = process.env.SMTP_USER || 'xavierarul40@gmail.com';
+    await transporter.sendMail({
+      from: `"GapAnchor Pipeline Controller" <${senderUser}>`,
+      to: recipient,
+      subject,
+      html,
+      priority: 'high',
+      headers: {
+        'X-Priority': '1 (Highest)',
+        'Importance': 'High',
+      },
+    });
+    console.log(`✅ Pipeline due alert email dispatched to ${recipient}`);
+    return { success: true, note: `Alert email dispatched to ${recipient}` };
+  } catch (err: any) {
+    console.warn('[Pipeline Due Email] Dispatch error:', err.message);
+    return { success: false, error: err.message };
+  }
+}

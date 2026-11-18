@@ -304,6 +304,10 @@ export function DailyPipelineBoard({
   const [removalNotes, setRemovalNotes] = useState('');
   const [isSubmittingRemoval, setIsSubmittingRemoval] = useState(false);
 
+  // Pipeline Pushed Timestamps (for 3-day SLA due alerts)
+  const [pushedTimestamps, setPushedTimestamps] = useState<Record<string, string>>({});
+  const [isTriggeringAlerts, setIsTriggeringAlerts] = useState(false);
+
   // Mobile Pipeline Specific State
   const [activeMobileStage, setActiveMobileStage] = useState<StageKey>('evaluating');
   const isMobile = useIsMobile(768);
@@ -328,6 +332,10 @@ export function DailyPipelineBoard({
         const parsed = JSON.parse(savedRemoved);
         if (Array.isArray(parsed)) setRemovedLeadIds(parsed);
       }
+      const savedTimestamps = localStorage.getItem('gapanchor_pipeline_pushed_timestamps');
+      if (savedTimestamps) {
+        setPushedTimestamps(JSON.parse(savedTimestamps));
+      }
     } catch {}
   }, []);
 
@@ -336,7 +344,30 @@ export function DailyPipelineBoard({
     const handlePipelineAction = (e: any) => {
       const detail = e.detail;
       if (!detail) return;
-      const { type, leadIds = [], removeLeadIds = [], targetStage, summary } = detail;
+      const { type, leadIds = [], removeLeadIds = [], targetStage, summary, pushedTimestamps: serverTimestamps } = detail;
+
+      // ─── 0. Trigger Due Alert Action ───
+      if (type === 'trigger_pipeline_due_alerts') {
+        try {
+          jarvisAudioFx.playSuccessChime();
+        } catch {}
+        toast.warning(
+          <span>
+            <strong>J.A.R.V.I.S.:</strong> {summary || 'Dispatched 3-day overdue pipeline alert to all employee channels.'}
+          </span>,
+          { duration: 5000 }
+        );
+        if (serverTimestamps) {
+          setPushedTimestamps((prev) => {
+            const next = { ...prev, ...serverTimestamps };
+            try {
+              localStorage.setItem('gapanchor_pipeline_pushed_timestamps', JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+        }
+        return;
+      }
 
       // ─── 1. Removal Actions (Remove Lost / Remove Lead) ───
       if (type === 'remove_lost' || type === 'remove_lead' || (Array.isArray(removeLeadIds) && removeLeadIds.length > 0)) {
@@ -387,6 +418,19 @@ export function DailyPipelineBoard({
           const next = Array.from(new Set([...leadIds, ...prev]));
           try {
             localStorage.setItem('gapanchor_pushed_pipeline_ids', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+
+        // Persist pushed timestamps
+        const nowIso = new Date().toISOString();
+        setPushedTimestamps((prev) => {
+          const next = { ...prev };
+          leadIds.forEach((id: string) => {
+            if (!next[id]) next[id] = nowIso;
+          });
+          try {
+            localStorage.setItem('gapanchor_pipeline_pushed_timestamps', JSON.stringify(next));
           } catch {}
           return next;
         });
@@ -805,9 +849,55 @@ export function DailyPipelineBoard({
       return next;
     });
 
+    // Record pushed timestamp
+    const nowIso = new Date().toISOString();
+    setPushedTimestamps((prev) => {
+      const next = { ...prev, [lead.id]: prev[lead.id] || nowIso };
+      try {
+        localStorage.setItem('gapanchor_pipeline_pushed_timestamps', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
     await handleMoveLead(lead.id, targetStage);
     setSearchModalOpen(false);
     setLeadSearchTerm('');
+  };
+
+  /**
+   * Triggers the 3-day SLA pipeline due alert through J.A.R.V.I.S.,
+   * sending mobile push notifications (ntfy) and operations alert email to employees.
+   */
+  const handleTriggerPipelineDueAlerts = async () => {
+    setIsTriggeringAlerts(true);
+    try {
+      const res = await fetch('/api/enquiries/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: 'please trigger alert for the pipeline dues' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        try {
+          jarvisAudioFx.playSuccessChime();
+        } catch {}
+        toast.success(
+          <span>
+            <strong>J.A.R.V.I.S.:</strong> {data.answer}
+          </span>,
+          { duration: 6000 }
+        );
+        if (data.pipelineAction?.pushedTimestamps) {
+          setPushedTimestamps((prev) => ({ ...prev, ...data.pipelineAction.pushedTimestamps }));
+        }
+      } else {
+        throw new Error(data.error || 'Failed to trigger pipeline alert');
+      }
+    } catch (err: any) {
+      toast.error(`Could not trigger alert: ${err.message}`);
+    } finally {
+      setIsTriggeringAlerts(false);
+    }
   };
 
   const handleResetBoard = () => {
@@ -866,6 +956,18 @@ export function DailyPipelineBoard({
         {/* View Mode Filters & Quick Actions */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
 
+
+          {/* Trigger Pipeline 3d Due Alerts Button */}
+          <button
+            type="button"
+            onClick={handleTriggerPipelineDueAlerts}
+            disabled={isTriggeringAlerts}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/35 text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Dispatch high-priority mobile push (ntfy) and email alerts to employees for prospects in pipeline > 3 days"
+          >
+            <Zap className={`w-3.5 h-3.5 ${isTriggeringAlerts ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+            <span>{isTriggeringAlerts ? 'Alerting...' : 'Alert 3d Dues'}</span>
+          </button>
 
           {/* Add Prospect Button */}
           <button
@@ -985,6 +1087,13 @@ export function DailyPipelineBoard({
                   const isMenuOpen = activeMenuLeadId === lead.id;
                   const isNewlyPushed = newlyPushedIds.has(lead.id);
 
+                  const pushIso = pushedTimestamps[lead.id] || (lead as any).dateOfEntry;
+                  const isThreeDaysOverdue =
+                    stage.key !== 'committed' &&
+                    stage.key !== 'lost' &&
+                    Boolean(pushIso) &&
+                    Date.now() - new Date(pushIso!).getTime() >= 3 * 24 * 60 * 60 * 1000;
+
                   return (
                     <div
                       key={lead.id}
@@ -1026,6 +1135,17 @@ export function DailyPipelineBoard({
                             >
                               {lead.leadCode || `#${lead.id.slice(-6)}`}
                             </span>
+
+                            {/* 3-Days Overdue SLA Alert Pill */}
+                            {isThreeDaysOverdue && (
+                              <span
+                                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 shrink-0 animate-pulse"
+                                title="Prospect has been staged in pipeline > 3 days without resolution"
+                              >
+                                <Clock className="w-2.5 h-2.5 text-rose-400" />
+                                3d+ Due
+                              </span>
+                            )}
                           </div>
 
                           {/* 3-Dots Context Menu Container */}
