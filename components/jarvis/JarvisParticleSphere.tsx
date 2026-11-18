@@ -22,7 +22,7 @@ const DEFAULT_DEMO_TRANSCRIPT = 'What is the status of my latest Blue Yonder enq
 const DEFAULT_DEMO_REPLY =
   'Good morning. Three high priority Blue Yonder leads are active today, with batches ready for review.';
 
-const FONT_FAMILY = '"Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
+const FONT_FAMILY = '"Space Grotesk", "JetBrains Mono", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
 
 interface LaidOutWord {
   text: string;
@@ -778,10 +778,10 @@ export function JarvisParticleSphere({
 
       const fontSize = stageW < 340 ? 14 : 16;
       const lineHeight = stageW < 340 ? 22 : 24;
-      const fontStr = `500 ${fontSize}px ${FONT_FAMILY}`;
+      const fontStr = `600 ${fontSize}px ${FONT_FAMILY}`;
       // Narrow centered zone directly beneath the orb so particles pour vertically in a clean plume
       const maxTextWidth = Math.min(stageW - 40, 295);
-      const captionTopBaselineY = orbCenterY + orbRadiusPx + Math.max(38, Math.round(stageH * 0.145));
+      const captionTopBaselineY = orbCenterY + orbRadiusPx + Math.max(48, Math.round(stageH * 0.165));
 
       // Handle LISTENING transcript + smooth Thinking fade-out (F011 -> F046)
       const listeningText = transcriptRef.current.trim();
@@ -832,11 +832,15 @@ export function JarvisParticleSphere({
             const enterAlpha = Math.min(1, age / 0.24);
             const freshness = Math.max(0, 1 - age / 0.9);
             const baseOpacity = 0.62 + freshness * 0.38;
+            ctx.save();
+            ctx.shadowColor = 'rgba(56, 189, 248, 0.45)';
+            ctx.shadowBlur = 6;
             ctx.fillStyle =
               freshness > 0.2
-                ? `rgba(224, 242, 254, ${(enterAlpha * baseOpacity * transcriptFadeAlpha).toFixed(3)})`
-                : `rgba(203, 213, 225, ${(enterAlpha * 0.65 * transcriptFadeAlpha).toFixed(3)})`;
+                ? `rgba(186, 230, 253, ${(enterAlpha * baseOpacity * transcriptFadeAlpha).toFixed(3)})`
+                : `rgba(125, 211, 252, ${(enterAlpha * 0.72 * transcriptFadeAlpha).toFixed(3)})`;
             ctx.fillText(wd.text, wx, wy);
+            ctx.restore();
             wx += wd.width + spaceW;
           });
         });
@@ -961,9 +965,13 @@ export function JarvisParticleSphere({
 
           for (const word of activeWindow.words) {
             if (word.globalIdx < activeWordIdx || floatWordPos >= totalWords) {
-              // 1. Settled crisp typography for already-spoken words
-              ctx.fillStyle = `rgba(226, 232, 240, ${(0.88 * windowCrossfadeAlpha).toFixed(3)})`;
+              // 1. Settled crisp typography for already-spoken words (luminous cyan frost glow)
+              ctx.save();
+              ctx.shadowColor = 'rgba(6, 182, 212, 0.45)';
+              ctx.shadowBlur = 6;
+              ctx.fillStyle = `rgba(186, 230, 253, ${(0.95 * windowCrossfadeAlpha).toFixed(3)})`;
               ctx.fillText(word.text, word.x, word.baselineY);
+              ctx.restore();
             } else if (word.globalIdx === activeWordIdx) {
               // 2. Active Word: Dust Plume pouring from orb underside -> Swirling -> Sharp Coalescence
               const dxAim = (word.centerX - orbCenterX) / Math.max(1, orbRadiusPx * 1.4);
@@ -1053,9 +1061,9 @@ export function JarvisParticleSphere({
               // Crisp word text fades in smoothly on exact alignment once particles lock
               if (textFadeIn > 0.01) {
                 ctx.save();
-                ctx.shadowColor = `rgba(${dr}, ${dg}, ${db}, ${(0.55 * (1 - textFadeIn * 0.7)).toFixed(2)})`;
-                ctx.shadowBlur = 7 * (1 - textFadeIn * 0.7);
-                ctx.fillStyle = `rgba(240, 249, 255, ${(textFadeIn * 0.96 * windowCrossfadeAlpha).toFixed(3)})`;
+                ctx.shadowColor = `rgba(${dr}, ${dg}, ${db}, ${(0.85 * (1 - textFadeIn * 0.5)).toFixed(2)})`;
+                ctx.shadowBlur = 9 * (1 - textFadeIn * 0.5);
+                ctx.fillStyle = `rgba(224, 247, 255, ${(textFadeIn * 0.98 * windowCrossfadeAlpha).toFixed(3)})`;
                 ctx.fillText(word.text, word.x, word.baselineY);
                 ctx.restore();
               }

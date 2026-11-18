@@ -397,7 +397,7 @@ async function fetchAudioBuffer(
 
 /**
  * Proactively pre-warms audio for an AI answer in the background as soon
- * as text arrives on screen. Sequential chunk warming avoids flooding Edge-TTS sockets.
+ * as text arrives on screen. Fetches all chunks in parallel so audio is ready with 0 pause.
  */
 export async function prepareJarvisSpeech(text: string, voiceId?: string): Promise<void> {
   if (typeof window === 'undefined' || !text) return;
@@ -409,20 +409,7 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
   if (chunks.length === 0) return;
 
   try {
-    // Await ONLY chunk 0 so speaking starts right away, then warm remaining chunks sequentially
-    // in the background without flooding Edge-TTS WebSockets
-    await fetchAudioBuffer(chunks[0], activeVoice);
-    if (chunks.length > 1) {
-      void (async () => {
-        for (let i = 1; i < chunks.length; i++) {
-          try {
-            await fetchAudioBuffer(chunks[i], activeVoice);
-          } catch {
-            break;
-          }
-        }
-      })();
-    }
+    await Promise.all(chunks.map((c) => fetchAudioBuffer(c, activeVoice)));
   } catch (err) {
     console.debug('Background speech prewarm notice:', err);
   }
@@ -430,13 +417,13 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
 
 /**
  * Splits text into natural spoken chunks for streaming pipeline:
- * Chunk 0: Short introductory sentence (40-95 chars) -> produces first audio in ~250-350ms!
- * Subsequent chunks: 120-220 chars -> processed seamlessly while preceding chunk plays.
+ * Responses under 500 chars remain a single seamless audio file (eliminating inter-sentence pauses).
+ * Longer detailed briefings split at natural 500-600 char paragraph boundaries.
  */
 export function chunkTextForPipelinedSpeech(
   text: string,
-  maxInitialLen = 95,
-  maxChunkLen = 220
+  maxInitialLen = 500,
+  maxChunkLen = 600
 ): string[] {
   if (!text || !text.trim()) return [];
 
@@ -451,7 +438,7 @@ export function chunkTextForPipelinedSpeech(
     .map((s) => s.replace(/___DOT___/g, '.').trim())
     .filter((s) => s.length > 0);
 
-  if (rawSentences.length <= 1) {
+  if (rawSentences.length <= 1 || text.length <= 500) {
     return [text.trim()];
   }
 
@@ -758,6 +745,9 @@ export function speakJarvis(
         }
         return chunkPromises[idx]!;
       };
+
+      // Concurrently warm ALL playlist chunks so upcoming sentences are 100% pre-buffered in memory (zero 2s gaps)
+      playlist.forEach((_, idx) => getChunkBuffer(idx));
 
       for (let i = 0; i < playlist.length; i++) {
         if (sessionId !== activePlaybackSessionId) break;
