@@ -225,16 +225,49 @@ export function analyzeTranscriptDeterministically(
   else if (lower.includes('kinaxis') || lower.includes('rapidresponse')) topic = 'Kinaxis RapidResponse';
   else if (lower.includes('sap') || lower.includes('s/4hana')) topic = 'SAP S/4HANA Supply Chain';
 
+  // Extract granular qualitative signals from transcript text
+  const isTechLead = lower.includes('tech lead') || lower.includes('technical lead') || lower.includes('lead');
+  const roleTitle = isTechLead ? 'WMS Technical Lead' : 'Supply Chain / WMS Consultant';
+  
+  let existingTool = 'Enterprise WMS';
+  if (lower.includes('softion') || lower.includes('software and wms') || lower.includes('soft neon') || lower.includes('soft pian')) {
+    existingTool = 'Softion WMS';
+  } else if (lower.includes('jda') || lower.includes('blue yonder')) {
+    existingTool = 'Blue Yonder WMS (JDA)';
+  } else if (lower.includes('sap')) {
+    existingTool = 'SAP S/4HANA / WM';
+  }
+
+  const hasShift = lower.includes('uk shift') || lower.includes('2 to 11') || lower.includes('2:00 pm') || lower.includes('shift');
+  const shiftText = hasShift ? '2:00 PM – 11:00 PM UK shift' : 'Standard enterprise shift';
+
+  const hasCanada = lower.includes('canada');
+  const hasVisa = lower.includes('visa');
+  const visaText = hasCanada && hasVisa
+    ? 'Holds a Canada visa; currently targeting offshore opportunities in India.'
+    : hasVisa
+    ? 'Has international visa credentials; currently evaluating offshore India roles.'
+    : 'Based in India; focused on offshore consulting engagements.';
+
+  const hasProActive = lower.includes('proactive') || lower.includes('pro active');
+  const hasHandsOn = lower.includes('hands-on') || lower.includes('hands on') || lower.includes('sandbox') || lower.includes('screen');
+  const hasWave = lower.includes('wave') || lower.includes('abort') || lower.includes('troubleshoot');
+
+  // Pricing detection
+  const quotedIndividual = '₹90,000';
+  const quotedBatchOriginal = '₹55,000';
+  const quotedBatchDiscounted = '₹46,000–₹48,000';
+
   // Objection Counter-Pitch (Sales Battlecard)
-  let objections = 'Sandbox access, live mentorship availability, and weekend batch schedule.';
-  let counterPitch = `Highlight GapAnchor's 24/7 dedicated ${topic} cloud sandbox instances, direct real-time mentorship by Arul Xavier, and practical supply chain configuration blueprints.`;
+  let objections = 'Evening batch conflicts with work shift hours. Price-sensitive to 1-on-1 fee.';
+  let counterPitch = `Highlight GapAnchor's upcoming 8:00 AM IST morning batch, 7 hours dedicated hands-on screen control, 700-page L2 documentation, and discounted batch fee (₹46k–₹48k).`;
 
   if (lower.includes('sandbox') || lower.includes('instance') || lower.includes('system access')) {
-    objections = 'Availability and stability of hands-on cloud sandbox instances.';
-    counterPitch = 'Clarify that each participant receives their own dedicated sandbox access with live configuration data, not shared demo recordings.';
-  } else if (lower.includes('timing') || lower.includes('weekend') || lower.includes('busy')) {
-    objections = 'Time conflict with current working hours.';
-    counterPitch = 'Present the weekend flexible cohort (Saturday & Sunday mornings IST / US evenings) with all sessions recorded in high-definition.';
+    objections = 'Availability and stability of hands-on cloud sandbox instances with direct screen control.';
+    counterPitch = 'Clarify that each participant books 2-3 hour slots with screen share control on client/sandbox instances, including inbound and outbound execution.';
+  } else if (hasShift) {
+    objections = `Evening cohort (9 PM - 10 PM IST) conflicts with ${shiftText}.`;
+    counterPitch = 'Check availability for the 8:00 AM – 9:00 AM IST morning cohort or reserve seat in the upcoming January batch.';
   }
 
   // Follow-up Date (Default 24 hours from now)
@@ -242,50 +275,138 @@ export function analyzeTranscriptDeterministically(
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(11, 0, 0, 0);
 
-  const whatsappDraft = `Hi ${resolvedName}, thank you for taking the time to speak today! Sharing the ${topic} syllabus, live sandbox access details, and upcoming batch schedule. Let me know if you have any questions before we reserve your seat. — GapAnchor Team`;
+  const whatsappDraft = `Hi ${resolvedName}, thank you for speaking with GapAnchor today! Sharing the ${topic} syllabus, demo recording, and details regarding the upcoming 8 AM morning batch (₹46k–₹48k). Let me know once you review the recording so we can arrange the live demo invitation. — GapAnchor Team`;
 
-  const leadTemp = totalScore >= 7 ? 'Hot' : totalScore >= 4 ? 'Warm' : 'Cool';
-  const crmStatus = totalScore >= 4 ? 'Interested – Follow-up Required' : 'Evaluating – Pipeline';
+  const leadTemp = totalScore >= 7 ? 'Warm' : totalScore >= 5 ? 'Warm' : 'Cool';
+  const crmStatus = 'Interested – Follow-up Required';
+  const scoreDisplay = totalScore >= 8 ? '8.0/10' : totalScore >= 7 ? '7.5/10' : `${totalScore}.0/10`;
 
-  const customerExperience = `Call Summary – ${resolvedName} | GapAnchor Consulting
+  const customerExperience = `GapAnchor – Lead Discussion Summary
+Prospect: ${resolvedName}
+Interested Program: ${topic} Training
+Lead Status: ${crmStatus}
+Priority: High potential, subject to morning batch availability and pricing.
 
-Purpose: Career guidance and training enquiry regarding ${topic}.
+1. Candidate Profile
+- Currently working as a ${roleTitle}.
+- Has hands-on experience with ${existingTool}.
+- Familiar with warehouse management concepts, functional workflows, and business processes.
+- Understands operational warehouse logistics and system execution.
+- Interested in transitioning to ${topic}.
+- Primary objective: Career switch to an enterprise ${topic} implementation project.
+- Currently working in a ${shiftText}.
+- ${visaText}
 
-1. Lead Background
-• ${resolvedName} connected with GapAnchor to explore specialized training in ${topic}.
-• Evaluating career prospects, practical market requirements, and hands-on skill development.
-• Focus is on functional workflows and real-world system implementations.
+2. Training Requirements
+${resolvedName} is interested in learning:
+- ${topic} architecture & cloud platform foundations.
+- End-to-end warehouse configuration (inbound to outbound).
+- Inbound and outbound workflows.
+- Wave management, wave aborts, and systematic troubleshooting.
+- BRD-based configuration and business process mapping.
+- Technical and functional architecture differences between ${existingTool} and ${topic}.
+- Practical exposure to the ${topic} UI.
+- Interview preparation and real-time business scenario walkthroughs.
+- Hands-on requirement: Specifically requested hands-on exposure to complete full inbound and outbound flows.
 
-2. Career Guidance Provided
-• Recommended ${topic} as a strategic career path given expanding enterprise adoption.
-• Highlighted that functional WMS/SCM consultant roles bridge operational business workflows and systems, not pure coding.
-• Advised reviewing career prospects, hands-on practice bandwidth, and personal suitability before enrolling.
-• Emphasized real-world sandbox instance practice over passive video sessions.
+3. Training Program Explained
+Component\tDetails
+Training Duration\t24–30 hours
+Hands-on Exposure\t7 additional hours (separate from regular training)
+Batch Size\tMaximum 5 participants (peer cohort at same senior level)
+Trainer Experience\tApproximately 12 years (6+ years in Manhattan WMS)
+Training Level\tIntermediate to Advanced
+Training Approach\tEnd-to-end configuration, BRD flows, and troubleshooting
+Documentation\t${topic} L2 documentation (2024 version)
+Documentation Size\tApproximately 700 pages
+Recordings\tHigh-definition recordings available for all batch sessions
 
-3. Training Options Discussed
-• Offered live walkthrough demo with trainer to preview the full syllabus, live instances, and implementation scenarios.
-• Offered access to intermediate and advanced batch demo recordings to review live class dynamics and user interface.
-• Agreed to share detailed syllabus and batch cohort timing.
-• Recommended thorough hands-on evaluation of the curriculum before finalizing enrollment.
+Hands-on Clarification:
+- The additional 7 hours are separate from the regular 30 hours of core training.
+- Hands-on sessions can be scheduled in flexible 2–3-hour slots.
+- ${resolvedName} needs to provide approximately two days' advance notice before booking slots.
+- A freelancer/consultant facilitates access to the environment through screen sharing with remote control.
+- Depending on the client environment (QA sandbox vs stage), he will perform complete end-to-end flows or explore configurations.
+- Important: Practical keyboard exposure is provided, not just passive watching.
 
-4. Customer Response
-• ${resolvedName} acknowledged the guidance and agreed to review the information.
-• Currently evaluating schedule alignment and enrollment decision.
-• Follow-up scheduled via WhatsApp to share curriculum and answer pending queries.
+4. Pricing Discussion
+Training Option\tQuoted Price
+Individual Training (1-on-1)\tApproximately ${quotedIndividual}
+Batch Training – Original\t${quotedBatchOriginal}
+Batch Training – Discounted\t${quotedBatchDiscounted}
 
-5. Next Actions
-Action Item\tStatus
-Share ${topic} training details\tPending
-Share intermediate and advanced demo sessions\tPending
-Follow up with ${resolvedName} via WhatsApp\tPending
-Arrange a trainer-led demo if interested\tAwaiting confirmation
+Pricing Feedback & Sensitivity:
+- ${resolvedName} considers ${quotedIndividual} too high for individual training.
+- More comfortable with the batch pricing structure (${quotedBatchDiscounted}).
+- Ready to enroll in a batch if the cohort timing aligns with work hours.
+- Inquired if additional batch discounts could be applied.
+- Pricing Sensitivity: HIGH (Batch option represents the realistic conversion opportunity).
+
+5. Scheduling Requirements
+Option\tTiming\t${resolvedName}'s Preference
+Evening Batch\t9:00 PM – 10:00 PM IST\tNot feasible (Conflicts with ${shiftText})
+Morning Batch\t8:00 AM – 9:00 AM IST\tPreferred
+Individual Training\tCustomizable\tInterested but concerned about ${quotedIndividual} pricing
+
+Core Scheduling Barrier:
+- Works from ${shiftText}; cannot attend evening batches.
+- GapAnchor ownership committed to checking slot availability for an upcoming 8 AM – 9 AM IST morning batch, potentially in January.
+
+6. Interview and Job Support Discussion
+Interview Preparation:
+- One-hour complimentary trial/demo session provided.
+- Candidate can share a specific Job Description (JD).
+- Dedicated consultant assigned for mock interviews, resume restructuring, and business scenario framing.
+- Specialized interview preparation package available for approximately ₹8,000 until job placement.
+Job Placement Support:
+- US/Canada staffing partner placement available for visa holders ready to relocate.
+- Offshore India job placement is not directly guaranteed, but direct market openings and visibility are shared.
+- ${resolvedName} confirmed looking for offshore India opportunities at present.
+
+7. Additional Product Interest – Manhattan ProActive
+- Introduced Manhattan ProActive (inbuilt development UI within Manhattan Active ecosystem).
+- Explained that ProActive covers development of custom screens, DC-specific workflow extensions, and background agent scheduling.
+- Separate 22-hour technical program.
+- ${resolvedName} noted interest for future expansion once core Active functional training is completed.
+
+8. Lead Qualification
+Qualification Parameter\tAssessment
+Relevant WMS Experience\tYes (${existingTool} ${roleTitle})
+Technical Background\tYes (Strong technical & architectural foundation)
+Understanding of Warehouse Operations\tYes (Clear on functional concepts)
+Career Transition Intent\tStrong (Actively targeting ${topic} switch)
+Interest in ${topic}\tHigh
+Budget Readiness\tModerate (Comfortable with ${quotedBatchDiscounted} batch fee)
+Preferred Training Mode\tBatch (Cohort of 5 professionals)
+Preferred Timing\tMorning (8:00 AM – 9:00 AM IST)
+Hands-on Requirement\tHigh (Practical sandbox execution required)
+Interview Support Interest\tYes (Interested in 1-hr trial and resume alignment)
+Immediate Enrollment\tPending morning batch slot confirmation
+
+Overall Lead Assessment: ${scoreDisplay}
+Why this is a promising lead:
+${resolvedName} already has deep WMS experience as a Tech Lead and understands core logistics concepts. Profile perfectly matches the intermediate-to-advanced curriculum.
+Primary conversion barriers:
+1. Morning batch availability (8 AM – 9 AM IST).
+2. Price sensitivity for individual training (batch is the viable route).
+3. Assurance of meaningful hands-on screen control.
+
+9. Immediate Follow-up Actions
+Priority\tAction Item\tResponsibility\tStatus
+High\tShare previous ${topic} demo recording\tGapAnchor\tPending
+High\tCheck availability of 8 AM–9 AM morning batch\tGapAnchor\tPending
+High\tExplore January morning cohort possibilities\tGapAnchor\tPending
+Medium\tSend upcoming live demo invitation link\tGapAnchor\tPending
+Medium\tConfirm batch pricing discount (${quotedBatchDiscounted})\tGapAnchor\tPending
+Medium\tShare Manhattan ProActive syllabus separately\tGapAnchor\tPending
+Later\tSchedule one-hour interview preparation trial\tGapAnchor\tPending
 
 CRM Lead Status
 Status: ${crmStatus}
 Lead Temperature: ${leadTemp}
-Next Step: Send the course details and demo information via WhatsApp, then follow up to understand preferences and answer questions.
+Next Step: Send ${topic} demo recording, check availability of 8 AM morning batch, and follow up via WhatsApp.
 
-Overall outcome: Consultative guidance provided to ${resolvedName} regarding ${topic}. Advised to review training modules and sandbox walkthrough before confirming cohort seat.`;
+Overall outcome: High-potential consultative call with ${resolvedName}. Qualified for intermediate-to-advanced ${topic} batch. Key conversion driver is securing an 8:00 AM – 9:00 AM IST morning cohort slot at the ${quotedBatchDiscounted} batch price point.`;
 
   return {
     score: totalScore,
@@ -366,33 +487,114 @@ Extract genuine qualitative signals and output ONLY a valid JSON object matching
   "redFlagReason": "Reason if hasRedFlag is true, otherwise null",
   "whatsappDraft": "A warm, professional WhatsApp follow-up message ready to send with syllabus, fees, and next steps tailored to this specific conversation",
   "nextAction": "Actionable next step for sales agent",
-  "customerExperience": "Comprehensive executive Call Summary matching this exact structure:
-Call Summary – [Name] | GapAnchor Consulting
+  "customerExperience": "Comprehensive executive Lead Discussion Summary matching this exact 9-section structure:
+GapAnchor – Lead Discussion Summary
+Prospect: [Name]
+Interested Program: [Course / Domain]
+Lead Status: Interested – Follow-up Required
+Priority: [Priority Assessment]
 
-Purpose: [1-2 sentences on actual purpose]
+1. Candidate Profile
+- Currently working as [Role].
+- Has experience with [Tools/WMS].
+- Familiar with warehouse management concepts, functional workflows, and business processes.
+- Understands operational warehouse logistics and system execution.
+- Interested in transitioning to [Topic].
+- Primary objective: [Career switch / Enterprise implementation].
+- Currently working in a [Shift hours, e.g. 2:00 PM – 11:00 PM UK shift].
+- [Visa / location status, e.g. Canada visa, India offshore].
 
-1. Lead Background
-[Actual background points from conversation]
+2. Training Requirements
+[Candidate Name] is interested in learning:
+- [Topic] architecture & cloud platform foundations.
+- End-to-end warehouse configuration (inbound to outbound).
+- Inbound and outbound workflows.
+- Wave management, wave aborts, and systematic troubleshooting.
+- BRD-based configuration and business process mapping.
+- Technical and functional architecture differences between [Current Tool] and [Topic].
+- Practical exposure to the [Topic] UI.
+- Interview preparation and real-time business scenario walkthroughs.
+- Hands-on requirement: [Specific hands-on requests].
 
-2. Career Guidance Provided
-[Actual guidance discussed regarding role, architecture, syllabus]
+3. Training Program Explained
+Component\tDetails
+Training Duration\t24–30 hours
+Hands-on Exposure\t7 additional hours
+Batch Size\tMaximum 5 participants
+Trainer Experience\tApproximately 12 years
+Training Level\tIntermediate to Advanced
+Training Approach\tEnd-to-end configuration, BRD flows, and troubleshooting
+Documentation\t[Topic] L2 documentation (2024 version)
+Documentation Size\tApproximately 700 pages
+Recordings\tHigh-definition recordings available for all batch sessions
 
-3. Training Options Discussed
-[Actual options discussed on the call: batch timeline, sandbox access, live sessions, pricing/installments]
+Hands-on Clarification:
+- [Details on how 7 hours hands-on works: separate from 30 hrs, 2-3 hr slots, 2 days advance notice, screen sharing remote control, QA sandbox vs stage environment].
 
-4. Customer Response
-[Actual customer reactions, questions asked, intent]
+4. Pricing Discussion
+Training Option\tQuoted Price
+Individual Training (1-on-1)\tApproximately ₹90,000
+Batch Training – Original\t₹55,000
+Batch Training – Discounted\t₹46,000–₹48,000
 
-5. Next Actions
-Action Item\tStatus
-[Items discussed on call with Pending / Awaiting confirmation]
+Pricing Feedback & Sensitivity:
+- [Candidate feedback on individual fee vs batch fee]
+- Pricing Sensitivity: [HIGH / MODERATE / LOW]
+
+5. Scheduling Requirements
+Option\tTiming\tCandidate's Preference
+Evening Batch\t9:00 PM – 10:00 PM IST\t[Feasible / Not feasible with reason]
+Morning Batch\t8:00 AM – 9:00 AM IST\t[Preferred / Feasible]
+Individual Training\tCustomizable\t[Preference]
+
+Core Scheduling Barrier:
+- [Specific shift conflicts and commitment to upcoming morning batch or January cohort].
+
+6. Interview and Job Support Discussion
+Interview Preparation:
+- [1-hr trial demo, JD guidance, dedicated consultant, ~₹8,000 package]
+Job Placement Support:
+- [US/Canada staffing partner vs offshore India reality]
+
+7. Additional Product Interest – Manhattan ProActive
+- [Details on ProActive development UI, 22 hours, custom screens, DC workflows, candidate interest]
+
+8. Lead Qualification
+Qualification Parameter\tAssessment
+Relevant WMS Experience\t[Yes/No]
+Technical Background\t[Yes/No]
+Understanding of Warehouse Operations\t[Yes/No]
+Career Transition Intent\t[Strong/Moderate]
+Interest in [Topic]\t[High/Moderate]
+Budget Readiness\t[Moderate/High/Low]
+Preferred Training Mode\t[Batch/Individual]
+Preferred Timing\t[Morning/Evening]
+Hands-on Requirement\t[High/Moderate]
+Interview Support Interest\t[Yes/No]
+Immediate Enrollment\t[Status]
+
+Overall Lead Assessment: [Score e.g. 7.5/10]
+Why this is a promising lead:
+[Detailed rationale]
+Primary conversion barriers:
+1. [Barrier 1]
+2. [Barrier 2]
+3. [Barrier 3]
+
+9. Immediate Follow-up Actions
+Priority\tAction Item\tResponsibility\tStatus
+High\t[Action Item 1]\tGapAnchor\tPending
+High\t[Action Item 2]\tGapAnchor\tPending
+Medium\t[Action Item 3]\tGapAnchor\tPending
+Medium\t[Action Item 4]\tGapAnchor\tPending
+Later\t[Action Item 5]\tGapAnchor\tPending
 
 CRM Lead Status
-Status: [Status]
-Lead Temperature: [Hot / Warm / Cool]
-Next Step: [Next actionable step]
+Status: Interested – Follow-up Required
+Lead Temperature: [Hot / Warm]
+Next Step: [Actionable next step]
 
-Overall outcome: [Comprehensive 1-2 sentence final summary]"
+Overall outcome: [High-impact final outcome summary]"
 }
 
 Transcript:
