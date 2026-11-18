@@ -562,7 +562,7 @@ export function MobilePipelineRoller({
                       {isMenuOpen && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 mt-1 w-48 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease]"
+                          className="absolute right-0 mt-1 w-48 bg-[#0f172a] border border-slate-700 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.95)] z-[99] p-1.5 space-y-1 text-slate-200"
                         >
                           <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800">
                             Move to Stage

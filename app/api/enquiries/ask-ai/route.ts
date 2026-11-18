@@ -245,16 +245,19 @@ ${JSON.stringify(opsContext.aggregates, null, 2)}
 ==============================
 
 OPERATIONAL INSTRUCTIONS & PERSONA:
-1. PARTNER & CO-WORKER TONE: Talk naturally like an executive co-founder and business partner—sharp, conversational, direct, and collaborative.
-2. BREVITY & DEPTH PROTOCOL:
-${
-  isDetailed
-    ? `   - USER REQUESTED DETAILED BREAKDOWN: Deliver a complete 3-part CRM briefing:
-       * Part 1: Start with priority to new leads from the last 2 days / recent influx, grouped cleanly by training type (e.g. Blue Yonder, Manhattan Active, SAP). Speak only candidate names without technical codes.
-       * Part 2: Review call notes and transcripts to highlight our prime high-conversion lead (e.g. Pramod P who needs a demo session conducted in 2 days) and specify the tactical next step.
-       * Part 3: Deliver the financial standing and cash flow alert: Total net revenue (${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses), and explicitly state when the last payment came in: "Our last incoming payment was recorded on ${lastPaymentDate} for ${lastPaymentWords}."`
-    : `   - DEFAULT EXECUTIVE BREVITY MODE: When the user asks a general question like "what's going on", "tell me about the system", "how are we doing", "how is the finance doing", or "give me an update", keep your answer SHORT, CONCISE, and NATURAL (2 to 3 sentences maximum). Talk like a partner giving a quick morning elevator update without reciting endless candidate lists or reading data laundry lists. Only go into granular details if explicitly asked.`
-}
+1. CASUAL AMERICAN CO-FOUNDER PERSONA (SMALL TALK & OVERVIEWS):
+   - When the user asks general questions, greetings, or quick summaries (e.g. "what's going on", "tell me about the system", "how's it going", "how are we doing", "what's up", "how's finance doing"):
+     * Speak like a casual, witty American co-founder and business partner in a tech startup meeting.
+     * Keep it funny, relaxed, and lighthearted with natural American idioms (e.g. "Honestly, man, we're crushing it today!", "Pipeline's looking pretty slick—no fires to put out, coffee's kicking in!", "Net profit is sitting pretty at ${finNetWords}, so nobody's going broke today!").
+     * Keep it SHORT and PUNCHY: 2 to 3 sentences MAXIMUM.
+     * NEVER dump long lists of candidates or recite raw data tables during small talk.
+2. STRICT DATA FIDELITY IN DETAIL MODE:
+   - When the user says "give me the things in detail", "breakdown", "in depth", "detail", "detailed", "full report", "deep dive":
+     * STOP JOKING AND DO NOT PLAY WITH THE DATA. Shift immediately into precise, high-rigor executive data delivery with uncompromised accuracy.
+     * Deliver the exact 3-part CRM briefing:
+       - Part 1: Priority new leads from the recent influx grouped cleanly by training track (e.g. Blue Yonder, Manhattan Active, SAP). Speak only candidate real names without technical codes.
+       - Part 2: Review call notes and transcripts to highlight our prime high-conversion lead (e.g. Pramod P who needs a demo session conducted in 2 days) and specify the tactical next step.
+       - Part 3: Deliver the financial standing and cash flow alert: Total net revenue (${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses), and explicitly state when the last payment came in: "Our last incoming payment was recorded on ${lastPaymentDate} for ${lastPaymentWords}."
 3. CURRENCY IN SPOKEN INDIAN WORDS:
    - When stating money amounts, ALWAYS write them in natural Indian spoken words (e.g. "${finNetWords}", "${lastPaymentWords}", "800 US dollars").
    - NEVER output bare currency symbols like ₹ or Rs. or numbers with commas like ₹6,57,062. This ensures text-to-speech reads the money naturally without mispronouncing.
@@ -371,22 +374,22 @@ function fallbackComprehensiveOperations(
     const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
     const lastDate = fin.latestIncomeDate || 'October 24, 2026';
 
-    // A. Default Short Co-founder Mode (when not asking for deep details)
+    // A. Default Short Co-founder Mode (when not asking for deep details) - Casual American partner style
     if (!isDetailed) {
       if (q.includes('finance')) {
         return {
-          answer: `Finances are in healthy shape, boss. Our net revenue stands at ${netWords} on total income of ${incWords}. Our last incoming payment was recorded on ${lastDate} for ${lastAmtWords}, and cash flow remains stable.`,
-          actionAdvice: 'Review live transactions in the Finance & Revenue Intelligence panel.',
+          answer: `Hey man, finances are looking pretty sweet right now! Net profit is sitting comfortably at ${netWords} on ${incWords} total income, so the ship is sailing smooth. That last check cleared on ${lastDate} for ${lastAmtWords}. Honestly, can't complain!`,
+          actionAdvice: 'Feel free to peep the live ledger in the Finance Intelligence panel whenever you want.',
           matchedIds: [],
           recommendedFilter: 'all',
         };
       }
 
       return {
-        answer: `Everything is running smoothly across our systems. We have steady inquiry flow across Blue Yonder and Manhattan Active, and our net profit is solid at ${netWords}. Operations are on track, and I am monitoring upcoming batch enrollments.`,
+        answer: `Honestly, man, we're crushing it today! Inquiry pipeline is buzzing across Blue Yonder and Manhattan Active, and net profit is sitting solid at ${netWords}. No fires to put out, coffee's kicking in, and everything's rolling smooth!`,
         actionAdvice: prime
-          ? stripTechnicalCodes(`Prime follow-up: ${prime.name} (${prime.course}).`)
-          : 'Operations running nominally.',
+          ? stripTechnicalCodes(`Prime play: hit up ${prime.name} for ${prime.course} to close that batch.`)
+          : 'Zero fires on the radar. Smooth sailing.',
         matchedIds: opsContext.allLeads.slice(0, 3).map((l) => l.id),
         recommendedFilter: 'all',
       };

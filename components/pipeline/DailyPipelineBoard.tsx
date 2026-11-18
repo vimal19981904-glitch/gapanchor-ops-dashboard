@@ -21,6 +21,8 @@ import {
   X,
   Zap,
   Trash2,
+  AlertCircle,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { jarvisAudioFx } from '../../lib/jarvis-audio-fx';
@@ -47,6 +49,7 @@ export interface PipelineEnquiry {
   status?: string;
   manualStage?: StageKey;
   callFollowUpDate?: string | Date | null;
+  notes?: string | null;
 }
 
 export interface DailyPipelineBoardProps {
@@ -54,7 +57,7 @@ export interface DailyPipelineBoardProps {
   onSelectLead?: (enquiry: PipelineEnquiry) => void;
   onUpdateLeadStatus?: (
     enquiryId: string,
-    updates: { contactStatus?: string; status?: string; leadQuality?: string }
+    updates: { contactStatus?: string; status?: string; leadQuality?: string; notes?: string }
   ) => Promise<void>;
   className?: string;
 }
@@ -295,6 +298,11 @@ export function DailyPipelineBoard({
   const [newlyPushedIds, setNewlyPushedIds] = useState<Set<string>>(new Set());
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [leadSearchTerm, setLeadSearchTerm] = useState('');
+
+  // Compulsory Removal Note Modal State
+  const [removalModalLead, setRemovalModalLead] = useState<PipelineEnquiry | null>(null);
+  const [removalNotes, setRemovalNotes] = useState('');
+  const [isSubmittingRemoval, setIsSubmittingRemoval] = useState(false);
 
   // Mobile Pipeline Specific State
   const [activeMobileStage, setActiveMobileStage] = useState<StageKey>('evaluating');
@@ -629,10 +637,53 @@ export function DailyPipelineBoard({
   };
 
   /**
-   * Manually removes a lead from the active pipeline board without deleting it from the DB.
+   * Opens the compulsory removal modal for a prospect.
+   */
+  const handleInitiateRemoval = (lead: PipelineEnquiry) => {
+    setActiveMenuLeadId(null);
+    setRemovalModalLead(lead);
+    setRemovalNotes('');
+  };
+
+  /**
+   * Legacy wrapper: opens modal if called by ID.
    */
   const handleRemoveFromPipeline = (leadId: string) => {
     const currentLead = localEnquiries.find((e) => e.id === leadId);
+    if (currentLead) {
+      handleInitiateRemoval(currentLead);
+    }
+  };
+
+  /**
+   * Executes removal after the user enters the compulsory reason/note.
+   * Persists the note into the lead's permanent CRM record.
+   */
+  const handleConfirmRemoval = async () => {
+    if (!removalModalLead) return;
+    const cleanNote = removalNotes.trim();
+    if (!cleanNote) {
+      toast.error('Notes are strictly compulsory before removing a prospect from the board.');
+      return;
+    }
+
+    setIsSubmittingRemoval(true);
+    const targetLead = removalModalLead;
+    const leadId = targetLead.id;
+    const nowStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const removalEntry = `[${nowStr} Removed from Pipeline: ${cleanNote}]`;
+    const updatedNotes = targetLead.notes
+      ? `${targetLead.notes}\n${removalEntry}`
+      : removalEntry;
+
+    // 1. Optimistic local update
+    setLocalEnquiries((prev) =>
+      prev.map((item) =>
+        item.id === leadId ? { ...item, notes: updatedNotes } : item
+      )
+    );
+
+    // 2. Hide from pipeline board
     setRemovedLeadIds((prev) => {
       const next = Array.from(new Set([leadId, ...prev]));
       try {
@@ -649,9 +700,35 @@ export function DailyPipelineBoard({
       return next;
     });
 
+    // 3. Save notes to backend database
+    try {
+      if (onUpdateLeadStatus) {
+        await onUpdateLeadStatus(leadId, { notes: updatedNotes });
+      } else {
+        await fetch('/api/enquiries/sync-excel', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            enquiryId: leadId,
+            notes: updatedNotes,
+          }),
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to sync removal note to database:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('gapanchor:lead-updated', {
+          detail: { enquiryId: leadId, notes: updatedNotes },
+        })
+      );
+    }
+
     addOpsNotification({
-      title: 'Removed from Board',
-      description: `${currentLead?.participantName || 'Prospect'} removed from active pipeline view`,
+      title: 'Prospect Removed with Notes',
+      description: `${targetLead.participantName}: ${cleanNote}`,
       category: 'pipeline',
     });
 
@@ -659,12 +736,16 @@ export function DailyPipelineBoard({
       jarvisAudioFx.playSuccessChime();
     } catch {}
 
-    toast.info(
+    toast.success(
       <span>
-        Removed <strong>{currentLead?.participantName || 'Prospect'}</strong> from pipeline board. (Data preserved in CRM)
+        Removed <strong>{targetLead.participantName}</strong> from pipeline board. Notes saved to CRM.
       </span>,
-      { duration: 3000 }
+      { duration: 3500 }
     );
+
+    setIsSubmittingRemoval(false);
+    setRemovalModalLead(null);
+    setRemovalNotes('');
   };
 
   /**
@@ -927,7 +1008,7 @@ export function DailyPipelineBoard({
                           : isNewlyPushed
                           ? 'bg-slate-900/95 ring-2 ring-cyan-400 shadow-xl shadow-cyan-500/20 border-cyan-400/70 animate-pulse'
                           : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/80 hover:shadow-xl hover:bg-slate-900/90'
-                      }`}
+                      } ${isMenuOpen ? 'z-40' : 'z-0'}`}
                     >
                       {/* Top Header & Details Section */}
                       <div>
@@ -955,17 +1036,17 @@ export function DailyPipelineBoard({
                                 e.stopPropagation();
                                 setActiveMenuLeadId(isMenuOpen ? null : lead.id);
                               }}
-                              className="p-1 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                               title="Quick Actions & Move Stage"
                             >
                               <MoreVertical className="w-3.5 h-3.5" />
                             </button>
 
-                            {/* Context Dropdown Popover */}
+                            {/* Context Dropdown Popover (Opaque & High-Z, Zero Lag) */}
                             {isMenuOpen && (
                               <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute right-0 mt-1 w-52 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 p-1.5 space-y-1 animate-[fadeIn_0.15s_ease]"
+                                className="absolute right-0 mt-1 w-56 bg-[#0f172a] border border-slate-700 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.95)] z-[99] p-1.5 space-y-1 text-slate-200"
                               >
                                 <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 flex justify-between items-center">
                                   <span>Move to Stage</span>
@@ -981,10 +1062,10 @@ export function DailyPipelineBoard({
                                         setActiveMenuLeadId(null);
                                         handleMoveLead(lead.id, s.key);
                                       }}
-                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${
+                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
                                         isCurrent
-                                          ? 'bg-slate-800 text-cyan-300 font-semibold cursor-default'
-                                          : 'text-slate-300 hover:bg-slate-800/70 hover:text-white cursor-pointer'
+                                          ? 'bg-slate-800 text-cyan-300 font-semibold'
+                                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                                       }`}
                                     >
                                       <div className="flex items-center gap-2">
@@ -1004,14 +1085,11 @@ export function DailyPipelineBoard({
                                 <div className="pt-1 mt-1 border-t border-slate-800">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setActiveMenuLeadId(null);
-                                      handleRemoveFromPipeline(lead.id);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors text-left"
+                                    onClick={() => handleInitiateRemoval(lead)}
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-colors text-left cursor-pointer"
                                   >
                                     <XCircle className="w-3.5 h-3.5 shrink-0" />
-                                    <span>Remove from Board</span>
+                                    <span>Remove from Board...</span>
                                   </button>
                                 </div>
                               </div>
@@ -1250,6 +1328,164 @@ export function DailyPipelineBoard({
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Compulsory Pipeline Removal Notes Modal ── */}
+      {removalModalLead && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-[fadeIn_0.15s_ease]">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0f172a] border border-slate-700/90 rounded-2xl w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.9)] p-5 space-y-4 animate-[fadeInUp_0.15s_ease]"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    Remove Prospect from Board
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    A note or reason is strictly compulsory before removing any prospect.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSubmittingRemoval) {
+                    setRemovalModalLead(null);
+                    setRemovalNotes('');
+                  }
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Prospect Summary Box */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+              <div className="min-w-0 flex-1 pr-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white truncate">
+                    {removalModalLead.participantName}
+                  </span>
+                  <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 shrink-0">
+                    {removalModalLead.leadCode || `#${removalModalLead.id.slice(-6)}`}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {removalModalLead.trainingType || removalModalLead.topic || 'Enterprise Training'} • {removalModalLead.phone}
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                {STAGES.find((s) => s.key === mapEnquiryToStage(removalModalLead))?.label || 'Pipeline'}
+              </span>
+            </div>
+
+            {/* Quick Reason Chips */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Quick Reason Select
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Budget / Fee mismatch',
+                  'Joined another institute',
+                  'Timing / Schedule conflict',
+                  'Not interested / Dropped out',
+                  'Unresponsive after 3+ calls',
+                  'Duplicate entry',
+                ].map((chip) => {
+                  const isSelected = removalNotes.includes(chip);
+                  return (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        if (!removalNotes.trim()) {
+                          setRemovalNotes(chip);
+                        } else if (!removalNotes.includes(chip)) {
+                          setRemovalNotes(`${removalNotes.trim()} - ${chip}`);
+                        }
+                      }}
+                      className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      {chip}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Compulsory Notes Textarea */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Compulsory Removal Notes *</span>
+                </label>
+                <span className="text-[10px] text-slate-500">
+                  {removalNotes.trim().length} chars entered
+                </span>
+              </div>
+              <textarea
+                value={removalNotes}
+                onChange={(e) => setRemovalNotes(e.target.value)}
+                placeholder="Enter mandatory reason or detailed explanation for removing this prospect from the board (e.g. Candidate confirmed they accepted another offer and asked to pause training)..."
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500/50 focus:border-rose-500 transition-colors"
+                autoFocus
+              />
+              {!removalNotes.trim() && (
+                <p className="text-[11px] text-amber-400 flex items-center gap-1.5 font-medium pt-0.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Notes are compulsory before removing a prospect from the board.</span>
+                </p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setRemovalModalLead(null);
+                  setRemovalNotes('');
+                }}
+                disabled={isSubmittingRemoval}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemoval}
+                disabled={!removalNotes.trim() || isSubmittingRemoval}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-rose-600/30 flex items-center gap-2 cursor-pointer"
+              >
+                {isSubmittingRemoval ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving Note & Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Confirm & Remove from Board</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

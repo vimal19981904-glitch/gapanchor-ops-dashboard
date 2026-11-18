@@ -15,7 +15,7 @@ export function getGeminiConfig(): { apiKey: string | null; model: string } {
     process.env.GOOGLE_AI_KEY ||
     process.env.GOOGLE_API_KEY ||
     null;
-  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   return { apiKey, model };
 }
 
