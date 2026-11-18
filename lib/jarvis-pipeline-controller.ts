@@ -785,8 +785,8 @@ export async function executeJarvisPipelineAction(
       .join(', ');
 
     const answer = isStrictBreach
-      ? `Right away, sir! I just audited the pipeline and flagged ${count} prospect${count > 1 ? 's' : ''} that have exceeded our 3-day SLA threshold: including ${sampleNames}. I have immediately fired off high-priority mobile push notifications to NTFY and an urgent operations email so the team gets instant visibility to jump on them.`
-      : `Alert dispatched, sir! While all current pipeline leads are within the 3-day threshold, I have sent an active pipeline status notification covering our top ${count} staged prospects—including ${sampleNames}—to employee mobile push and operations email for immediate visibility.`;
+      ? `Right away, boss! I just audited the pipeline and flagged ${count} prospect${count > 1 ? 's' : ''} that have exceeded our 3-day SLA threshold: including ${sampleNames}. I have immediately fired off high-priority mobile push notifications to NTFY and an urgent operations email so the team gets instant visibility to jump on them.`
+      : `Alert dispatched, boss! While all current pipeline leads are within the 3-day threshold, I have sent an active pipeline status notification covering our top ${count} staged prospects—including ${sampleNames}—to employee mobile push and operations email for immediate visibility.`;
 
     const actionAdvice = isStrictBreach
       ? `High-priority mobile & email alerts sent for ${count} overdue prospect(s). Prioritize immediate follow-up to unblock pipeline.`
@@ -831,7 +831,7 @@ export async function executeJarvisPipelineAction(
       leadNames: lostLeads.map((l) => l.name),
       leadCodes: lostLeads.map((l) => l.leadCode),
       count: lostLeads.length,
-      answer: `Very good, sir. I have removed all ${lostLeads.length} lost enquiries from your active pipeline board, including ${namesSummary || 'archived records'}. All contact histories remain safely preserved in the database.`,
+      answer: `Very good, boss. I have removed all ${lostLeads.length} lost enquiries from your active pipeline board, including ${namesSummary || 'archived records'}. All contact histories remain safely preserved in the database.`,
       actionAdvice: `Cleaned ${lostLeads.length} archived/lost prospects from your active pipeline board.`,
       recommendedFilter: 'all',
       summary: `Removed ${lostLeads.length} lost enquiries from pipeline board`,
@@ -851,7 +851,7 @@ export async function executeJarvisPipelineAction(
         leadNames: [matched.name],
         leadCodes: [matched.leadCode],
         count: 1,
-        answer: `Understood, sir. I have removed ${matched.name} [${matched.leadCode}] from your interactive pipeline board. The lead record remains intact in your CRM.`,
+        answer: `Understood, boss. I have removed ${matched.name} [${matched.leadCode}] from your interactive pipeline board. The lead record remains intact in your CRM.`,
         actionAdvice: `Removed ${matched.name} (${matched.leadCode}) from active pipeline board.`,
         recommendedFilter: 'all',
         summary: `Removed ${matched.name} (${matched.leadCode}) from pipeline`,
@@ -865,7 +865,7 @@ export async function executeJarvisPipelineAction(
       removeLeadIds: [],
       leadNames: [],
       count: 0,
-      answer: `Apologies, sir. I could not locate a matching candidate by that primary key or name in our active pipeline.`,
+      answer: `Apologies, boss. I could not locate a matching candidate by that primary key or name in our active pipeline.`,
       actionAdvice: 'Please verify the primary key code (e.g. GAMA-0355) on the lead card.',
       summary: 'Candidate not found for removal',
     };
@@ -917,7 +917,7 @@ export async function executeJarvisPipelineAction(
       leadNames: targetLeads.map((l) => l.name),
       leadCodes: targetLeads.map((l) => l.leadCode),
       count: leadIds.length,
-      answer: `Right away, sir. I have pushed all ${leadIds.length} due callback enquiries into your interactive pipeline board: including ${namesList}${extraCount}.`,
+      answer: `Right away, boss. I have pushed all ${leadIds.length} due callback enquiries into your interactive pipeline board: including ${namesList}${extraCount}.`,
       actionAdvice: 'All scheduled callback leads are now staged on your pipeline board for immediate engagement.',
       recommendedFilter: 'due_today',
       summary: `Pushed ${leadIds.length} due enquiries to pipeline`,
@@ -971,7 +971,7 @@ export async function executeJarvisPipelineAction(
       leadNames: selected.map((l) => l.name),
       leadCodes: selected.map((l) => l.leadCode),
       count: leadIds.length,
-      answer: `Executing now, sir. I have evaluated our entire database across call transcripts, notes, and scores, and pushed our top ${leadIds.length} priority candidates to the pipeline: including ${keyHighlights}.`,
+      answer: `Executing now, boss. I have evaluated our entire database across call transcripts, notes, and scores, and pushed our top ${leadIds.length} priority candidates to the pipeline: including ${keyHighlights}.`,
       actionAdvice: 'Prioritize Arya Suriyanarayanan and Bhuvanesh for immediate enrollment confirmation and syllabus delivery.',
       recommendedFilter: 'high_intent',
       summary: `Pushed top ${leadIds.length} priority candidates to pipeline`,
@@ -1000,7 +1000,7 @@ export async function executeJarvisPipelineAction(
       leadNames: top10.map((l) => l.name),
       leadCodes: top10.map((l) => l.leadCode),
       count: leadIds.length,
-      answer: `Directly onto the board, sir. I have added the top 10 leads to your pipeline: ${namesSummary}.`,
+      answer: `Directly onto the board, boss. I have added the top 10 leads to your pipeline: ${namesSummary}.`,
       actionAdvice: 'Review their respective pipeline stages and drag any card to update its CRM status in real time.',
       recommendedFilter: 'all',
       summary: `Added top 10 leads to pipeline`,
@@ -1037,7 +1037,7 @@ export async function executeJarvisPipelineAction(
         leadNames: [matchedLead.name],
         leadCodes: [matchedLead.leadCode],
         count: 1,
-        answer: `Understood, sir. I have moved ${matchedLead.name} [${matchedLead.leadCode}] into the ${targetStage.toUpperCase()} stage on your pipeline board.`,
+        answer: `Understood, boss. I have moved ${matchedLead.name} [${matchedLead.leadCode}] into the ${targetStage.toUpperCase()} stage on your pipeline board.`,
         actionAdvice: `CRM record for ${matchedLead.name} synchronized to ${targetStage}.`,
         recommendedFilter: 'all',
         summary: `Moved ${matchedLead.name} (${matchedLead.leadCode}) to ${targetStage}`,
@@ -1071,7 +1071,7 @@ export async function executeJarvisPipelineAction(
         leadNames: [matchedLead.name],
         leadCodes: [matchedLead.leadCode],
         count: 1,
-        answer: `Right away, sir. I have added ${matchedLead.name} [${matchedLead.leadCode}] to the ${targetStage} stage on your pipeline board.`,
+        answer: `Right away, boss. I have added ${matchedLead.name} [${matchedLead.leadCode}] to the ${targetStage} stage on your pipeline board.`,
         actionAdvice: `Review ${matchedLead.name}'s call notes and transcript in the detail drawer.`,
         recommendedFilter: 'all',
         summary: `Added ${matchedLead.name} (${matchedLead.leadCode}) to pipeline`,
@@ -1128,7 +1128,7 @@ export function evaluateAllCandidatesPriorities(
 
   if (candidatesWithCallsOrTranscripts.length === 0) {
     return {
-      answer: 'I have analyzed our operational database, sir. No high-urgency candidate evaluations are currently recorded.',
+      answer: 'I have analyzed our operational database, boss. No high-urgency candidate evaluations are currently recorded.',
       actionAdvice: 'Sync Teams transcripts or import recent enquiries to populate intelligence records.',
       matchedIds: [],
       recommendedFilter: 'all',

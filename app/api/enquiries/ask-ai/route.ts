@@ -35,12 +35,18 @@ function stripTechnicalCodes(text: string): string {
 }
 
 /**
- * Ensures output is stripped of technical codes and all currency values
- * are formatted into natural Indian spoken words (e.g. "6 lakh 57 thousand rupees").
+ * Ensures output is stripped of technical codes, all salutations normalized to "boss",
+ * and all currency values are formatted into natural Indian spoken words.
  */
 function cleanOutput(text: string): string {
   if (!text) return '';
-  return sanitizeIndianCurrencyForSpeech(stripTechnicalCodes(text));
+  const noCodes = stripTechnicalCodes(text);
+  const normalizedBoss = noCodes
+    .replace(/\b(?:hey\s+)?(?:man|partner|sir)\b/gi, (match) => {
+      if (/^hey/i.test(match)) return 'Hey boss';
+      return 'boss';
+    });
+  return sanitizeIndianCurrencyForSpeech(normalizedBoss);
 }
 
 export async function GET() {
@@ -246,15 +252,17 @@ ${JSON.stringify(opsContext.aggregates, null, 2)}
 ==============================
 
 OPERATIONAL INSTRUCTIONS & PERSONA:
-1. CASUAL AMERICAN CO-FOUNDER PERSONA (SMALL TALK & OVERVIEWS):
+1. CASUAL AMERICAN STYLE (MANDATORY SALUTATION: ALWAYS ADDRESS USER AS "BOSS"):
    - When the user asks general questions, greetings, or quick summaries (e.g. "what's going on", "tell me about the system", "how's it going", "how are we doing", "what's up", "how's finance doing"):
-     * Speak like a casual, witty American co-founder and business partner in a tech startup meeting.
-     * Keep it funny, relaxed, and lighthearted with natural American idioms (e.g. "Honestly, man, we're crushing it today!", "Pipeline's looking pretty slick—no fires to put out, coffee's kicking in!", "Net profit is sitting pretty at ${finNetWords}, so nobody's going broke today!").
+     * Speak like a casual, witty American co-founder talking directly to his CEO.
+     * STRICT ADDRESS DIRECTIVE: ALWAYS call the user "boss" (e.g. "Honestly, boss, we're crushing it today!", "Pipeline's looking pretty slick, boss—no fires to put out, coffee's kicking in!", "Net profit is sitting pretty at ${finNetWords}, boss, so nobody's going broke today!").
+     * NEVER call the user "man" or "partner" or "sir". Use "boss" exclusively.
+     * Keep it funny, relaxed, and lighthearted with natural American idioms.
      * Keep it SHORT and PUNCHY: 2 to 3 sentences MAXIMUM.
      * NEVER dump long lists of candidates or recite raw data tables during small talk.
 2. STRICT DATA FIDELITY IN DETAIL MODE:
    - When the user says "give me the things in detail", "breakdown", "in depth", "detail", "detailed", "full report", "deep dive":
-     * STOP JOKING AND DO NOT PLAY WITH THE DATA. Shift immediately into precise, high-rigor executive data delivery with uncompromised accuracy.
+     * STOP JOKING AND DO NOT PLAY WITH THE DATA. Shift immediately into precise, high-rigor executive data delivery with uncompromised accuracy, addressing the user as "boss" (e.g. "Alright boss, here is the full executive breakdown across our active operations...").
      * Deliver the exact 3-part CRM briefing:
        - Part 1: Priority new leads from the recent influx grouped cleanly by training track (e.g. Blue Yonder, Manhattan Active, SAP). Speak only candidate real names without technical codes.
        - Part 2: Review call notes and transcripts to highlight our prime high-conversion lead (e.g. Pramod P who needs a demo session conducted in 2 days) and specify the tactical next step.
@@ -375,11 +383,11 @@ function fallbackComprehensiveOperations(
     const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
     const lastDate = fin.latestIncomeDate || 'October 24, 2026';
 
-    // A. Default Short Co-founder Mode (when not asking for deep details) - Casual American partner style
+    // A. Default Short Co-founder Mode (when not asking for deep details) - Casual American style ("boss")
     if (!isDetailed) {
       if (q.includes('finance')) {
         return {
-          answer: `Hey man, finances are looking pretty sweet right now! Net profit is sitting comfortably at ${netWords} on ${incWords} total income, so the ship is sailing smooth. That last check cleared on ${lastDate} for ${lastAmtWords}. Honestly, can't complain!`,
+          answer: `Hey boss, finances are looking pretty sweet right now! Net profit is sitting comfortably at ${netWords} on ${incWords} total income, so the ship is sailing smooth. That last check cleared on ${lastDate} for ${lastAmtWords}. Honestly, can't complain!`,
           actionAdvice: 'Feel free to peep the live ledger in the Finance Intelligence panel whenever you want.',
           matchedIds: [],
           recommendedFilter: 'all',
@@ -387,10 +395,10 @@ function fallbackComprehensiveOperations(
       }
 
       return {
-        answer: `Honestly, man, we're crushing it today! Inquiry pipeline is buzzing across Blue Yonder and Manhattan Active, and net profit is sitting solid at ${netWords}. No fires to put out, coffee's kicking in, and everything's rolling smooth!`,
+        answer: `Honestly, boss, we're crushing it today! Inquiry pipeline is buzzing across Blue Yonder and Manhattan Active, and net profit is sitting solid at ${netWords}. No fires to put out, coffee's kicking in, and everything's rolling smooth!`,
         actionAdvice: prime
           ? stripTechnicalCodes(`Prime play: hit up ${prime.name} for ${prime.course} to close that batch.`)
-          : 'Zero fires on the radar. Smooth sailing.',
+          : 'Zero fires on the radar, boss. Smooth sailing.',
         matchedIds: opsContext.allLeads.slice(0, 3).map((l) => l.id),
         recommendedFilter: 'all',
       };

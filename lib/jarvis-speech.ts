@@ -489,8 +489,8 @@ export async function prewarmJarvisVoiceCache(): Promise<void> {
 
   const activeVoice = getActiveVoice();
   const phrases = [
-    'Online, sir. Ready.',
-    'Right away, sir.',
+    'Online, boss. Ready.',
+    'Right away, boss.',
   ];
 
   for (const phrase of phrases) {
@@ -737,8 +737,8 @@ export function speakJarvis(
       const bodyChunks = chunkTextForPipelinedSpeech(cleanBody);
       const playlist: string[] = [];
 
-      if (includeIntro) {
-        playlist.push('Right away, sir.');
+      if (includeIntro && !cleanBody.toLowerCase().startsWith('right away') && !cleanBody.toLowerCase().startsWith('online')) {
+        playlist.push('Right away, boss.');
       }
       playlist.push(...bodyChunks);
 
@@ -1041,26 +1041,27 @@ export function getJarvisGreeting(): string {
 
 /**
  * Returns conversational acknowledgment when the user's prompt is captured.
- * "One minute, sir. Checking the details now."
+ * "One minute, boss. Checking the details now."
  */
 export function getJarvisThinkingPhrase(): string {
-  return 'One minute, sir. Checking the details now.';
+  return 'One minute, boss. Checking the details now.';
 }
 
 /**
  * The J.A.R.V.I.S. Humanizer Algorithm:
- * Formats Gemini AI answer into humanized, conversational speech with British styling,
- * natural slang/idioms, smooth acronym pronunciations, and elegant pauses.
+ * Formats Gemini AI answer into humanized, conversational speech with American style,
+ * natural slang/idioms, smooth acronym pronunciations, elegant pauses, and "boss" salutation.
  */
 export function formatHumanizedJarvisBriefing(answer: string, actionAdvice?: string | null): string {
   let clean = sanitizeForSpeech(answer);
 
-  // 1. Diction & Politeness Conversions
+  // 1. Diction & Politeness Conversions (Always address as "boss")
   clean = clean
-    .replace(/\bhello\b/gi, 'Good day, sir.')
-    .replace(/\bgood morning\b/gi, 'Good morning, sir.')
-    .replace(/\bI have found\b/gi, 'I have isolated')
-    .replace(/\bHere are\b/gi, 'Allow me to present')
+    .replace(/\b(?:hey\s+)?(?:man|partner|sir)\b/gi, (m) => (/^hey/i.test(m) ? 'Hey boss' : 'boss'))
+    .replace(/\bhello\b/gi, 'Hey boss,')
+    .replace(/\bgood morning\b/gi, 'Morning boss,')
+    .replace(/\bI have found\b/gi, 'I found')
+    .replace(/\bHere are\b/gi, 'Here are')
     .replace(/\bleads\b/gi, 'candidates')
     .replace(/\blead\b/gi, 'candidate');
 
@@ -1096,18 +1097,18 @@ export function formatHumanizedJarvisBriefing(answer: string, actionAdvice?: str
 
 /**
  * Follow-up conversational question asked by J.A.R.V.I.S. after delivering briefing:
- * "Anything else I can assist you with, sir?"
+ * "Anything else I can help you with, boss?"
  */
 export function getJarvisFollowUpPhrase(): string {
-  return 'Anything else I can assist you with, sir?';
+  return 'Anything else I can help you with, boss?';
 }
 
 /**
  * Polite sign-off when user concludes ("Nothing Jarvis, thank you"):
- * "Very good, sir. Standing by whenever you need me."
+ * "You got it, boss. Standing by whenever you need me."
  */
 export function getJarvisSignOffPhrase(): string {
-  return 'Very good, sir. Standing by whenever you need me.';
+  return 'You got it, boss. Standing by whenever you need me.';
 }
 
 /**
