@@ -120,10 +120,22 @@ export async function POST(request: NextRequest) {
             },
           });
           if (alreadyLogged) {
-            // If already logged but lacks the comprehensive 9-section dossier, upgrade it in place!
+            // If already logged but lacks authentic dossier or has generic template, upgrade it in place!
+            const url = new URL(request.url);
+            const forceRefresh = url.searchParams.get('force') === 'true';
+
+            const hasMismatchedNaveenTemplate =
+              Boolean(alreadyLogged.customerExperience) &&
+              !baseMeetingKey.includes('naveen') &&
+              (alreadyLogged.customerExperience!.includes('UK shift') ||
+                alreadyLogged.customerExperience!.includes('Canada visa') ||
+                alreadyLogged.customerExperience!.includes('₹90,000'));
+
             const needsDossierUpgrade =
+              forceRefresh ||
+              hasMismatchedNaveenTemplate ||
               !alreadyLogged.customerExperience ||
-              alreadyLogged.customerExperience.length < 2500 ||
+              alreadyLogged.customerExperience.length < 1000 ||
               !alreadyLogged.customerExperience.includes('1. Candidate Profile');
 
             if (needsDossierUpgrade) {
@@ -160,6 +172,7 @@ export async function POST(request: NextRequest) {
                       counterPitch: refreshedAnalysis.counterPitch,
                       nextAction: refreshedAnalysis.nextAction,
                       score: refreshedAnalysis.score,
+                      summary: refreshedAnalysis.summary,
                     },
                   });
                 }
