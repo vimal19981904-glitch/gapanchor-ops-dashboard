@@ -40,6 +40,8 @@ import {
   unlockJarvisAudio,
   getLiveAudioFrequency,
   getJarvisGreeting,
+  getJarvisCallResponse,
+  isCallingJarvis,
   getJarvisThinkingPhrase,
   getJarvisFollowUpPhrase,
   getJarvisSignOffPhrase,
@@ -221,13 +223,15 @@ export function FollowUpAssistantBar({
   }, []);
 
   // ─── Inline Voice Mode Core Handlers ───
-  const stripJarvisGreetingPrefix = (raw: string) =>
-    raw
+  const stripJarvisGreetingPrefix = (raw: string) => {
+    if (isCallingJarvis(raw)) return raw.trim();
+    return raw
       .replace(
-        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
+        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*boss\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*boss\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*boss\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*boss\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
         ''
       )
       .trim();
+  };
 
   const startListeningInline = () => {
     stopJarvis();
@@ -263,6 +267,13 @@ export function FollowUpAssistantBar({
         setVoiceStatusMessage('Transcribing your voice...');
       },
       onInterim: (text) => {
+        if (isCallingJarvis(text)) {
+          hasSpokenInCurrentTurnRef.current = true;
+          stopJarvis();
+          setIsSpeakingJarvis(false);
+          setVoiceTranscript(text);
+          return;
+        }
         const cleaned = stripJarvisGreetingPrefix(text);
         if (!cleaned || isJarvisSelfEchoOrFiller(cleaned)) {
           return;
@@ -274,6 +285,13 @@ export function FollowUpAssistantBar({
         setVoiceTranscript(cleaned);
       },
       onFinal: (finalText) => {
+        if (!finalText || !finalText.trim()) return;
+        if (isCallingJarvis(finalText)) {
+          hasSpokenInCurrentTurnRef.current = true;
+          setLiveAudioLevel(0);
+          handleExecuteVoicePrompt(finalText);
+          return;
+        }
         const cleaned = stripJarvisGreetingPrefix(finalText);
         if (!cleaned || !isActionablePrompt(cleaned)) {
           console.log('Ignored greeting echo or empty user turn:', finalText);
@@ -349,6 +367,51 @@ export function FollowUpAssistantBar({
   const handleExecuteVoicePrompt = async (promptText: string) => {
     if (!promptText || !promptText.trim()) {
       setVoiceStage('idle');
+      return;
+    }
+
+    // Direct greeting / calling Jarvis ("Hey Jarvis", "Jarvis", "Hello", etc.)
+    if (isCallingJarvis(promptText)) {
+      if (isExecutingPromptRef.current) return;
+      isExecutingPromptRef.current = true;
+      try {
+        stopAllListening();
+        setLiveAudioLevel(0);
+        setVoiceTranscript(promptText.trim());
+        setNlpQuery(promptText.trim());
+
+        setVoiceStage('speaking_output');
+        const greeting = getJarvisCallResponse();
+        setVoiceStatusMessage(greeting);
+
+        setAiResponse({
+          answer: greeting,
+          actionAdvice: 'Standing by for your command.',
+          matchedIds: [],
+          recommendedFilter: 'all',
+          isRealAi: false,
+          model: 'J.A.R.V.I.S. Core Neural Voice',
+          prompt: promptText.trim(),
+        });
+
+        await speakJarvis(greeting, {
+          includeIntro: false,
+          onStart: () => setIsSpeakingJarvis(true),
+          onEnd: () => {
+            setIsSpeakingJarvis(false);
+            setVoiceStage('listening');
+            setVoiceStatusMessage('Listening to you, boss... Speak your command now.');
+            startListeningInline();
+          },
+          onError: () => {
+            setIsSpeakingJarvis(false);
+            setVoiceStage('listening');
+            startListeningInline();
+          },
+        });
+      } finally {
+        isExecutingPromptRef.current = false;
+      }
       return;
     }
 
@@ -490,12 +553,12 @@ export function FollowUpAssistantBar({
     if (wakeWordEnabled && !isVoiceModeActive) {
       startWakeWordMonitor(
         (trailingPrompt?: string) => {
-          if (trailingPrompt && trailingPrompt.trim().length > 0) {
-            pauseWakeWordMonitor();
-            setIsVoiceModeActive(true);
+          pauseWakeWordMonitor();
+          setIsVoiceModeActive(true);
+          if (trailingPrompt && trailingPrompt.trim().length > 0 && !isCallingJarvis(trailingPrompt)) {
             latestVoiceHandlersRef.current.executeVoicePrompt(trailingPrompt.trim());
           } else {
-            latestVoiceHandlersRef.current.openVoiceMode();
+            latestVoiceHandlersRef.current.executeVoicePrompt('Hey Jarvis');
           }
         },
         (err: any) => {

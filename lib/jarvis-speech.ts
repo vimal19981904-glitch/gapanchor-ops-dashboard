@@ -1024,9 +1024,51 @@ export function isJarvisSpeaking(): boolean {
  */
 export function getJarvisGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning, sir. What can I do for you?';
-  if (hour < 17) return 'Good afternoon, sir. What can I do for you?';
-  return 'Good evening, sir. What can I do for you?';
+  if (hour < 12) return 'Good morning, boss. Ready and listening—what can I get done for you?';
+  if (hour < 17) return 'Good afternoon, boss. Ready and listening—what can I get done for you?';
+  return 'Online, boss! Ready and listening—what can I get done for you?';
+}
+
+/**
+ * Detects if a prompt or transcript is purely calling or greeting Jarvis
+ * (e.g., "Jarvis", "Hey Jarvis", "Hello Jarvis", "Are you there", "Wake up", "Hi", etc.)
+ */
+export function isCallingJarvis(text: string): boolean {
+  if (!text || typeof text !== 'string') return false;
+  const clean = text
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?;:'"’]/g, '')
+    .replace(/\s+/g, ' ');
+
+  if (!clean) return false;
+
+  // Exact or greeting calls to Jarvis
+  const jarvisCallRegex = /^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)\s*$/i;
+  if (jarvisCallRegex.test(clean)) return true;
+
+  // Calling out presence or waking up
+  const presenceRegex = /^(?:are\s+you\s+there(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+are\s+you\s+there|wake\s+up(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+wake\s+up|you\s+there(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+you\s+there|can\s+you\s+hear\s+me(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+can\s+you\s+hear\s+me)$/i;
+  if (presenceRegex.test(clean)) return true;
+
+  // Simple pure greetings
+  const pureGreetingRegex = /^(?:hello|hey|hi|good\s+morning|good\s+afternoon|good\s+evening)\s*$/i;
+  if (pureGreetingRegex.test(clean)) return true;
+
+  return false;
+}
+
+/**
+ * Returns conversational greeting response when Jarvis is called
+ */
+export function getJarvisCallResponse(): string {
+  const hour = new Date().getHours();
+  let timePrefix = 'Online';
+  if (hour < 12) timePrefix = 'Good morning';
+  else if (hour < 17) timePrefix = 'Good afternoon';
+  else timePrefix = 'Good evening';
+
+  return `${timePrefix}, boss! Ready and listening—what can I get done for you?`;
 }
 
 /**

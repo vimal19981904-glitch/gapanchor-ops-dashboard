@@ -31,6 +31,8 @@ import {
   setActiveVoice,
   subscribeJarvisVoiceChange,
   JarvisVoiceProfile,
+  isCallingJarvis,
+  getJarvisCallResponse,
 } from '@/lib/jarvis-speech';
 import {
   startActivePromptListening,
@@ -113,13 +115,15 @@ export function JarvisVoiceModal({
     }
   }, [isOpen]);
 
-  const stripJarvisGreetingPrefix = (raw: string) =>
-    raw
+  const stripJarvisGreetingPrefix = (raw: string) => {
+    if (isCallingJarvis(raw)) return raw.trim();
+    return raw
       .replace(
-        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
+        /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)[,.]?\s*)?(?:online\s*,?\s*boss\.?\s*,?\s*ready\.?\s*|online\s*,?\s*sir\.?\s*,?\s*ready\.?\s*|online\s*,?\s*boss\.?\s*|online\s*,?\s*sir\.?\s*|online\s*,?\s*ready\.?\s*|online\s*,?\s*so\.?\s*|right\s+away\s*,?\s*boss\.?\s*|right\s+away\s*,?\s*sir\.?\s*|ready\s*,?\s*boss\.?\s*|ready\s*,?\s*sir\.?\s*|online\.?\s*)/i,
         ''
       )
       .trim();
+  };
 
   const startGreetingSequence = () => {
     // Open mic immediately with instant zero-latency tone so user is never stalled
@@ -172,6 +176,30 @@ export function JarvisVoiceModal({
   const handleUserSpeechCompleted = async (finalText: string) => {
     if (!finalText || !finalText.trim()) {
       setStage('listening');
+      return;
+    }
+
+    if (isCallingJarvis(finalText)) {
+      pauseWakeWordMonitor();
+      const promptToSave = finalText.trim();
+      setTranscript(promptToSave);
+      setHistory((prev) => [...prev, { sender: 'user', text: promptToSave }]);
+      const greeting = getJarvisCallResponse();
+      setHistory((prev) => [...prev, { sender: 'jarvis', text: greeting }]);
+      setStage('speaking_output');
+
+      speakJarvis(greeting, {
+        includeIntro: false,
+        onStart: () => setStage('speaking_output'),
+        onEnd: () => {
+          setStage('listening');
+          startListeningForUserPrompt();
+        },
+        onError: () => {
+          setStage('listening');
+          startListeningForUserPrompt();
+        },
+      });
       return;
     }
 

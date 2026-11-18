@@ -16,6 +16,7 @@ import {
   OperationsIntelligenceSnapshot,
   ComprehensiveLeadProfile,
 } from '@/lib/jarvis-pipeline-controller';
+import { isCallingJarvis, getJarvisCallResponse } from '@/lib/jarvis-speech';
 
 export const dynamic = 'force-dynamic';
 
@@ -280,6 +281,19 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'A search or question prompt is required.' },
         { status: 400 }
       );
+    }
+
+    // Direct greeting / calling Jarvis ("Hey Jarvis", "Jarvis", "hello", etc.)
+    if (isCallingJarvis(prompt)) {
+      return NextResponse.json({
+        success: true,
+        isRealGemini: false,
+        model: 'J.A.R.V.I.S. Core Neural Voice',
+        answer: getJarvisCallResponse(),
+        actionAdvice: 'Standing by for your command.',
+        matchedIds: [],
+        recommendedFilter: 'all',
+      });
     }
 
     const { apiKey: envApiKey, model } = getGeminiConfig();

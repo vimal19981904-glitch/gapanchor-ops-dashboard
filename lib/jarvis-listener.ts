@@ -5,6 +5,8 @@
  * and automatic MediaRecorder + Gemini transcription fallback when Web Speech stalls.
  */
 
+import { isCallingJarvis } from './jarvis-speech';
+
 export type JarvisListeningMode = 'speech_api' | 'recorder';
 
 export interface JarvisListeningCallbacks {
@@ -116,12 +118,16 @@ export function isJarvisSelfEchoOrFiller(text: string): boolean {
  */
 export function isActionablePrompt(text: string): boolean {
   if (!text) return false;
+  // Pure calls / greetings to Jarvis ("Hey Jarvis", "Jarvis", etc.) are valid actionable triggers
+  if (isCallingJarvis(text)) return true;
+
   let cleaned = text.trim().replace(/[.,!?;:'"]/g, '').toLowerCase();
   // Strip wake word prefix
   cleaned = cleaned.replace(/^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)\s*/i, '').trim();
   // Strip greeting phrases if user speech echoed Jarvis greeting
   cleaned = cleaned
     .replace(/^(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?|online\s*,?\s*sir\.?|online\s*,?\s*ready\.?|right\s+away\s*,?\s*sir\.?|ready\s*,?\s*sir\.?|online\.?)\s*/i, '')
+    .replace(/^(?:online\s*,?\s*boss\.?\s*,?\s*ready\.?|online\s*,?\s*boss\.?|online\s*,?\s*ready\.?|right\s+away\s*,?\s*boss\.?|ready\s*,?\s*boss\.?)\s*/i, '')
     .trim();
 
   if (!cleaned) return false;
