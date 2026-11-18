@@ -158,12 +158,15 @@ export function CustomerExperienceTab({
     let completed = 0;
 
     for (const line of lines) {
-      const isTableRow = line.includes('\t') || line.includes('|');
+      const isTableRow =
+        line.includes('\t') ||
+        line.includes('|') ||
+        (/^priority\s*:/i.test(line.trim()) || /^(high|medium|later|low)\s*:/i.test(line.trim()));
       if (!isTableRow) continue;
 
-      if (/pending/i.test(line) && (/gapanchor/i.test(line) || /share/i.test(line) || /check/i.test(line) || /explore/i.test(line) || /send/i.test(line) || /confirm/i.test(line) || /schedule/i.test(line) || /action/i.test(line))) {
+      if (/pending/i.test(line)) {
         total++;
-      } else if (/done|completed/i.test(line) && (/gapanchor/i.test(line) || /share/i.test(line) || /check/i.test(line) || /explore/i.test(line) || /send/i.test(line) || /confirm/i.test(line) || /schedule/i.test(line) || /action/i.test(line))) {
+      } else if (/done|completed/i.test(line)) {
         total++;
         completed++;
       }
@@ -199,6 +202,11 @@ export function CustomerExperienceTab({
       } else if (r.includes('|')) {
         parts = r
           .split('|')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      } else if (r.includes(':') && (r.split(':').length >= 3 || /priority/i.test(r))) {
+        parts = r
+          .split(':')
           .map((s) => s.trim())
           .filter(Boolean);
       } else {
@@ -421,10 +429,19 @@ export function CustomerExperienceTab({
         continue;
       }
 
-      // Check table row (contains tab or pipe)
+      // Check table row (contains tab, pipe, or colon-separated table rows)
+      const isColonTableRow =
+        (/^priority\s*:/i.test(trimmed) && /action/i.test(trimmed)) ||
+        (/^qualification\s*parameter\s*:/i.test(trimmed)) ||
+        (/^component\s*:/i.test(trimmed)) ||
+        (/^training\s*option\s*:/i.test(trimmed)) ||
+        (/^option\s*:/i.test(trimmed)) ||
+        ((/^(high|medium|later|low)\s*:/i.test(trimmed)) && /pending|done|completed|confirmed/i.test(trimmed));
+
       const isTableRow =
         trimmed.includes('\t') ||
-        (trimmed.includes('|') && !trimmed.startsWith('GapAnchor –') && !trimmed.startsWith('Call Summary'));
+        (trimmed.includes('|') && !trimmed.startsWith('GapAnchor –') && !trimmed.startsWith('Call Summary')) ||
+        isColonTableRow;
 
       if (isTableRow) {
         tableBuffer.push(trimmed);

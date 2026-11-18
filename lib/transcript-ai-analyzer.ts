@@ -678,10 +678,10 @@ Why this is a promising lead / status summary:
 [Rationale based strictly on this call]
 
 9. Immediate Follow-up Actions
-Priority\\tAction Item\\tResponsibility\\tStatus
-High\\t[Real action item 1]\\tGapAnchor\\tPending
-High\\t[Real action item 2]\\tGapAnchor\\tPending
-Medium\\t[Real action item 3]\\tGapAnchor\\tPending
+Priority | Action Item | Responsibility | Status
+High | [Real action item 1] | GapAnchor | Pending
+High | [Real action item 2] | GapAnchor | Pending
+Medium | [Real action item 3] | GapAnchor | Pending
 
 CRM Lead Status
 Status: [Status]
@@ -713,6 +713,17 @@ ${rawTranscript.slice(0, 45000)}
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(11, 0, 0, 0);
 
+    let cleanedCx = parsed.customerExperience || '';
+    // Normalize colon-delimited action tables into standard markdown pipe tables
+    cleanedCx = cleanedCx.replace(
+      /Priority\s*:\s*Action Item\s*:\s*Responsibility\s*:\s*Status/gi,
+      'Priority | Action Item | Responsibility | Status'
+    );
+    cleanedCx = cleanedCx.replace(
+      /^(High|Medium|Later|Low)\s*:\s*([^:\n]+?)\s*:\s*([^:\n]+?)\s*:\s*(Pending|Done|Completed|Confirmed)\s*$/gim,
+      '$1 | $2 | $3 | $4'
+    );
+
     return {
       score: totalScore,
       durationMinutes,
@@ -726,7 +737,7 @@ ${rawTranscript.slice(0, 45000)}
         totalScore,
       },
       summary: parsed.summary || `Call completed with ${resolvedName}.`,
-      customerExperience: parsed.customerExperience || `Call Summary – ${resolvedName} | GapAnchor Consulting\n\nPurpose: Career guidance and training enquiry.\n\n1. Lead Background\n• ${resolvedName} connected with GapAnchor for career guidance.\n\n2. Career Guidance Provided\n• Advised on functional implementation pathways and industry expectations.\n\n3. Training Options Discussed\n• Live trainer walkthrough demo and cloud sandbox practice.\n\n4. Customer Response\n• Positive engagement, evaluating enrollment details.\n\n5. Next Actions\nAction Item\tStatus\nShare course curriculum\tPending\nFollow up via WhatsApp\tPending\n\nCRM Lead Status\nStatus: Interested – Follow-up Required\nLead Temperature: ${totalScore >= 7 ? 'Hot' : 'Warm'}\nNext Step: ${parsed.nextAction || 'Send course details via WhatsApp'}\n\nOverall outcome: ${parsed.summary || 'Consultative discussion completed.'}`,
+      customerExperience: cleanedCx || `Call Summary – ${resolvedName} | GapAnchor Consulting\n\nPurpose: Career guidance and training enquiry.\n\n1. Lead Background\n• ${resolvedName} connected with GapAnchor for career guidance.\n\n2. Career Guidance Provided\n• Advised on functional implementation pathways and industry expectations.\n\n3. Training Options Discussed\n• Live trainer walkthrough demo and cloud sandbox practice.\n\n4. Customer Response\n• Positive engagement, evaluating enrollment details.\n\n5. Next Actions\nAction Item\tStatus\nShare course curriculum\tPending\nFollow up via WhatsApp\tPending\n\nCRM Lead Status\nStatus: Interested – Follow-up Required\nLead Temperature: ${totalScore >= 7 ? 'Hot' : 'Warm'}\nNext Step: ${parsed.nextAction || 'Send course details via WhatsApp'}\n\nOverall outcome: ${parsed.summary || 'Consultative discussion completed.'}`,
       clientNeed: parsed.clientNeed || 'Supply Chain Enterprise Training',
       budget: parsed.budget || 'Fee standard',
       timeline: parsed.timeline || 'Upcoming batch',

@@ -65,38 +65,78 @@ export function extractSpeakerFromTranscript(text: string): string | null {
     );
   };
 
+  let candidateSpeaker: string | null = null;
+
   // 1. WEBVTT speaker tags: <v Speaker Name>
   const vttRegex = /<v\s+([^>]+)>/gi;
   let vttMatch: RegExpExecArray | null;
   while ((vttMatch = vttRegex.exec(text)) !== null) {
     const rawSpeaker = vttMatch[1].trim();
     if (rawSpeaker && !isHostSpeaker(rawSpeaker)) {
-      return rawSpeaker.replace(/\s+/g, ' ');
+      candidateSpeaker = rawSpeaker.replace(/\s+/g, ' ');
+      break;
     }
   }
 
   // 2. Docx timestamp-prefixed speaker patterns:
   // e.g. "00:00:58.543 --> 00:00:59.183 joel Hello." or "--&gt;"
-  const docxRegex = /\d{2}:\d{2}:\d{2}[\.,]\d{3}\s*(?:-->|--&gt;)\s*\d{2}:\d{2}:\d{2}[\.,]\d{3}\s+([^:\r\n<]+?)(?:\s+[A-Z0-9]|\s*:)/gi;
-  let docxMatch: RegExpExecArray | null;
-  while ((docxMatch = docxRegex.exec(text)) !== null) {
-    const rawSpeaker = docxMatch[1].trim();
-    if (rawSpeaker && rawSpeaker.length >= 2 && !isHostSpeaker(rawSpeaker)) {
-      return rawSpeaker
-        .replace(/\s+/g, ' ')
-        .split(' ')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-        .join(' ');
+  if (!candidateSpeaker) {
+    const docxRegex = /\d{2}:\d{2}:\d{2}[\.,]\d{3}\s*(?:-->|--&gt;)\s*\d{2}:\d{2}:\d{2}[\.,]\d{3}\s+([^:\r\n<]+?)(?:\s+[A-Z0-9]|\s*:)/gi;
+    let docxMatch: RegExpExecArray | null;
+    while ((docxMatch = docxRegex.exec(text)) !== null) {
+      const rawSpeaker = docxMatch[1].trim();
+      if (rawSpeaker && rawSpeaker.length >= 2 && !isHostSpeaker(rawSpeaker)) {
+        candidateSpeaker = rawSpeaker
+          .replace(/\s+/g, ' ')
+          .split(' ')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ');
+        break;
+      }
     }
   }
 
   // 3. Standard "Speaker Name: text" format
-  const colonRegex = /^([A-Za-z\s]{2,30}):\s+/gm;
-  let colonMatch: RegExpExecArray | null;
-  while ((colonMatch = colonRegex.exec(text)) !== null) {
-    const rawSpeaker = colonMatch[1].trim();
-    if (rawSpeaker && !isHostSpeaker(rawSpeaker)) {
-      return rawSpeaker.replace(/\s+/g, ' ');
+  if (!candidateSpeaker) {
+    const colonRegex = /^([A-Za-z\s]{2,30}):\s+/gm;
+    let colonMatch: RegExpExecArray | null;
+    while ((colonMatch = colonRegex.exec(text)) !== null) {
+      const rawSpeaker = colonMatch[1].trim();
+      if (rawSpeaker && !isHostSpeaker(rawSpeaker)) {
+        candidateSpeaker = rawSpeaker.replace(/\s+/g, ' ');
+        break;
+      }
+    }
+  }
+
+  // If candidateSpeaker was identified as a single word (e.g. "Vishnu"),
+  // inspect dialogue to see if candidate provided their full or middle name
+  if (candidateSpeaker && !candidateSpeaker.includes(' ')) {
+    const repeatedMatch = text.match(new RegExp('\\b' + candidateSpeaker + ',\\s*' + candidateSpeaker + '\\s+([A-Za-z]{3,20})\\b', 'i'));
+    if (repeatedMatch) {
+      const secondName = repeatedMatch[1].charAt(0).toUpperCase() + repeatedMatch[1].slice(1).toLowerCase();
+      return `${candidateSpeaker} ${secondName}`;
+    }
+
+    const goodNameMatch = text.match(new RegExp('(?:good name|your name|who is this)[^.?!\n]*[.?!\n][\\s\\S]{0,120}?\\b' + candidateSpeaker + ',?\\s*(?:' + candidateSpeaker + '\\s+)?([A-Za-z]{3,20})\\b', 'i'));
+    if (goodNameMatch && goodNameMatch[1]) {
+      const secondName = goodNameMatch[1].charAt(0).toUpperCase() + goodNameMatch[1].slice(1).toLowerCase();
+      return `${candidateSpeaker} ${secondName}`;
+    }
+  }
+
+  if (candidateSpeaker) {
+    return candidateSpeaker;
+  }
+
+  // Fallback: general self-introduction
+  const introMatch = text.match(/(?:my name is|this is|i am|i'm)\s+([A-Za-z]+(?:\s+[A-Za-z]+){1,3})/i);
+  if (introMatch && !isHostSpeaker(introMatch[1])) {
+    const rawIntro = introMatch[1].trim();
+    if (rawIntro.length >= 3) {
+      return rawIntro
+        .replace(/\b([a-z])/g, (l) => l.toUpperCase())
+        .trim();
     }
   }
 
@@ -341,7 +381,18 @@ export interface ResolveEnquiryResult {
   resolvedEmail?: string;
   resolvedPhone?: string;
   resolvedName?: string;
-  matchedBy: 'direct_id' | 'direct_email' | 'direct_phone' | 'calendar_attendee' | 'email_prefix' | 'first_name_proximity' | 'exact_name' | 'none';
+  matchedBy:
+    | 'direct_id'
+    | 'direct_email'
+    | 'direct_phone'
+    | 'calendar_attendee'
+    | 'email_prefix'
+    | 'first_name_proximity'
+    | 'exact_name'
+    | 'multi_word_name_match'
+    | 'first_name_unique'
+    | 'first_name_topic_disambiguated'
+    | 'none';
 }
 
 /**
@@ -419,16 +470,65 @@ export async function resolveTargetEnquiry(
     }
   }
 
-  // 5. Tier 2: Email Prefix / Handle Heuristic (e.g. aryasuriyanarayanan@gmail.com -> Arya Suriyanarayanan)
+  const isGenericCandidate =
+    !candidateName ||
+    candidateName.length < 2 ||
+    GENERIC_NAMES.has(candidateName.toLowerCase().trim()) ||
+    /^(?:transcript|meeting|recording|call|session|webvtt)(\s*\(\d+\)|\s*_\d+)?$/i.test(candidateName);
+
+  if (!isGenericCandidate) {
+    const words = candidateName.trim().split(/\s+/).filter(Boolean);
+
+    // 5. Tier 2: Exact Full Name Match (Case-insensitive across ALL statuses)
+    if (words.length >= 2) {
+      const exactEnquiry = await prisma.enquiry.findFirst({
+        where: { participantName: { equals: candidateName, mode: 'insensitive' } },
+        orderBy: { messageTimestamp: 'desc' },
+      });
+      if (exactEnquiry) {
+        return { enquiry: exactEnquiry, resolvedName: exactEnquiry.participantName, resolvedEmail: exactEnquiry.email || undefined, matchedBy: 'exact_name' };
+      }
+
+      // 6. Tier 3: Multi-Word Substring / Token Match (e.g. "Vishnu Karthik" -> "Vishnu Karthik Venugopal")
+      const allLeads = await prisma.enquiry.findMany({
+        where: {
+          AND: words.map((w) => ({
+            participantName: { contains: w, mode: 'insensitive' },
+          })),
+        },
+        orderBy: { messageTimestamp: 'desc' },
+      });
+
+      if (allLeads.length > 0) {
+        // Disambiguate if multiple
+        let bestLead = allLeads[0];
+        if (allLeads.length > 1 && meta.bodyText) {
+          const lowerBody = (meta.bodyText || '').toLowerCase();
+          bestLead = allLeads.sort((a, b) => {
+            let scoreA = 0;
+            let scoreB = 0;
+            if (a.topic && lowerBody.includes(a.topic.toLowerCase())) scoreA += 5;
+            if (b.topic && lowerBody.includes(b.topic.toLowerCase())) scoreB += 5;
+            return scoreB - scoreA;
+          })[0];
+        }
+        return {
+          enquiry: bestLead,
+          resolvedName: bestLead.participantName,
+          resolvedEmail: bestLead.email || undefined,
+          matchedBy: 'multi_word_name_match',
+        };
+      }
+    }
+  }
+
+  // 7. Tier 4: Email Prefix / Handle Heuristic (e.g. aryasuriyanarayanan@gmail.com -> Arya Suriyanarayanan)
   const normName = candidateName.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (normName.length >= 4 && !GENERIC_NAMES.has(normName) && !normName.startsWith('transcript')) {
     const recentEnquiries = await prisma.enquiry.findMany({
-      where: {
-        email: { not: null },
-        messageTimestamp: { gte: new Date(Date.now() - 60 * 24 * 3600 * 1000) },
-      },
+      where: { email: { not: null } },
       orderBy: { messageTimestamp: 'desc' },
-      take: 50,
+      take: 60,
     });
 
     for (const enq of recentEnquiries) {
@@ -450,39 +550,68 @@ export async function resolveTargetEnquiry(
     }
   }
 
-  // 6. Tier 3: First Name Token + Proximity (Pending/Open/In Touch/Talked leads within 60 days)
+  // 8. Tier 5: Single-Word First Name Match WITH SMART DISAMBIGUATION
   const firstName = candidateName.split(/\s+/)[0].toLowerCase().trim();
-  const isGenericCandidate = GENERIC_NAMES.has(firstName) || /^(?:transcript|meeting|recording|call|session|webvtt)(\s*\(\d+\)|\s*_\d+)?$/i.test(candidateName);
-  if (firstName.length >= 3 && !isGenericCandidate) {
-    const activeLeads = await prisma.enquiry.findMany({
+  if (firstName.length >= 3 && !isGenericCandidate && !GENERIC_NAMES.has(firstName)) {
+    const matchingLeads = await prisma.enquiry.findMany({
       where: {
-        status: { in: ['Open', 'Pending', 'In Touch', 'Talked', 'negotiating'] },
-        messageTimestamp: { gte: new Date(Date.now() - 60 * 24 * 3600 * 1000) },
+        participantName: { startsWith: firstName, mode: 'insensitive' },
       },
       orderBy: { messageTimestamp: 'desc' },
     });
 
-    for (const enq of activeLeads) {
-      const leadFirst = enq.participantName.split(/\s+/)[0].toLowerCase().trim();
-      if (leadFirst === firstName) {
+    if (matchingLeads.length === 1) {
+      return {
+        enquiry: matchingLeads[0],
+        resolvedEmail: matchingLeads[0].email || undefined,
+        resolvedName: matchingLeads[0].participantName,
+        matchedBy: 'first_name_unique',
+      };
+    }
+
+    if (matchingLeads.length > 1) {
+      // Disambiguate against transcript content (Course Topic + Country/Location + Shift)
+      const lowerBody = (meta.bodyText || meta.dialogueText || '').toLowerCase();
+      let bestLead: any = null;
+      let highestScore = 0;
+
+      for (const lead of matchingLeads) {
+        let score = 0;
+        const topicLower = (lead.topic || '').toLowerCase();
+
+        // Topic matching
+        if (topicLower.includes('manhattan') && lowerBody.includes('manhattan')) score += 5;
+        if ((topicLower.includes('blue yonder') || topicLower.includes('jda')) && (lowerBody.includes('blue yonder') || lowerBody.includes('blueyonder') || lowerBody.includes('beyond'))) score += 5;
+        if (topicLower.includes('proactive') && lowerBody.includes('proactive')) score += 4;
+        if (topicLower.includes('sap') && lowerBody.includes('sap')) score += 5;
+
+        // Country / Location matching
+        const countryLower = (lead.country || '').toLowerCase();
+        if ((countryLower.includes('canada') || countryLower.includes('usa') || countryLower.includes('us')) && (lowerBody.includes('canada') || lowerBody.includes('ontario') || lowerBody.includes('us'))) {
+          score += 5;
+        }
+        if (countryLower.includes('india') && lowerBody.includes('india')) {
+          score += 2;
+        }
+
+        // Phone code matching
+        if (lead.phone?.startsWith('+1') && (lowerBody.includes('canada') || lowerBody.includes('us'))) score += 4;
+        if (lead.phone?.startsWith('+91') && lowerBody.includes('india') && !lowerBody.includes('canada')) score += 2;
+
+        if (score > highestScore) {
+          highestScore = score;
+          bestLead = lead;
+        }
+      }
+
+      if (bestLead && highestScore >= 3) {
         return {
-          enquiry: enq,
-          resolvedEmail: enq.email || undefined,
-          resolvedName: enq.participantName,
-          matchedBy: 'first_name_proximity',
+          enquiry: bestLead,
+          resolvedEmail: bestLead.email || undefined,
+          resolvedName: bestLead.participantName,
+          matchedBy: 'first_name_topic_disambiguated',
         };
       }
-    }
-  }
-
-  // 7. Tier 4: Exact Name Match (only for valid non-generic names)
-  if (candidateName && !isGenericCandidate && !GENERIC_NAMES.has(candidateName.toLowerCase())) {
-    const enquiry = await prisma.enquiry.findFirst({
-      where: { participantName: { equals: candidateName, mode: 'insensitive' } },
-      orderBy: { messageTimestamp: 'desc' },
-    });
-    if (enquiry) {
-      return { enquiry, resolvedName: enquiry.participantName, resolvedEmail: enquiry.email || undefined, matchedBy: 'exact_name' };
     }
   }
 
