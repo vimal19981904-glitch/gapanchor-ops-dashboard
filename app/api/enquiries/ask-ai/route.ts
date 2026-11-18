@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { callGemini, getGeminiConfig } from '@/lib/gemini-client';
+import { numberToIndianWords, sanitizeIndianCurrencyForSpeech } from '@/lib/utils';
 import {
   getTranscriptKnowledgeSnapshot,
   searchTranscriptsHeuristically,
@@ -16,6 +17,31 @@ import {
 } from '@/lib/jarvis-pipeline-controller';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Strips technical CRM primary key codes [GAMA-0224], [GABY-0002], [GAGN-0001],
+ * bare codes, and database IDs from spoken/display text so JARVIS speaks only real names.
+ */
+function stripTechnicalCodes(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\[\s*GA[A-Z]{2}-?\d{3,4}\s*\]/gi, '')
+    .replace(/\(\s*GA[A-Z]{2}-?\d{3,4}\s*\)/gi, '')
+    .replace(/\bGA[A-Z]{2}-?\d{3,4}\b/gi, '')
+    .replace(/\[\s*GA[A-Z]{2}\s*\]/gi, '')
+    .replace(/#[a-z0-9]{5,8}\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
+ * Ensures output is stripped of technical codes and all currency values
+ * are formatted into natural Indian spoken words (e.g. "6 lakh 57 thousand rupees").
+ */
+function cleanOutput(text: string): string {
+  if (!text) return '';
+  return sanitizeIndianCurrencyForSpeech(stripTechnicalCodes(text));
+}
 
 export async function GET() {
   const { apiKey, model } = getGeminiConfig();
@@ -84,31 +110,73 @@ export async function POST(req: NextRequest) {
             !['what', 'when', 'where', 'who', 'how', 'show', 'tell', 'the', 'are', 'is', 'for', 'and', 'with', 'about', 'from', 'all', 'our', 'my'].includes(w)
         );
 
-      // Dynamically match any specific prospects across all 463+ leads
+      // Dynamically match any specific prospects across all 500+ leads
+      // Full deep search across name, code, notes, message, phone, email, country, course, transcripts
       const matchedProspects = opsContext.allLeads
-        .filter((l) => {
+        .map((l) => {
           const name = l.name.toLowerCase();
           const code = l.leadCode.toLowerCase();
           const email = (l.email || '').toLowerCase();
           const phone = (l.phone || '').toLowerCase();
           const country = (l.country || '').toLowerCase();
           const course = l.course.toLowerCase();
-          return queryWords.some(
-            (w) =>
-              name.includes(w) ||
-              code.includes(w) ||
-              email.includes(w) ||
-              phone.includes(w) ||
-              country.includes(w) ||
-              course.includes(w)
-          );
-        })
-        .slice(0, 10);
+          const notes = (l.notes || '').toLowerCase();
+          const lastMsg = (l.lastMessage || '').toLowerCase();
+          const summary = (l.transcriptSummary || '').toLowerCase();
 
-      // Evaluated candidates with notes, call transcripts, scores, callback reminders
+          let matchScore = 0;
+          // Exact substring in notes gets highest relevance boost
+          if (notes && notes.includes(pLower)) matchScore += 10;
+          if (lastMsg && lastMsg.includes(pLower)) matchScore += 8;
+          if (name.includes(pLower)) matchScore += 10;
+
+          // Word-level scoring
+          for (const w of queryWords) {
+            if (notes.includes(w)) matchScore += 4;
+            if (lastMsg.includes(w)) matchScore += 3;
+            if (name.includes(w)) matchScore += 5;
+            if (code.includes(w)) matchScore += 5;
+            if (phone.includes(w)) matchScore += 4;
+            if (email.includes(w)) matchScore += 3;
+            if (course.includes(w)) matchScore += 2;
+            if (country.includes(w)) matchScore += 2;
+            if (summary.includes(w)) matchScore += 3;
+          }
+
+          return { lead: l, matchScore };
+        })
+        .filter((item) => item.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 25)
+        .map((item) => item.lead);
+
+      // All leads with active Call Notes & Follow-up Due Dates
+      // Prioritize leads where notes exist and match prompt, or most recent notes
+      const leadsWithCallNotes = opsContext.allLeads
+        .filter((l) => l.notes && l.notes.trim().length > 0)
+        .sort((a, b) => {
+          const aMatch = queryWords.some((w) => (a.notes || '').toLowerCase().includes(w)) ? 1 : 0;
+          const bMatch = queryWords.some((w) => (b.notes || '').toLowerCase().includes(w)) ? 1 : 0;
+          if (bMatch !== aMatch) return bMatch - aMatch;
+          return (b.dateOfEntry || '').localeCompare(a.dateOfEntry || '');
+        })
+        .slice(0, 30)
+        .map((l) => ({
+          leadCode: l.leadCode,
+          name: l.name,
+          phone: l.phone,
+          course: l.course,
+          callNotes: l.notes,
+          followUpDue: l.followUpDate,
+          isDue: l.isDue,
+          status: l.status,
+          contactStatus: l.contactStatus,
+        }));
+
+      // Evaluated candidates with scores, call transcripts, callback reminders
       const evaluatedCandidates = opsContext.allLeads
         .filter((l) => l.score || l.transcriptSummary || l.notes || l.followUpDate || l.hasRedFlag)
-        .slice(0, 15)
+        .slice(0, 20)
         .map((l) => ({
           id: l.id,
           primaryKey: l.leadCode,
@@ -124,17 +192,26 @@ export async function POST(req: NextRequest) {
           contactStatus: l.contactStatus,
           due: l.followUpDate,
           isDue: l.isDue,
-          notes: l.notes ? l.notes.slice(0, 140) : null,
-          transcriptSummary: l.transcriptSummary ? l.transcriptSummary.slice(0, 150) : null,
+          notes: l.notes || null,
+          transcriptSummary: l.transcriptSummary ? l.transcriptSummary.slice(0, 200) : null,
           quotes: l.quotes && l.quotes.length > 0 ? l.quotes.slice(0, 2).join(' | ') : null,
           timeline: l.timeline,
           budget: l.budget,
           flag: l.hasRedFlag ? l.redFlagReason : null,
         }));
 
-      const systemPrompt = `You are J.A.R.V.I.S., the British AI operations controller for GapAnchor enterprise academy (Manhattan Active WMS, Blue Yonder, SAP, Kinaxis).
+      const fin = opsContext.aggregates.finance;
+      const finNetWords = numberToIndianWords(fin.netRevenue);
+      const finIncomeWords = numberToIndianWords(fin.totalIncome);
+      const finExpenseWords = numberToIndianWords(fin.totalExpense);
+      const lastPaymentWords = numberToIndianWords(fin.latestIncomeAmount || 0);
+      const lastPaymentDate = fin.latestIncomeDate || 'October 24, 2026';
+
+      const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
+
+      const systemPrompt = `You are J.A.R.V.I.S., the co-founder, partner, and operations controller for GapAnchor enterprise academy (Manhattan Active WMS, Blue Yonder, SAP, Kinaxis). You are speaking directly to your CEO / business partner.
 You have live neural database access across all GapAnchor systems:
-1. All 463+ candidate leads (full contact details: email, phone, country, course, service type, initial query message, entry dates, status, notes, call transcripts & scores).
+1. All 500+ candidate leads (full contact details: email, phone, country, course, service type, initial query message, entry dates, status, CRM call notes, call transcripts & scores).
 2. Live Training Batches & Sessions (platform, trainer, scheduled times, trainer total payout, trainer amount paid/due, trainee participants with fees & payment statuses: PAID, PARTIAL, PENDING).
 3. Financial Ledger Transactions (income, expenses, payment methods, transaction notes, amounts).
 4. Trainer Registrations (work-with-us candidate profiles, experience years, primary domains, contact info).
@@ -145,38 +222,53 @@ USER INQUIRY: "${prompt}"
 1. LATEST INCOMING ENQUIRIES (Most Recent First):
 ${JSON.stringify(opsContext.latestEnquiries.slice(0, 10), null, 2)}
 
-2. DYNAMICALLY MATCHED PROSPECTS:
+2. DYNAMICALLY MATCHED PROSPECTS (Searched across Name, Lead Code, Phone, Email, Course, Call Notes, Messages):
 ${JSON.stringify(matchedProspects, null, 2)}
 
-3. HIGH-INTENT EVALUATED CANDIDATES (Call Notes & Transcripts):
+3. ACTIVE CRM CALL NOTES & DISCUSSION LOGS (Real caller remarks, price discussions, demo requests, callback notes):
+${JSON.stringify(leadsWithCallNotes, null, 2)}
+
+4. HIGH-INTENT EVALUATED CANDIDATES (Call Notes & Transcripts):
 ${JSON.stringify(evaluatedCandidates, null, 2)}
 
-4. ACTIVE TRAINING BATCHES & TRAINER PAYOUTS (Session & SessionParticipant):
+5. ACTIVE TRAINING BATCHES & TRAINER PAYOUTS (Session & SessionParticipant):
 ${JSON.stringify(opsContext.activeSessions.slice(0, 6), null, 2)}
 
-5. RECENT FINANCIAL TRANSACTIONS:
+6. RECENT FINANCIAL TRANSACTIONS:
 ${JSON.stringify(opsContext.financialTransactions.slice(0, 6), null, 2)}
 
-6. TRAINER REGISTRATIONS (Work With Us Applications):
+7. TRAINER REGISTRATIONS (Work With Us Applications):
 ${JSON.stringify(opsContext.trainerRegistrations.slice(0, 6), null, 2)}
 
-7. DATABASE TOTALS & AGGREGATES:
+8. DATABASE TOTALS & AGGREGATES:
 ${JSON.stringify(opsContext.aggregates, null, 2)}
 ==============================
 
-OPERATIONAL INSTRUCTIONS:
-1. Directly answer the user's inquiry with verified facts from the live database sections above.
-2. If asked about "latest inquiry", "latest leads", or "recent enquiries", cite the exact recent candidates from "LATEST INCOMING ENQUIRIES" (e.g. ${opsContext.latestEnquiries[0]?.name || 'Candidate'} [${opsContext.latestEnquiries[0]?.leadCode || 'GAMA'}], their course, phone, email, country, date of entry, and their initial message).
-3. If asked for a candidate's contact info (phone, email, country), provide the exact real data from the database.
-4. If asked about batches, trainer payouts, or trainee fees, cite the exact platform, trainer name (e.g. Jose Paul, Arul Xavier), trainer amount due/paid, participant names, and payment status (PAID/PENDING).
-5. If asked about finances, revenue, or expenses, cite the exact transactions, dates, payment methods, and amounts.
-6. If asked about trainers or work-with-us applicants, cite the registered applicants, experience, and domains.
-7. Tone & Cadence: Deliver a sharp, polished, articulate British J.A.R.V.I.S. operational briefing. Be clear, specific, and direct without hallucinating.
-8. "answer": Concise, spoken operational briefing (2 to 4 crisp sentences) directly answering the prompt with exact data.
-9. "actionAdvice": Crisp tactical next directive for the operations team.
-10. "matchedIds": Array of matching lead ID strings from the provided dataset (never invented IDs).
-11. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
-12. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
+OPERATIONAL INSTRUCTIONS & PERSONA:
+1. PARTNER & CO-WORKER TONE: Talk naturally like an executive co-founder and business partner—sharp, conversational, direct, and collaborative.
+2. BREVITY & DEPTH PROTOCOL:
+${
+  isDetailed
+    ? `   - USER REQUESTED DETAILED BREAKDOWN: Deliver a complete 3-part CRM briefing:
+       * Part 1: Start with priority to new leads from the last 2 days / recent influx, grouped cleanly by training type (e.g. Blue Yonder, Manhattan Active, SAP). Speak only candidate names without technical codes.
+       * Part 2: Review call notes and transcripts to highlight our prime high-conversion lead (e.g. Pramod P who needs a demo session conducted in 2 days) and specify the tactical next step.
+       * Part 3: Deliver the financial standing and cash flow alert: Total net revenue (${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses), and explicitly state when the last payment came in: "Our last incoming payment was recorded on ${lastPaymentDate} for ${lastPaymentWords}."`
+    : `   - DEFAULT EXECUTIVE BREVITY MODE: When the user asks a general question like "what's going on", "tell me about the system", "how are we doing", "how is the finance doing", or "give me an update", keep your answer SHORT, CONCISE, and NATURAL (2 to 3 sentences maximum). Talk like a partner giving a quick morning elevator update without reciting endless candidate lists or reading data laundry lists. Only go into granular details if explicitly asked.`
+}
+3. CURRENCY IN SPOKEN INDIAN WORDS:
+   - When stating money amounts, ALWAYS write them in natural Indian spoken words (e.g. "${finNetWords}", "${lastPaymentWords}", "800 US dollars").
+   - NEVER output bare currency symbols like ₹ or Rs. or numbers with commas like ₹6,57,062. This ensures text-to-speech reads the money naturally without mispronouncing.
+4. STRICT NAME DIRECTIVE:
+   - Under NO circumstance should you speak or include primary key codes like [GAMA-0224], [GABY-0002], [GAGN-0001], or bare codes in "answer" or "actionAdvice". Speak ONLY the real person's name (e.g. 'Bovani Anusha', 'Pramod P', 'Karandeep Singh'). Technical codes are strictly forbidden in speech.
+5. If asked about "call notes", cite the exact candidate name, phone, and their exact call note from "ACTIVE CRM CALL NOTES & DISCUSSION LOGS" (without codes).
+6. If asked about "latest inquiry" or "recent enquiries", cite the exact candidates from "LATEST INCOMING ENQUIRIES" by name.
+7. If asked for a candidate's contact info (phone, email, country), provide the exact real data from the database.
+8. If asked about batches, trainer payouts, or trainee fees, cite the exact platform, trainer name, trainer amount due/paid, participant names, and payment status.
+9. "answer": Spoken operational briefing directly answering the prompt with exact data (never include GAMA/GABY codes, write money in words).
+10. "actionAdvice": Crisp tactical next directive for the operations team.
+11. "matchedIds": Array of matching lead ID strings from the provided dataset (never invented IDs).
+12. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
+13. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
 
 Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", "recommendedFilter", optional "pipelineAction".`;
 
@@ -190,13 +282,15 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
         });
 
         const parsed = JSON.parse(geminiRes.text);
+        const cleanAnswer = cleanOutput(parsed.answer || 'Operational analysis complete, sir.');
+        const cleanAdvice = parsed.actionAdvice ? cleanOutput(parsed.actionAdvice) : null;
 
         return NextResponse.json({
           success: true,
           isRealGemini: true,
           model: 'GAP Neural v2 (Gemini Flash)',
-          answer: parsed.answer || 'Operational analysis complete, sir.',
-          actionAdvice: parsed.actionAdvice || null,
+          answer: cleanAnswer,
+          actionAdvice: cleanAdvice,
           matchedIds: Array.isArray(parsed.matchedIds) ? parsed.matchedIds : [],
           recommendedFilter: parsed.recommendedFilter || null,
           pipelineAction: parsed.pipelineAction || null,
@@ -204,11 +298,16 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
       } catch (geminiErr: any) {
         console.error('AI API execution error:', geminiErr);
         // Fallback to deterministic multi-entity engine
+        const fallback = fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
         return NextResponse.json({
           success: true,
           isRealGemini: false,
           apiError: geminiErr.message,
-          ...fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot),
+          answer: cleanOutput(fallback.answer),
+          actionAdvice: cleanOutput(fallback.actionAdvice),
+          matchedIds: fallback.matchedIds,
+          recommendedFilter: fallback.recommendedFilter,
+          pipelineAction: (fallback as any).pipelineAction || null,
         });
       }
     }
@@ -220,7 +319,11 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
       isRealGemini: false,
       missingApiKey: true,
       model: 'GAP Comprehensive Intelligence Engine',
-      ...fallback,
+      answer: cleanOutput(fallback.answer),
+      actionAdvice: cleanOutput(fallback.actionAdvice),
+      matchedIds: fallback.matchedIds,
+      recommendedFilter: fallback.recommendedFilter,
+      pipelineAction: (fallback as any).pipelineAction || null,
     });
   } catch (error: any) {
     console.error('Ask AI error:', error);
@@ -240,6 +343,95 @@ function fallbackComprehensiveOperations(
   transcriptSnapshot: TranscriptSnapshot
 ) {
   const q = prompt.toLowerCase();
+  const fin = opsContext.aggregates.finance;
+  const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
+
+  // 0. Comprehensive CRM Executive Briefing ("What's going on?", "How is finance doing?", "Status update", "Daily briefing", "Morning briefing")
+  if (
+    q.includes("what's going on") ||
+    q.includes('whats going on') ||
+    q.includes('what is going on') ||
+    q.includes('how is the finance doing') ||
+    q.includes('how are the finances') ||
+    q.includes('finance doing') ||
+    q.includes('how are we doing') ||
+    q.includes('daily briefing') ||
+    q.includes('morning briefing') ||
+    q.includes('executive briefing') ||
+    q.includes('give me an update') ||
+    q.includes('status update') ||
+    q.includes('tell me about the system') ||
+    q.includes('about the system')
+  ) {
+    const rByTrack = opsContext.aggregates.recentByTrack;
+    const prime = opsContext.aggregates.primeConversionOpportunity;
+    const netWords = numberToIndianWords(fin.netRevenue);
+    const incWords = numberToIndianWords(fin.totalIncome);
+    const expWords = numberToIndianWords(fin.totalExpense);
+    const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
+    const lastDate = fin.latestIncomeDate || 'October 24, 2026';
+
+    // A. Default Short Co-founder Mode (when not asking for deep details)
+    if (!isDetailed) {
+      if (q.includes('finance')) {
+        return {
+          answer: `Finances are in healthy shape, boss. Our net revenue stands at ${netWords} on total income of ${incWords}. Our last incoming payment was recorded on ${lastDate} for ${lastAmtWords}, and cash flow remains stable.`,
+          actionAdvice: 'Review live transactions in the Finance & Revenue Intelligence panel.',
+          matchedIds: [],
+          recommendedFilter: 'all',
+        };
+      }
+
+      return {
+        answer: `Everything is running smoothly across our systems. We have steady inquiry flow across Blue Yonder and Manhattan Active, and our net profit is solid at ${netWords}. Operations are on track, and I am monitoring upcoming batch enrollments.`,
+        actionAdvice: prime
+          ? stripTechnicalCodes(`Prime follow-up: ${prime.name} (${prime.course}).`)
+          : 'Operations running nominally.',
+        matchedIds: opsContext.allLeads.slice(0, 3).map((l) => l.id),
+        recommendedFilter: 'all',
+      };
+    }
+
+    // B. Explicit Detailed Breakdown Mode
+
+    // Part 1: Recent leads grouped by track (Names only, no codes)
+    const trackSummaries: string[] = [];
+    if (rByTrack.blueYonder.length > 0) {
+      trackSummaries.push(`Blue Yonder: ${rByTrack.blueYonder.map((x) => x.name).join(', ')}`);
+    }
+    if (rByTrack.manhattan.length > 0) {
+      trackSummaries.push(`Manhattan Active WMS: ${rByTrack.manhattan.map((x) => x.name).join(', ')}`);
+    }
+    if (rByTrack.sap.length > 0) {
+      trackSummaries.push(`SAP: ${rByTrack.sap.map((x) => x.name).join(', ')}`);
+    }
+    if (rByTrack.other.length > 0) {
+      trackSummaries.push(`Supply Chain & Analytics: ${rByTrack.other.map((x) => `${x.name} (${x.course})`).join(', ')}`);
+    }
+
+    const leadsPart = trackSummaries.length > 0
+      ? `Starting with our newest candidate inquiries grouped by track: ${trackSummaries.join('; ')}.`
+      : `We have 501 active prospects recorded in CRM.`;
+
+    // Part 2: Prime follow-up opportunity from call notes & transcripts
+    const followUpPart = prime
+      ? `Moving to follow-ups, our prime conversion opportunity is ${prime.name} for ${prime.course}. Their call log notes: "${prime.notes}". They are actively primed for conversion.`
+      : `Our top active callback candidates are ready for immediate contact.`;
+
+    // Part 3: Finance net worth & cash flow alert
+    const lastPaymentAlert = fin.latestIncomeDate
+      ? `Regarding our finances, overall net revenue stands at ${netWords} (total income ${incWords} against ${expWords} in expenses). Our last incoming payment arrived on ${lastDate} for ${lastAmtWords}, and we have not recorded any new incoming payments since that date.`
+      : `Overall net revenue stands at ${netWords}.`;
+
+    return {
+      answer: stripTechnicalCodes(`${leadsPart} ${followUpPart} ${lastPaymentAlert}`),
+      actionAdvice: prime
+        ? stripTechnicalCodes(`Engage ${prime.name} immediately via WhatsApp (${prime.phone}) to lock in batch confirmation and release invoicing.`)
+        : `Prioritize closing demo stage candidates to restart inbound cash flow.`,
+      matchedIds: opsContext.allLeads.slice(0, 5).map((l) => l.id),
+      recommendedFilter: 'all',
+    };
+  }
 
   // 1. Latest Inquiries
   if (
@@ -254,13 +446,13 @@ function fallbackComprehensiveOperations(
     const summary = latest
       .map(
         (l) =>
-          `${l.name} [${l.leadCode}] (${l.course}, ${l.country || 'India'}, Ph: ${l.phone}, Query: "${l.lastMessage || 'N/A'}")`
+          `${l.name} (${l.course}, ${l.country || 'India'}, Ph: ${l.phone}, Query: "${l.lastMessage || 'N/A'}")`
       )
       .join('; ');
 
     return {
-      answer: `Our latest incoming inquiries are: ${summary}.`,
-      actionAdvice: `Initiate prompt contact with ${latest[0]?.name} via WhatsApp or email (${latest[0]?.email || 'N/A'}).`,
+      answer: stripTechnicalCodes(`Our latest incoming inquiries are: ${summary}.`),
+      actionAdvice: stripTechnicalCodes(`Initiate prompt contact with ${latest[0]?.name} via WhatsApp or email (${latest[0]?.email || 'N/A'}).`),
       matchedIds: latest.map((l) => l.id),
       recommendedFilter: 'all',
     };
@@ -278,7 +470,7 @@ function fallbackComprehensiveOperations(
     if (s) {
       const pCount = s.participants.length;
       return {
-        answer: `Our latest scheduled batch is "${s.title}" on ${s.platform} led by ${s.trainer}. Trainer fee payable: ₹${s.trainerAmountDue.toLocaleString()} (Total: ₹${s.trainerTotalCost.toLocaleString()}). Registered participants: ${pCount}.`,
+        answer: stripTechnicalCodes(`Our latest scheduled batch is "${s.title}" on ${s.platform} led by ${s.trainer}. Trainer fee payable: ${numberToIndianWords(s.trainerAmountDue)} (Total: ${numberToIndianWords(s.trainerTotalCost)}). Registered participants: ${pCount}.`),
         actionAdvice: 'Verify participant payment receipts before batch kickoff.',
         matchedIds: [],
         recommendedFilter: 'all',
@@ -288,10 +480,14 @@ function fallbackComprehensiveOperations(
 
   // 3. Financial Transactions
   if (q.includes('finance') || q.includes('income') || q.includes('expense') || q.includes('revenue') || q.includes('transaction')) {
+    const fin = opsContext.aggregates.finance;
     const t = opsContext.financialTransactions.slice(0, 3);
-    const details = t.map((x) => `₹${x.amount.toLocaleString()} (${x.type}, ${x.paymentMethod})`).join(', ');
+    const details = t.map((x) => `${numberToIndianWords(x.amount)} (${x.type}, ${x.paymentMethod})`).join(', ');
+    const paymentNotice = fin.latestIncomeDate
+      ? ` Our last incoming payment was received on ${fin.latestIncomeDate} for ${numberToIndianWords(fin.latestIncomeAmount || 0)}. We have had no incoming payments since then.`
+      : '';
     return {
-      answer: `Recent financial transactions recorded: ${details}. Total recorded operations: ${opsContext.aggregates.totalTransactions}.`,
+      answer: stripTechnicalCodes(`Overall net revenue stands at ${numberToIndianWords(fin.netRevenue)}. Recent transactions: ${details}.${paymentNotice}`),
       actionAdvice: 'Review live finance ledger in the Finance Intelligence view.',
       matchedIds: [],
       recommendedFilter: 'all',
@@ -303,14 +499,48 @@ function fallbackComprehensiveOperations(
     const tr = opsContext.trainerRegistrations.slice(0, 3);
     const names = tr.map((x) => `${x.name} (${x.primaryCourse}, ${x.experienceYears} yrs exp, ${x.status})`).join('; ');
     return {
-      answer: `We have ${opsContext.aggregates.totalTrainers} registered trainer applicants. Recent profiles: ${names}.`,
+      answer: stripTechnicalCodes(`We have ${opsContext.aggregates.totalTrainers} registered trainer applicants. Recent profiles: ${names}.`),
       actionAdvice: 'Review trainer experience notes in the Work With Us onboarding drawer.',
       matchedIds: [],
       recommendedFilter: 'all',
     };
   }
 
-  // 5. Prioritize / Hot Candidates
+  // 5. Call Notes & Discussion Logs
+  if (
+    q.includes('call note') ||
+    q.includes('note') ||
+    q.includes('spoke') ||
+    q.includes('due') ||
+    q.includes('whatsapp number') ||
+    q.includes('remark') ||
+    q.includes('discussion')
+  ) {
+    const leadsWithNotes = opsContext.allLeads
+      .filter((l) => l.notes && l.notes.trim().length > 0)
+      .sort((a, b) => (b.dateOfEntry || '').localeCompare(a.dateOfEntry || ''));
+
+    // Check if query matches specific note keywords (e.g. price, demo, proactive, batch)
+    const matchingNotes = leadsWithNotes.filter((l) => {
+      const nLower = (l.notes || '').toLowerCase();
+      return q.split(/\s+/).some((w) => w.length >= 4 && nLower.includes(w));
+    });
+
+    const targetList = matchingNotes.length > 0 ? matchingNotes : leadsWithNotes;
+    const topSlice = targetList.slice(0, 3);
+    const summary = topSlice
+      .map((l) => `${l.name}: "${l.notes}"${l.followUpDate ? ` (Due: ${l.followUpDate})` : ''}`)
+      .join(' | ');
+
+    return {
+      answer: stripTechnicalCodes(`Retrieved ${targetList.length} candidate call notes. Key records: ${summary}.`),
+      actionAdvice: 'Click Details on any lead card to review full discussion history or update notes.',
+      matchedIds: topSlice.map((l) => l.id),
+      recommendedFilter: 'has_notes',
+    };
+  }
+
+  // 6. Prioritize / Hot Candidates
   if (
     q.includes('priorit') ||
     q.includes('interest') ||
@@ -321,20 +551,25 @@ function fallbackComprehensiveOperations(
     q.includes('best candidate') ||
     q.includes('top candidate')
   ) {
-    return evaluateAllCandidatesPriorities(prompt, opsContext.allLeads);
+    const res = evaluateAllCandidatesPriorities(prompt, opsContext.allLeads);
+    return {
+      ...res,
+      answer: stripTechnicalCodes(res.answer),
+      actionAdvice: stripTechnicalCodes(res.actionAdvice),
+    };
   }
 
-  // 6. General lead matching
+  // 7. General lead matching
   const matched = opsContext.allLeads.filter((l) => {
-    const hay = `${l.name} ${l.leadCode} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''} ${l.notes || ''}`.toLowerCase();
+    const hay = `${l.name} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''} ${l.notes || ''}`.toLowerCase();
     return q.split(' ').some((w) => w.length > 2 && hay.includes(w));
   });
 
   const matchedIds = matched.map((l) => l.id);
-  const sampleNames = matched.slice(0, 3).map((l) => `${l.name} [${l.leadCode}]`).join(', ');
+  const sampleNames = matched.slice(0, 3).map((l) => l.name).join(', ');
 
   return {
-    answer: `Located ${matched.length} candidates matching your query: ${sampleNames || 'None found'}.`,
+    answer: stripTechnicalCodes(`Located ${matched.length} candidates matching your query: ${sampleNames || 'None found'}.`),
     actionAdvice: 'Click Details on any lead card to review complete CRM call notes and transcripts.',
     matchedIds,
     recommendedFilter: 'all',

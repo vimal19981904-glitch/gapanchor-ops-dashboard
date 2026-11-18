@@ -46,38 +46,88 @@ export interface CallAnalysisResult {
 }
 
 /**
- * Calculates candidate talk-time percentage based on transcript dialogue lines
+ * Calculates candidate talk-time percentage based on transcript dialogue lines.
+ * Accurately parses MS Teams .docx utterance lines, WebVTT <v speaker> cues,
+ * and timestamped dialogue turns between GapAnchor Team and the candidate.
  */
-export function calculateTalkTime(rawTranscript: string, candidateName: string): { candidateTalkPct: number; durationMinutes: number } {
+export function calculateTalkTime(rawTranscript: string, candidateName?: string): { candidateTalkPct: number; durationMinutes: number } {
   const meta = extractTranscriptMetadata(rawTranscript);
   const targetName = (candidateName || meta.customerName || '').toLowerCase().trim();
+  const targetFirstWord = targetName ? targetName.split(/\s+/)[0] : '';
 
-  const lines = meta.dialogueText.split('\n');
+  const lines = (meta.dialogueText || rawTranscript).replace(/\r\n/g, '\n').split('\n');
   let candidateWords = 0;
   let hostWords = 0;
   let currentSpeaker: 'candidate' | 'host' = 'host';
 
+  const hostKeywords = ['gapanchor', 'gap anchor', 'arul', 'xavier', 'sam', 'trainer', 'host', 'admin'];
+
+  const vttSpeakerRegex = /<v\s+([^>]+)>(.*)/i;
+  const tsRangeMatchRegex = /^\d{2}:\d{2}:\d{2}\.\d{3}\s*(?:-->|--&gt;)\s*\d{2}:\d{2}:\d{2}\.\d{3}\s+([A-Za-z\s.'_-]+?)\s{1,3}(.*)$/;
+  const docxSpeakerRegex = /^(?:\d+\s+\d+\s+)?([A-Za-z\s.'_-]+?)\s+(\d{1,2}:\d{2}(?::\d{2})?)\s+(.*)$/;
+  const colonSpeakerRegex = /^([A-Za-z\s.'_-]{2,30}):\s*(.*)$/;
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    if (trimmed.includes('started transcription') || trimmed.includes('stopped transcription')) continue;
+    if (/^\d{2}:\d{2}:\d{2}\.\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}\.\d{3}$/.test(trimmed)) continue;
 
-    // Speaker change lines often have name or timestamp, e.g. "Arul Xavier 01:23" or "Candidate Name:"
-    const lower = trimmed.toLowerCase();
-    if (targetName && lower.includes(targetName)) {
-      currentSpeaker = 'candidate';
-      continue;
-    } else if (
-      lower.includes('gapanchor') ||
-      lower.includes('arul') ||
-      lower.includes('host') ||
-      lower.includes('trainer') ||
-      lower.includes('admin')
-    ) {
-      currentSpeaker = 'host';
-      continue;
+    let speaker = '';
+    let speechContent = trimmed;
+
+    const vttMatch = trimmed.match(vttSpeakerRegex);
+    if (vttMatch) {
+      speaker = vttMatch[1].trim();
+      speechContent = vttMatch[2].replace(/<\/v>/gi, '').trim();
+    } else {
+      const tsMatch = trimmed.match(tsRangeMatchRegex);
+      if (tsMatch) {
+        speaker = tsMatch[1].trim();
+        speechContent = tsMatch[2].trim();
+      } else {
+        const docxMatch = trimmed.match(docxSpeakerRegex);
+        if (docxMatch) {
+          speaker = docxMatch[1].trim();
+          speechContent = docxMatch[3].trim();
+        } else {
+          const colonMatch = trimmed.match(colonSpeakerRegex);
+          if (colonMatch) {
+            speaker = colonMatch[1].trim();
+            speechContent = colonMatch[2].trim();
+          }
+        }
+      }
     }
 
-    const wordCount = trimmed.split(/\s+/).length;
+    if (speaker) {
+      const spLower = speaker.toLowerCase();
+      const isHost = hostKeywords.some((kw) => spLower.includes(kw));
+      if (isHost) {
+        currentSpeaker = 'host';
+      } else if (
+        (targetName && spLower.includes(targetName)) ||
+        (targetFirstWord && targetFirstWord.length > 2 && spLower.includes(targetFirstWord))
+      ) {
+        currentSpeaker = 'candidate';
+      } else {
+        // Any non-host participant in a 1-on-1 Teams call is the candidate
+        currentSpeaker = 'candidate';
+      }
+    }
+
+    const cleanSpeech = speechContent
+      .replace(/<[^>]+>/g, '')
+      .replace(/&apos;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .trim();
+
+    if (!cleanSpeech) continue;
+
+    const wordCount = cleanSpeech.split(/\s+/).filter(Boolean).length;
+    if (wordCount === 0) continue;
+
     if (currentSpeaker === 'candidate') {
       candidateWords += wordCount;
     } else {
@@ -86,9 +136,9 @@ export function calculateTalkTime(rawTranscript: string, candidateName: string):
   }
 
   const totalWords = candidateWords + hostWords;
-  let candidateTalkPct = 50; // default balance
-  if (totalWords > 20) {
-    candidateTalkPct = Math.min(95, Math.max(5, Math.round((candidateWords / totalWords) * 100)));
+  let candidateTalkPct = 50; // default balance if no speech detected
+  if (totalWords > 10) {
+    candidateTalkPct = Math.min(90, Math.max(5, Math.round((candidateWords / totalWords) * 100)));
   }
 
   return {
@@ -306,7 +356,7 @@ Extract genuine qualitative signals and output ONLY a valid JSON object matching
   "timeline": "Candidate's expected start date, cohort timing, or urgency discussed",
   "decisionMaker": "Decision maker status",
   "objections": "Main concerns, process knowledge gaps, scheduling, or hesitation discussed",
-  "counterPitch": "Targeted sales counter-pitch / battlecard tailored to GapAnchor's strengths (24/7 sandbox instances, 24-30 live classes, direct mentorship by Arul Xavier/Sam)",
+  "counterPitch": "Targeted sales counter-pitch / battlecard tailored to GapAnchor's strengths (24/7 sandbox instances, 24-30 live classes, direct mentorship by GapAnchor Team)",
   "verbatimQuotes": {
     "need": "Exact quote from candidate about their requirement",
     "budget": "Exact quote from candidate about budget/fee/installment if discussed",

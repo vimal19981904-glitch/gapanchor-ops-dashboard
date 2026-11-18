@@ -45,30 +45,30 @@ export function JarvisOrb({
         };
       case 'thinking':
         return {
-          coreGradient: 'from-violet-400 via-fuchsia-500 to-amber-400',
-          glowColor: 'rgba(168, 85, 247, 0.65)',
-          pulseDuration: '0.8s',
+          coreGradient: 'from-white via-slate-300 to-slate-500',
+          glowColor: 'rgba(203, 213, 225, 0.55)',
+          pulseDuration: '1.2s',
           pingAura: true,
         };
       case 'speaking':
         return {
-          coreGradient: 'from-teal-300 via-cyan-400 to-emerald-400',
-          glowColor: 'rgba(20, 241, 149, 0.5)',
+          coreGradient: 'from-teal-300 via-cyan-400 to-slate-300',
+          glowColor: 'rgba(20, 241, 149, 0.45)',
           pulseDuration: '1.4s',
           pingAura: false,
         };
       case 'active':
         return {
-          coreGradient: 'from-cyan-400 via-sky-500 to-indigo-600',
-          glowColor: 'rgba(0, 242, 254, 0.45)',
+          coreGradient: 'from-white via-slate-300 to-slate-500',
+          glowColor: 'rgba(226, 232, 240, 0.45)',
           pulseDuration: '1.5s',
           pingAura: false,
         };
       case 'idle':
       default:
         return {
-          coreGradient: 'from-cyan-400 via-sky-500 to-blue-600',
-          glowColor: 'rgba(0, 242, 254, 0.35)',
+          coreGradient: 'from-slate-200 via-slate-400 to-slate-600',
+          glowColor: 'rgba(203, 213, 225, 0.35)',
           pulseDuration: '1.5s',
           pingAura: false,
         };

@@ -141,12 +141,26 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
-          {/* Tab toggle */}
-          <div className="flex rounded-full border border-border p-0.5 sm:p-1" style={{ background: 'var(--surface-2)' }}>
-            <button onClick={() => setActiveTab('charts')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'charts' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'charts' ? { color: 'var(--text-secondary)' } : {}}>
+          {/* Tab toggle (Image 2 Reference Style) */}
+          <div className="flex rounded-full border border-white/10 p-0.5 sm:p-1 bg-slate-900/60 backdrop-blur-xl">
+            <button
+              onClick={() => setActiveTab('charts')}
+              className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
+                activeTab === 'charts'
+                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+              }`}
+            >
               Analytics
             </button>
-            <button onClick={() => setActiveTab('transactions')} className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all ${activeTab === 'transactions' ? 'bg-brand-500 text-white shadow-md' : 'hover:bg-surface-3'}`} style={activeTab !== 'transactions' ? { color: 'var(--text-secondary)' } : {}}>
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
+                activeTab === 'transactions'
+                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+              }`}
+            >
               Transactions ({transactions.length})
             </button>
           </div>
@@ -164,7 +178,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
 
             <a
               href="/finance/analytics"
-              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-brand-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-md shadow-brand-500/20 cursor-pointer"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl active:scale-95 cursor-pointer"
               title="Open Expanded Finance Intelligence & Excel Import View"
             >
               <Maximize2 size={12} className="sm:w-[13px] sm:h-[13px]" />
@@ -228,8 +242,8 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                 </span>
               </div>
 
-              {/* View Selector Pills */}
-              <div className="flex rounded-lg p-0.5 border border-border bg-surface-1 text-[11px] font-bold">
+              {/* View Selector Pills (Image 2 Reference Style) */}
+              <div className="flex rounded-full p-0.5 border border-white/10 bg-slate-900/60 backdrop-blur-xl text-[11px] font-bold">
                 {[
                   { id: 'combined', label: 'Single Pie' },
                   { id: 'income', label: 'Income' },
@@ -238,10 +252,10 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                   <button
                     key={v.id}
                     onClick={() => setBreakdownView(v.id as any)}
-                    className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 rounded-full transition-all duration-200 active:scale-95 cursor-pointer ${
                       breakdownView === v.id
-                        ? 'bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/30'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl font-bold'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent font-medium'
                     }`}
                   >
                     {v.label}
@@ -496,7 +510,15 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
             <div className="flex items-center gap-2">
               <Filter size={13} style={{ color: 'var(--text-tertiary)' }} />
               {(['all', 'income', 'expense'] as const).map(f => (
-                <button key={f} onClick={() => handleFilterChange(f)} className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${filterType === f ? 'border-brand-500/40 bg-brand-500/20 text-brand-300' : 'border-transparent hover:bg-surface-2'}`} style={filterType !== f ? { color: 'var(--text-secondary)' } : {}}>
+                <button
+                  key={f}
+                  onClick={() => handleFilterChange(f)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+                    filterType === f
+                      ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                  }`}
+                >
                   {f === 'all' ? 'All' : f === 'income' ? '↑ Income' : '↓ Expense'}
                 </button>
               ))}
@@ -577,7 +599,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(tx)}
-                            className="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-white/25 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
                           >
                             <Eye size={12} />
                             <span>Detail View</span>
@@ -616,7 +638,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                     <td className="px-4 py-3.5 text-center">
                       <button
                         onClick={() => handleOpenDetail(tx)}
-                        className="px-2.5 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                        className="px-2.5 py-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-white/25 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
                         title="View Detailed Transaction Info"
                       >
                         <Eye size={12} />
@@ -647,7 +669,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                 <span>Previous</span>
               </button>
 
-              <span className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-300 font-extrabold">
+              <span className="px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/15 text-slate-200 font-bold backdrop-blur-xl">
                 Page {currentPage} of {totalPages}
               </span>
 
@@ -655,7 +677,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3.5 py-1.5 rounded-xl border border-brand-500/40 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-sm"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white border border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 <span>Next Page</span>
                 <ChevronRight size={13} />

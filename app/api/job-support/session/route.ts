@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { DEMO_JOB_SUPPORT_SESSIONS } from '@/lib/demoDataMasker';
 
 function computePaymentStatus(due: number, paid: number): 'PAID' | 'PARTIAL' | 'PENDING' {
   if (paid >= due && due > 0) return 'PAID';
@@ -60,6 +62,19 @@ const DEFAULT_JOB_SUPPORT_SESSIONS = [
 
 export async function GET() {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        sessions: DEMO_JOB_SUPPORT_SESSIONS,
+        summary: {
+          totalEngagements: DEMO_JOB_SUPPORT_SESSIONS.length,
+          activeEngagements: DEMO_JOB_SUPPORT_SESSIONS.filter((s) => s.status === 'In Progress').length,
+          totalRevenueDue: 230000,
+          totalRevenueCollected: 165000,
+        },
+      });
+    }
+
     // Query sessions tagged with "Job Support" in title or platform
     let sessions = await prisma.session.findMany({
       where: {

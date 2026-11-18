@@ -605,7 +605,7 @@ export default function OpsModal({
                   <button
                     type="button"
                     onClick={handleAddCustomParticipant}
-                    className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+                    className="px-3 py-1 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white border border-white/25 shadow-sm text-xs font-bold cursor-pointer active:scale-95"
                   >
                     Add
                   </button>
@@ -826,7 +826,7 @@ export default function OpsModal({
                                     type="button"
                                     onClick={() => handleGenerateInvoice(row, idx)}
                                     disabled={generatingInvoiceIndex === idx}
-                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50 min-w-[76px]"
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50 min-w-[76px] active:scale-95"
                                     title="Generate and download PDF invoice"
                                   >
                                     <FileText size={12} className="text-cyan-400 shrink-0" />
@@ -920,7 +920,7 @@ export default function OpsModal({
                                       type="button"
                                       onClick={() => handleGenerateInvoice(row, idx)}
                                       disabled={generatingInvoiceIndex === idx}
-                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-cyan-500/15 cursor-pointer disabled:opacity-50"
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 active:scale-95"
                                     >
                                       <FileText size={13} />
                                       <span>{generatingInvoiceIndex === idx ? 'Generating...' : 'Invoice'}</span>
@@ -980,7 +980,7 @@ export default function OpsModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 active:scale-95"
               >
                 <CheckCircle size={15} className="shrink-0" />
                 <span className="whitespace-nowrap">{loading ? 'Saving...' : 'Save Session'}</span>

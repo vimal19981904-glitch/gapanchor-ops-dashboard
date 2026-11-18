@@ -31,6 +31,7 @@ import {
   speakJarvis,
   prepareJarvisSpeech,
   stopJarvis,
+  unlockJarvisAudio,
   getJarvisVoice,
   getJarvisGreeting,
   getJarvisThinkingPhrase,
@@ -184,6 +185,8 @@ export function JarvisHolographicHud({
 
   // Microphone Activation
   const handleToggleMic = () => {
+    unlockJarvisAudio();
+
     if (uiState === 'listening') {
       stopAllListening();
       setUiState('idle');
@@ -224,6 +227,7 @@ export function JarvisHolographicHud({
   // Command Execution Pipeline
   const executeCommand = async (command: string) => {
     if (!command.trim()) return;
+    unlockJarvisAudio();
 
     // Check for conversational dismissal
     if (isDismissalOrThankYou(command)) {

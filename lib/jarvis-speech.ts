@@ -347,7 +347,7 @@ async function fetchAudioBuffer(
     const controller = new AbortController();
     const timer = setTimeout(
       () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
-      6000
+      3500
     );
 
     try {
@@ -376,7 +376,9 @@ async function fetchAudioBuffer(
       audioArrayBufferCache.set(cacheKey, buffer);
       return buffer;
     } catch (err) {
-      neuralTtsCooldownUntil = Date.now() + 60_000;
+      // Short 5s circuit breaker cooldown so fallback local speech takes over immediately
+      // without locking out audio for 60 seconds
+      neuralTtsCooldownUntil = Date.now() + 5_000;
       throw err;
     } finally {
       clearTimeout(timer);
@@ -511,10 +513,64 @@ if (typeof window !== 'undefined') {
 }
 
 /**
+ * Converts a numeric amount to natural Indian words (crore, lakh, thousand, rupees)
+ * e.g. 657062 -> "6 lakh 57 thousand 62 rupees"
+ */
+export function numberToIndianWords(amount: number): string {
+  const n = Math.round(Number(amount));
+  if (isNaN(n) || n === 0) return '0 rupees';
+  if (n === 1) return '1 rupee';
+
+  const crore = Math.floor(n / 10000000);
+  const lakh = Math.floor((n % 10000000) / 100000);
+  const thousand = Math.floor((n % 100000) / 1000);
+  const remainder = n % 1000;
+
+  const parts: string[] = [];
+  if (crore > 0) parts.push(`${crore} crore`);
+  if (lakh > 0) parts.push(`${lakh} lakh`);
+  if (thousand > 0) parts.push(`${thousand} thousand`);
+  if (remainder > 0) {
+    parts.push(`${remainder}`);
+  }
+
+  return `${parts.join(' ')} rupees`;
+}
+
+/**
+ * Replaces Indian currency expressions (₹6,57,062.12 or Rs. 24,630) into natural words for speech synthesis
+ */
+export function sanitizeIndianCurrencyForSpeech(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d+)?)/gi, (match, numStr) => {
+      const cleanNum = parseFloat(numStr.replace(/,/g, ''));
+      if (isNaN(cleanNum)) return match;
+      return numberToIndianWords(cleanNum);
+    })
+    .replace(/([\d,]+(?:\.\d+)?)\s*(?:rupees|rupee)\b/gi, (match, numStr) => {
+      const cleanNum = parseFloat(numStr.replace(/,/g, ''));
+      if (isNaN(cleanNum)) return match;
+      return numberToIndianWords(cleanNum);
+    });
+}
+
+/**
  * Clean text for natural speech (remove markdown symbols, URLs, asterisks, citations)
  */
 function sanitizeForSpeech(text: string): string {
-  return text
+  const withCurrencyWords = sanitizeIndianCurrencyForSpeech(text);
+
+  return withCurrencyWords
+    // 1. Strip technical CRM primary key codes: [GAMA-0224], (GABY-0002), [GAGN-0001], GAMA-0001, etc.
+    .replace(/\[\s*GA[A-Z]{2}-?\d{3,4}\s*\]/gi, '')
+    .replace(/\(\s*GA[A-Z]{2}-?\d{3,4}\s*\)/gi, '')
+    .replace(/\bGA[A-Z]{2}-?\d{3,4}\b/gi, '')
+    .replace(/\[\s*GA[A-Z]{2}\s*\]/gi, '')
+    .replace(/#[a-z0-9]{5,8}\b/gi, '')
+    // 2. Strip cuid / database IDs
+    .replace(/\bcm[a-z0-9]{20,30}\b/gi, '')
+    // 3. Clean markdown & styling artifacts
     .replace(/\*\*/g, '')
     .replace(/\*/g, '')
     .replace(/`/g, '')
@@ -875,13 +931,13 @@ async function speakJarvisLocalFallback(
     if (options.onError) options.onError(err);
   };
 
-  // If Chrome/Safari blocks speechSynthesis silently after async fetch, fail fast in 900ms instead of hanging!
+  // If Chrome/Safari delays speechSynthesis start on production HTTPS, give a generous 1800ms window before failing cleanly
   const startTimeout = setTimeout(() => {
     if (!startFired && !finished) {
       try { window.speechSynthesis.cancel(); } catch {}
       finishError(new Error('Browser speech synthesis did not start'));
     }
-  }, 900);
+  }, 1800);
 
   const finishWatchdog = setTimeout(() => {
     if (!finished) {
@@ -908,13 +964,21 @@ async function speakJarvisLocalFallback(
   utterance.onerror = finishError;
 
   try {
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
     if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
       window.speechSynthesis.cancel();
     }
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
     window.speechSynthesis.speak(utterance);
+    // Chrome bug workaround: force resume immediately after queuing utterance
+    setTimeout(() => {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      } catch {}
+    }, 40);
   } catch (err) {
     finishError(err);
   }
@@ -1011,12 +1075,12 @@ export function formatHumanizedJarvisBriefing(answer: string, actionAdvice?: str
 
   let speech = clean;
 
-  // 3. Elegant Tactical Directive Wrap-up
-  if (actionAdvice) {
+  // 3. Elegant Tactical Next Step (Only if distinct and helpful)
+  if (actionAdvice && actionAdvice.trim().length > 0) {
     const cleanAdvice = sanitizeForSpeech(actionAdvice);
-    speech += `. As for our immediate tactical directive: ${cleanAdvice}. I have also isolated their files on your dashboard, sir.`;
-  } else {
-    speech += `. I have highlighted the relevant candidates on your screen, sir.`;
+    if (!speech.toLowerCase().includes(cleanAdvice.toLowerCase().slice(0, 20))) {
+      speech += ` Next step: ${cleanAdvice}.`;
+    }
   }
 
   return speech;

@@ -155,7 +155,7 @@ function DrawerQualitySelect({ value, onChange, className = '' }: { value: strin
   );
 }
 
-function TalkTimeDonut({ candidatePct = 50, hostName = 'Sam' }: { candidatePct: number; hostName?: string }) {
+function TalkTimeDonut({ candidatePct = 50, hostName = 'GapAnchor Team' }: { candidatePct: number; hostName?: string }) {
   const safeCandidate = Math.min(100, Math.max(0, candidatePct || 50));
   const safeHost = 100 - safeCandidate;
 
@@ -178,7 +178,7 @@ function TalkTimeDonut({ candidatePct = 50, hostName = 'Sam' }: { candidatePct: 
             stroke="#1e293b"
             strokeWidth={strokeWidth}
           />
-          {/* Host / Sam Segment (Indigo - Full base) */}
+          {/* Host / GapAnchor Team Segment (Indigo - Full base) */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -221,7 +221,7 @@ function TalkTimeDonut({ candidatePct = 50, hostName = 'Sam' }: { candidatePct: 
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
-            <span className="text-slate-400 text-[11px] truncate">{hostName} (Host):</span>
+            <span className="text-slate-400 text-[11px] truncate">{hostName}:</span>
           </div>
           <span className="font-bold text-indigo-300 text-xs shrink-0">{safeHost}%</span>
         </div>
@@ -948,7 +948,7 @@ export function LeadDetailsDrawer({
                     <button
                       onClick={handleSaveNotes}
                       disabled={isSavingNote}
-                      className="px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs text-white font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-xs text-white font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95"
                     >
                       {isSavingNote ? 'Saving...' : 'Save to DB'}
                     </button>
@@ -1084,7 +1084,7 @@ export function LeadDetailsDrawer({
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center">
                       <TalkTimeDonut
                         candidatePct={latestCall.candidateTalkPct}
-                        hostName="Sam"
+                        hostName="GapAnchor Team"
                       />
                     </div>
                   </div>
@@ -1095,7 +1095,7 @@ export function LeadDetailsDrawer({
                       AI Call Summary
                     </div>
                     <p className="text-xs text-slate-200 leading-relaxed">
-                      {latestCall.summary.replace(/Arul\s+Xavier/gi, 'Sam').replace(/\bArul\b/gi, 'Sam')}
+                      {latestCall.summary.replace(/Arul\s+Xavier/gi, 'GapAnchor Team').replace(/\bArul\b/gi, 'GapAnchor Team').replace(/\bSam\b/gi, 'GapAnchor Team')}
                     </p>
                   </div>
 
@@ -1110,7 +1110,6 @@ export function LeadDetailsDrawer({
                       <span className="text-emerald-400 font-semibold">{latestCall.budget || 'In evaluation'}</span>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      <span className="text-slate-400 font-medium block mb-1">Timeline Urgency:</span>
                       <span className="text-cyan-400 font-semibold">{latestCall.timeline || 'Flexible'}</span>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -1129,7 +1128,7 @@ export function LeadDetailsDrawer({
                         </div>
                         <button
                           onClick={() => handleCopyPitch(
-                            latestCall.counterPitch!.replace(/Arul\s+Xavier/gi, 'Sam').replace(/\bArul\b/gi, 'Sam')
+                            latestCall.counterPitch!.replace(/Arul\s+Xavier/gi, 'GapAnchor Team').replace(/\bArul\b/gi, 'GapAnchor Team').replace(/\bSam\b/gi, 'GapAnchor Team')
                           )}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-white transition-colors"
                         >
@@ -1148,11 +1147,11 @@ export function LeadDetailsDrawer({
                       </div>
                       {latestCall.objections && (
                         <div className="text-xs text-amber-200/80 mb-2 italic">
-                          Objection: "{latestCall.objections.replace(/Arul\s+Xavier/gi, 'Sam').replace(/\bArul\b/gi, 'Sam')}"
+                          Objection: "{latestCall.objections.replace(/Arul\s+Xavier/gi, 'GapAnchor Team').replace(/\bArul\b/gi, 'GapAnchor Team').replace(/\bSam\b/gi, 'GapAnchor Team')}"
                         </div>
                       )}
                       <p className="text-xs text-slate-200 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-amber-500/10">
-                        {latestCall.counterPitch.replace(/Arul\s+Xavier/gi, 'Sam').replace(/\bArul\b/gi, 'Sam')}
+                        {latestCall.counterPitch.replace(/Arul\s+Xavier/gi, 'GapAnchor Team').replace(/\bArul\b/gi, 'GapAnchor Team').replace(/\bSam\b/gi, 'GapAnchor Team')}
                       </p>
                     </div>
                   )}

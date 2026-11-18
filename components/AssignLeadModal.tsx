@@ -195,7 +195,7 @@ export default function AssignLeadModal({
           <button
             onClick={handleAssign}
             disabled={assigning || !selectedEmployeeId}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white transition-all shadow-md shadow-indigo-600/30 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 active:scale-95"
           >
             <UserCheck size={14} />
             {assigning ? 'Assigning...' : 'Assign Lead'}

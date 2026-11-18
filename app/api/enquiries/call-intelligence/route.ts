@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { maskEnquiriesForDemo } from '@/lib/demoDataMasker';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +27,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Enquiry not found' }, { status: 404 });
     }
 
+    const finalEnquiry = isDemoSession() ? maskEnquiriesForDemo([enquiry])[0] : enquiry;
+
     return NextResponse.json({
       success: true,
-      enquiry,
+      enquiry: finalEnquiry,
       callTimeline: enquiry.callTimeline,
     });
   } catch (error: any) {
@@ -38,6 +42,10 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({ success: true, message: 'Demo mode active. Changes simulated.' });
+    }
+
     const body = await req.json();
     const { enquiryId, leadCallId, callScore, dismissRedFlag, followUpDate, customerExperience } = body;
 

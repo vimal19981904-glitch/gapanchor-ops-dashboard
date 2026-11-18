@@ -425,67 +425,54 @@ export function FollowUpAssistantBar({
         throw new Error(data?.error || 'Failed to process AI query');
       }
 
+      // 2. Immediately render the response card so the user sees their briefing instantly
+      setIsAskingAi(false);
+      setVoiceStage('speaking_output');
+      setVoiceStatusMessage('Briefing executive team...');
+
+      setAiResponse({
+        answer: data.answer,
+        actionAdvice: data.actionAdvice,
+        matchedIds: data.matchedIds || [],
+        recommendedFilter: data.recommendedFilter,
+        isRealAi: Boolean(data.isRealGemini),
+        missingApiKey: Boolean(data.missingApiKey),
+        apiError: data.apiError,
+        model: data.model,
+        prompt: cleanPrompt,
+      });
+
+      onFilterChange('all');
+      if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
+        onAiMatchedIdsChange(data.matchedIds);
+      }
+      if (data.pipelineAction && typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('gapanchor:pipeline-action', { detail: data.pipelineAction })
+        );
+      }
+
+      // 3. Simultaneously stream neural voice in parallel
       const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, data.actionAdvice);
       const followUpPhrase = getJarvisFollowUpPhrase();
       const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
-      const prewarmPromise = prepareJarvisSpeech(fullSpeech);
-
-      const elapsed = Date.now() - thinkingStartTime;
-      if (elapsed < 2000) {
-        await new Promise((r) => setTimeout(r, 2000 - elapsed));
-      }
-      try {
-        await prewarmPromise;
-      } catch {}
-
-      let revealed = false;
-      const revealBriefing = (audioStarted: boolean) => {
-        if (revealed) return;
-        revealed = true;
-        setVoiceStage(audioStarted ? 'speaking_output' : 'idle');
-        setVoiceStatusMessage(audioStarted ? 'Briefing executive team...' : 'Executive briefing ready.');
-        setIsAskingAi(false);
-
-        setAiResponse({
-          answer: data.answer,
-          actionAdvice: data.actionAdvice,
-          matchedIds: data.matchedIds || [],
-          recommendedFilter: data.recommendedFilter,
-          isRealAi: Boolean(data.isRealGemini),
-          missingApiKey: Boolean(data.missingApiKey),
-          apiError: data.apiError,
-          model: data.model,
-          prompt: cleanPrompt,
-        });
-
-        onFilterChange('all');
-        if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
-          onAiMatchedIdsChange(data.matchedIds);
-        }
-        if (data.pipelineAction && typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('gapanchor:pipeline-action', { detail: data.pipelineAction })
-          );
-        }
-      };
-
-      setVoiceStatusMessage('Synthesizing neural voice...');
 
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {
           setIsSpeakingJarvis(true);
-          revealBriefing(true);
+          setVoiceStage('speaking_output');
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);
-          revealBriefing(false);
+          setVoiceStage('idle');
+          setVoiceStatusMessage('JARVIS Online. Listening...');
           startListeningInline();
         },
         onError: () => {
           setIsSpeakingJarvis(false);
-          revealBriefing(false);
-          startListeningInline();
+          setVoiceStage('idle');
+          setVoiceStatusMessage('Executive briefing ready.');
         },
       });
     } catch (err: any) {
@@ -872,12 +859,12 @@ export function FollowUpAssistantBar({
   return (
     <div className={`space-y-3 ${className}`}>
       {/* ─── Real-Time GAP AI Copilot Command Bar ─── */}
-      <div className="p-2.5 sm:p-4 bg-slate-900/70 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-xl transition-all">
+      <div className="p-2.5 sm:p-4 bg-[#050608] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl transition-all">
         {isVoiceModeActive ? (
           /* ─── B1. 100% INLINE Jarvis Voice Interface (Zero Popup Windows) ─── */
-          <div className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/35 border border-slate-800/60 transition-all animate-[fadeIn_0.2s_ease]">
+          <div className="p-2.5 sm:p-3.5 rounded-xl bg-black border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04),0_8px_30px_rgba(0,0,0,0.85)] transition-all animate-[fadeIn_0.2s_ease]">
             {/* Top row: Voice status & controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.08]">
               <div className="flex items-center gap-2.5 min-w-0">
                 {/* J.A.R.V.I.S. Concentric Holographic Core Orb */}
                 <div
@@ -915,19 +902,19 @@ export function FollowUpAssistantBar({
                       Jarvis Voice
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium max-w-full truncate border transition-colors ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium max-w-full truncate border transition-colors ${
                         voiceStage === 'listening'
-                          ? 'bg-cyan-500/10 text-cyan-200 border-cyan-500/25'
+                          ? 'bg-white/[0.08] text-slate-200 border-white/20'
                           : voiceStage === 'speaking_output' || voiceStage === 'greeting'
-                          ? 'bg-slate-800/70 text-cyan-200 border-slate-700/60'
-                          : 'bg-slate-800/60 text-slate-300 border-slate-700/50'
+                          ? 'bg-white/[0.06] text-slate-200 border-white/15'
+                          : 'bg-white/[0.04] text-slate-400 border-white/10'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                           voiceStage === 'listening' || voiceStage === 'speaking_output' || voiceStage === 'thinking'
-                            ? 'bg-cyan-400 animate-pulse'
-                            : 'bg-slate-400'
+                            ? 'bg-slate-300 animate-pulse'
+                            : 'bg-slate-500'
                         }`}
                       />
                       <span className="truncate">
@@ -963,7 +950,7 @@ export function FollowUpAssistantBar({
                       setIsSpeakingJarvis(false);
                       startListeningInline();
                     }}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:text-white hover:bg-amber-500/30 text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all animate-pulse shadow-md shadow-amber-500/10"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:text-white hover:bg-amber-500/30 text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all animate-pulse shadow-md shadow-amber-500/10 active:scale-95"
                     title="Stop Jarvis speaking and speak now"
                   >
                     <Mic className="w-3.5 h-3.5" />
@@ -973,10 +960,10 @@ export function FollowUpAssistantBar({
                   <button
                     type="button"
                     onClick={voiceStage === 'listening' ? handlePauseListening : handleResumeListening}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all border ${
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all border active:scale-95 ${
                       voiceStage === 'listening'
-                        ? 'bg-rose-500/20 border-rose-500/50 text-rose-300 hover:bg-rose-500/30'
-                        : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
+                        ? 'bg-rose-500/15 border-rose-500/30 text-rose-300 hover:bg-rose-500/25'
+                        : 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl'
                     }`}
                   >
                     {voiceStage === 'listening' ? (
@@ -996,7 +983,7 @@ export function FollowUpAssistantBar({
                 <button
                   type="button"
                   onClick={handleCloseVoiceMode}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.10] to-white/[0.04] hover:from-white/[0.16] hover:to-white/[0.08] border border-white/15 text-slate-300 hover:text-white text-[10px] sm:text-[11px] font-bold cursor-pointer transition-all backdrop-blur-xl active:scale-95"
                   title="Exit voice mode"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1039,7 +1026,7 @@ export function FollowUpAssistantBar({
 
             {/* Unified Voice Briefing Sheet (Integrated Directly Below Center Orb) */}
             {aiResponse && (
-              <div className="my-3 p-3.5 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/70 shadow-lg animate-[fadeIn_0.25s_ease] text-xs text-slate-200">
+              <div className="my-3 p-3.5 sm:p-4 rounded-xl bg-black border border-white/10 shadow-2xl animate-[fadeIn_0.25s_ease] text-xs text-slate-200">
                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800/60">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -1117,8 +1104,8 @@ export function FollowUpAssistantBar({
                 }}
                 className={`w-full min-h-[44px] p-2.5 sm:px-3.5 sm:py-2.5 rounded-xl border text-xs text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${
                   voiceStage === 'listening'
-                    ? 'bg-slate-950/45 border-cyan-500/25'
-                    : 'bg-slate-950/35 border-slate-800/60 cursor-pointer'
+                    ? 'bg-black/95 border-cyan-500/30'
+                    : 'bg-black/85 border-white/10 hover:border-white/20 cursor-pointer'
                 }`}
               >
                 <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
@@ -1172,7 +1159,7 @@ export function FollowUpAssistantBar({
                       handleExecuteVoicePrompt(voiceTranscript);
                     }}
                     disabled={isAskingAi}
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shrink-0 flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer transition-transform active:scale-95"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shrink-0 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl cursor-pointer transition-transform active:scale-95"
                   >
                     <span>Ask AI Now</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1200,7 +1187,7 @@ export function FollowUpAssistantBar({
               <button
                 type="submit"
                 disabled={isAskingAi || !nlpQuery.trim()}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-[11px] font-bold text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 sm:px-3 py-1 rounded-lg bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-[11px] font-bold text-white shadow-sm border border-white/25 backdrop-blur-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
               >
                 {isAskingAi ? (
                   <>
@@ -1484,7 +1471,7 @@ export function FollowUpAssistantBar({
                   <button
                     type="submit"
                     disabled={isSavingKey || !aiKeyInput.trim()}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all disabled:opacity-50 cursor-pointer active:scale-95"
                   >
                     {isSavingKey ? (
                       <>

@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-client';
+import { isDemoSession } from '@/lib/demoInterceptor';
 
 export async function POST(req: Request) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Lead processing simulated in demo showcase. WhatsApp notification held in sandbox.',
+      });
+    }
+
     const body = await req.json();
     const { enquiryId, customNote, customMessage } = body;
 

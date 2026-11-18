@@ -121,6 +121,29 @@ export interface OperationsIntelligenceSnapshot {
     totalTransactions: number;
     topCountries: Array<{ country: string; count: number }>;
     topCourses: Array<{ course: string; count: number }>;
+    finance: {
+      totalIncome: number;
+      totalExpense: number;
+      netRevenue: number;
+      latestIncomeDate: string | null;
+      latestIncomeAmount: number | null;
+      latestIncomeSource: string | null;
+    };
+    recentByTrack: {
+      manhattan: Array<{ name: string; phone: string; date: string }>;
+      blueYonder: Array<{ name: string; phone: string; date: string }>;
+      sap: Array<{ name: string; phone: string; date: string }>;
+      other: Array<{ name: string; course: string; phone: string; date: string }>;
+      totalRecent: number;
+    };
+    primeConversionOpportunity: {
+      name: string;
+      course: string;
+      notes: string;
+      phone: string;
+      due: string | null;
+      reason: string;
+    } | null;
   };
 }
 
@@ -380,7 +403,6 @@ export async function getComprehensiveOperationsSnapshot(
       include: { participants: true },
     }),
     prisma.transaction.findMany({
-      take: 15,
       orderBy: { date: 'desc' },
     }),
     prisma.trainerRegistration.findMany({
@@ -439,6 +461,26 @@ export async function getComprehensiveOperationsSnapshot(
     notes: t.notes,
   }));
 
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let latestIncomeDate: string | null = null;
+  let latestIncomeAmount: number | null = null;
+  let latestIncomeSource: string | null = null;
+
+  for (const t of rawTransactions) {
+    if (t.type.toLowerCase() === 'income') {
+      totalIncome += t.amount;
+      if (!latestIncomeDate) {
+        latestIncomeDate = t.date.toISOString().split('T')[0];
+        latestIncomeAmount = t.amount;
+        latestIncomeSource = t.sourceOrCategory;
+      }
+    } else if (t.type.toLowerCase() === 'expense') {
+      totalExpense += t.amount;
+    }
+  }
+  const netRevenue = totalIncome - totalExpense;
+
   const trainerRegistrations = rawTrainers.map((tr) => ({
     id: tr.id,
     name: tr.name,
@@ -475,6 +517,61 @@ export async function getComprehensiveOperationsSnapshot(
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  // Group recent leads by training track
+  const recentByTrack = {
+    manhattan: [] as Array<{ name: string; phone: string; date: string }>,
+    blueYonder: [] as Array<{ name: string; phone: string; date: string }>,
+    sap: [] as Array<{ name: string; phone: string; date: string }>,
+    other: [] as Array<{ name: string; course: string; phone: string; date: string }>,
+    totalRecent: 0,
+  };
+
+  const sampleRecent = allLeads.slice(0, 12);
+  recentByTrack.totalRecent = sampleRecent.length;
+
+  for (const l of sampleRecent) {
+    const cLower = (l.course || '').toLowerCase();
+    const entry = { name: l.name, phone: l.phone, date: l.dateOfEntry ? l.dateOfEntry.split('T')[0] : 'Recent' };
+    if (cLower.includes('blue yonder') || cLower.includes('jda') || cLower.includes('redprairie')) {
+      recentByTrack.blueYonder.push(entry);
+    } else if (cLower.includes('manhattan') || cLower.includes('wms') || cLower.includes('proactive') || cLower.includes('active')) {
+      recentByTrack.manhattan.push(entry);
+    } else if (cLower.includes('sap') || cLower.includes('s/4hana') || cLower.includes('ewm') || cLower.includes('scm')) {
+      recentByTrack.sap.push(entry);
+    } else {
+      recentByTrack.other.push({ ...entry, course: l.course });
+    }
+  }
+
+  // Prime conversion opportunity from call notes & transcripts
+  const conversionPool = allLeads.filter(
+    (l) => l.notes && l.notes.trim().length > 0 && l.status !== 'Resolved' && l.contactStatus !== 'Lost'
+  );
+
+  const demoCandidate = conversionPool.find((l) => {
+    const n = (l.notes || '').toLowerCase();
+    return n.includes('demo') || n.includes('conduct') || n.includes('in 2 days') || n.includes('upcoming');
+  });
+
+  const budgetCandidate = conversionPool.find((l) => {
+    const n = (l.notes || '').toLowerCase();
+    return (n.includes('800') || n.includes('usd') || n.includes('good to go') || n.includes('price')) && !n.includes('not okay');
+  });
+
+  const selectedTarget = demoCandidate || budgetCandidate || conversionPool[0] || null;
+  const primeConversionOpportunity = selectedTarget
+    ? {
+        name: selectedTarget.name,
+        course: selectedTarget.course,
+        notes: selectedTarget.notes || '',
+        phone: selectedTarget.phone,
+        due: selectedTarget.followUpDate,
+        reason: demoCandidate
+          ? 'Demo session urgently requested within 2 days; high purchase intent.'
+          : 'Agreed on budget and actively engaging with our curriculum.',
+      }
+    : null;
+
   return {
     allLeads,
     latestEnquiries,
@@ -488,6 +585,16 @@ export async function getComprehensiveOperationsSnapshot(
       totalTransactions: rawTransactions.length,
       topCountries,
       topCourses,
+      finance: {
+        totalIncome,
+        totalExpense,
+        netRevenue,
+        latestIncomeDate,
+        latestIncomeAmount,
+        latestIncomeSource,
+      },
+      recentByTrack,
+      primeConversionOpportunity,
     },
   };
 }

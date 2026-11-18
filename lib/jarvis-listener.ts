@@ -672,10 +672,18 @@ function spawnWakeWordRecognition(): any {
       if (err === 'no-speech' || err === 'aborted') {
         return;
       }
-      // Fatal background errors: do NOT respawn 5x/sec without permission or network
-      if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' || err === 'network') {
+      // Fatal background errors: only shut down when user explicitly denies microphone
+      if (err === 'not-allowed') {
         isWakeWordActive = false;
         clearTimeout(wakeWordRestartTimer);
+      } else if (err === 'service-not-allowed' || err === 'network' || err === 'audio-capture') {
+        // Transient network or audio-capture flutter: schedule restart with backoff
+        clearTimeout(wakeWordRestartTimer);
+        wakeWordRestartTimer = setTimeout(() => {
+          if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
+            spawnWakeWordRecognition();
+          }
+        }, 1500);
       }
       if (wakeWordErrorCallback) {
         wakeWordErrorCallback(e);
@@ -688,23 +696,13 @@ function spawnWakeWordRecognition(): any {
         return;
       }
 
-      if (!wakeGotResult && Date.now() - wakeStartedAt < 1500) {
-        wakeConsecutiveErrors++;
-        if (wakeConsecutiveErrors >= 3) {
-          isWakeWordActive = false;
-          if (wakeWordErrorCallback) {
-            wakeWordErrorCallback({ error: 'service-unavailable' });
-          }
-          return;
-        }
-      }
-
+      // Smooth background restart (Chrome naturally ends idle recognition cycles on silence)
       clearTimeout(wakeWordRestartTimer);
       wakeWordRestartTimer = setTimeout(() => {
         if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
           spawnWakeWordRecognition();
         }
-      }, 250);
+      }, 300);
     };
 
     recognition.start();

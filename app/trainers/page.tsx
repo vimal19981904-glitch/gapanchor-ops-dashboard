@@ -197,7 +197,7 @@ export default function TrainersFullPage() {
                 setTrainerToEdit(null);
                 setModalOpen(true);
               }}
-              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white shadow-md shadow-indigo-500/20 transition-all cursor-pointer whitespace-nowrap"
+              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer whitespace-nowrap active:scale-95"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span>Add Staff</span>
@@ -206,9 +206,9 @@ export default function TrainersFullPage() {
             <button
               onClick={handleSyncWorkWithUs}
               disabled={syncing}
-              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 border border-indigo-500/40 transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap"
+              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border border-white/15 bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/25 transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap backdrop-blur-xl shadow-sm active:scale-95"
             >
-              <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${syncing ? 'animate-spin text-indigo-400' : 'text-indigo-400'}`} />
+              <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${syncing ? 'animate-spin text-slate-300' : 'text-slate-300'}`} />
               <span>{syncing ? 'Syncing...' : 'Sync Outlook'}</span>
             </button>
 

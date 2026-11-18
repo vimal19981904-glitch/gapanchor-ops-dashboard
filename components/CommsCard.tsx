@@ -129,10 +129,37 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
             <h4 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
               Enquiry Threads & Actions
             </h4>
-            <div className="flex items-center gap-1 p-1 rounded-lg border border-border" style={{ background: 'var(--surface-0)' }}>
-              <button onClick={() => handleFilterChange('all')} className={`text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'all' ? 'bg-surface-2 text-primary shadow-sm border border-border' : 'text-tertiary hover:text-secondary'}`}>All</button>
-              <button onClick={() => handleFilterChange('training')} className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'training' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30' : 'text-tertiary hover:text-secondary'}`}>Training</button>
-              <button onClick={() => handleFilterChange('job_support')} className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-bold transition-colors ${typeFilter === 'job_support' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'text-tertiary hover:text-secondary'}`}>Job Support</button>
+            <div className="flex items-center gap-1 p-0.5 rounded-full border border-white/10 bg-slate-900/60 backdrop-blur-xl">
+              <button
+                onClick={() => handleFilterChange('all')}
+                className={`text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  typeFilter === 'all'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => handleFilterChange('training')}
+                className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  typeFilter === 'training'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                }`}
+              >
+                Training
+              </button>
+              <button
+                onClick={() => handleFilterChange('job_support')}
+                className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+                  typeFilter === 'job_support'
+                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                }`}
+              >
+                Job Support
+              </button>
             </div>
           </div>
 
@@ -195,9 +222,9 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                       <button
                         onClick={() => openAssignModal(enq)}
                         title={enq.assignedToName ? `Currently assigned to ${enq.assignedToName}. Click to reassign.` : "Assign lead to employee"}
-                        className="flex items-center justify-center gap-1.5 min-w-[90px] px-3 py-1 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-200 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                        className="flex items-center justify-center gap-1.5 min-w-[90px] px-3 py-1 rounded-xl border border-white/15 bg-white/[0.04] text-slate-200 hover:text-white hover:bg-white/[0.08] hover:border-white/25 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
                       >
-                        <UserCheck size={13} className="text-cyan-400 shrink-0" />
+                        <UserCheck size={13} className="text-slate-300 shrink-0" />
                         <span>{enq.assignedToName ? 'Reassign' : 'Assign'}</span>
                       </button>
                     </div>

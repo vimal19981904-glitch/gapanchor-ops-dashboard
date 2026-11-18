@@ -278,7 +278,7 @@ export function JarvisVoiceModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-[fadeIn_0.2s_ease]">
-      <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border border-cyan-500/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col items-center">
+      <div className="relative w-full max-w-lg bg-black border border-white/15 rounded-3xl p-6 shadow-[0_0_50px_rgba(0,0,0,0.85)] flex flex-col items-center">
         {/* Top Header */}
         <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -600,7 +600,7 @@ export function JarvisVoiceModal({
                 type="button"
                 onClick={handleManualSendPrompt}
                 disabled={!transcript.trim()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 disabled:opacity-40 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl disabled:opacity-40 cursor-pointer active:scale-95"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Send Prompt</span>
@@ -622,7 +622,7 @@ export function JarvisVoiceModal({
               <button
                 type="button"
                 onClick={startListeningForUserPrompt}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-cyan-500/20 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl cursor-pointer active:scale-95"
               >
                 <Mic className="w-3.5 h-3.5" />
                 <span>Ask Another Question</span>

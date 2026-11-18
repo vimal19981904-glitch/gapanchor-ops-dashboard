@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listCalendarEvents, createCalendarEvent } from '@/lib/googleCalendar';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { DEMO_CALENDAR_EVENTS } from '@/lib/demoDataMasker';
 
 export async function GET(request: NextRequest) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        events: DEMO_CALENDAR_EVENTS,
+        connected: false,
+        isDemo: true,
+      });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const timeMin = searchParams.get('timeMin') || undefined;
     const timeMax = searchParams.get('timeMax') || undefined;

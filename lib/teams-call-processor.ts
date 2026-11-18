@@ -104,7 +104,7 @@ export function parseVttTranscript(vttContent: string): TranscriptSegment[] {
 /**
  * Computes call duration and candidate talk-time percentage
  */
-export function computeTalkTimeMetrics(segments: TranscriptSegment[], hostName: string = 'Sam') {
+export function computeTalkTimeMetrics(segments: TranscriptSegment[], hostName: string = 'GapAnchor Team') {
   if (!segments || segments.length === 0) {
     return { durationMinutes: 0, candidateTalkPct: 50 };
   }

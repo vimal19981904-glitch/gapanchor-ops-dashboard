@@ -39,14 +39,14 @@ async function runGeminiGenerateContent(
     throw new Error('GEMINI_API_KEY is not configured in environment or provided in request.');
   }
 
-  // Prioritize previously verified working models for zero trial latency
+  // Prioritize verified active models for zero trial latency
   const modelCandidates = [
     cachedWorkingModel,
     'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
+    'gemini-3.8-flash',
     requestedModel,
     'gemini-flash-latest',
-    'gemini-2.5-flash-lite',
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   let lastErrorText = '';

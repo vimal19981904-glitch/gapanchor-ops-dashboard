@@ -95,18 +95,15 @@
   .badge-processed { @apply bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm shadow-cyan-500/10; }
   .badge-open { @apply bg-blue-500/15 text-blue-300 border border-blue-500/35 shadow-sm shadow-blue-500/10; }
 
-  /* ─── Apple Style Glossy Boxy Buttons ───────────────────────── */
+  /* ─── Apple Style Glossy Boxy Buttons (Image 2 Reference Style) ───────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition-all duration-200 hover:shadow-brand-500/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] border border-white/25 px-4 py-2 text-xs font-bold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl transition-all duration-200 hover:from-white/[0.24] hover:to-white/[0.10] hover:border-white/35 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-bold transition-all duration-200 hover:bg-surface-2 hover:border-border-secondary active:scale-[0.98] disabled:opacity-50;
-    color: var(--text-primary);
-    background: var(--surface-1);
-    backdrop-filter: blur(12px);
+    @apply inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-slate-300 bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:bg-white/[0.08] hover:border-white/25 hover:text-white active:scale-[0.98] disabled:opacity-50;
   }
   .btn-process {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 px-4 py-2 text-xs font-extrabold text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl transition-all duration-200 hover:from-white/[0.28] hover:to-white/[0.12] hover:border-white/40 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ─── Payment Status Indicator Dots ────────────────────────── */

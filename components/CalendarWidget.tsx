@@ -210,20 +210,19 @@ export default function CalendarWidget() {
           {!status.connected && (
             <button
               onClick={handleConnectGoogle}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold border border-white/20 bg-gradient-to-b from-white/[0.12] to-white/[0.04] hover:from-white/[0.18] hover:to-white/[0.08] text-slate-200 transition-all cursor-pointer backdrop-blur-xl active:scale-95"
               title="Connect real Google Calendar via OAuth2"
             >
-              <Sparkles size={13} />
+              <Sparkles size={13} className="text-slate-300" />
               <span>Connect Google</span>
             </button>
           )}
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold border border-border/80 bg-surface-2 hover:bg-surface-3 transition-colors cursor-pointer"
-            style={{ color: 'var(--text-primary)' }}
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white border border-white/25 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl transition-all cursor-pointer active:scale-95"
           >
-            <Plus size={13} className="text-cyan-400" />
+            <Plus size={13} />
             <span>New Event</span>
           </button>
 
@@ -239,7 +238,7 @@ export default function CalendarWidget() {
 
           <Link
             href="/calendar"
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all no-underline"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all no-underline active:scale-95"
           >
             <span>View All</span>
             <ChevronRight size={13} />
@@ -274,7 +273,7 @@ export default function CalendarWidget() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/25 transition-all"
+            className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
           >
             <Plus size={13} /> Add an Event
           </button>
@@ -344,7 +343,7 @@ export default function CalendarWidget() {
                       href={cleanTeamsMeetingUrl(event.joinUrl) || event.joinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 hover:text-white shadow-sm transition-all no-underline shrink-0 ml-auto"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-black bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 text-slate-200 hover:text-white shadow-sm transition-all no-underline shrink-0 ml-auto active:scale-95"
                       title={`Join ${platformBadge.label} Meeting`}
                     >
                       <span>JOIN</span>

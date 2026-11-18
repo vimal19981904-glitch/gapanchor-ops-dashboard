@@ -600,7 +600,7 @@ export default function JobSupportModal({
                           type="button"
                           onClick={() => handleGenerateInvoice(row, idx)}
                           disabled={generatingInvoiceIndex === idx}
-                          className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 rounded-lg text-indigo-300 text-[11px] font-bold cursor-pointer"
+                          className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 rounded-xl text-[11px] font-bold cursor-pointer transition-all shadow-sm active:scale-95"
                         >
                           <FileText className="w-3.5 h-3.5" />
                           <span>Invoice</span>
@@ -645,7 +645,7 @@ export default function JobSupportModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-extrabold shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-60"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white text-xs font-extrabold shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl cursor-pointer disabled:opacity-60 active:scale-95"
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>{loading ? 'Saving…' : 'Save Session'}</span>

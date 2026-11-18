@@ -183,7 +183,7 @@ export default function TrainingOpsPage() {
           <div className="flex items-center gap-2.5 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
             <button
               onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Session</span>
@@ -193,7 +193,7 @@ export default function TrainingOpsPage() {
             <button
               onClick={handleSyncOutlook}
               disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all disabled:opacity-60 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing…' : 'Sync'}</span>
@@ -362,7 +362,7 @@ export default function TrainingOpsPage() {
                           <div className="pt-1 flex items-center justify-end">
                             <button
                               onClick={() => handleOpenEditModal(session)}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Edit Training Session</span>
@@ -457,7 +457,7 @@ export default function TrainingOpsPage() {
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <button
                               onClick={() => handleOpenEditModal(session)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600/90 hover:bg-cyan-500 text-white text-xs font-bold transition-all cursor-pointer ml-auto shadow-md shadow-cyan-500/10"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer ml-auto active:scale-95"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Edit Session</span>

@@ -3,6 +3,7 @@ import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { extractTextFromDocx } from '@/lib/docx-extractor';
 import { extractTranscriptMetadata } from '@/lib/bookings-transcript-matcher';
+import { calculateTalkTime } from '@/lib/transcript-ai-analyzer';
 
 export interface TranscriptRecord {
   id: string;
@@ -202,6 +203,7 @@ export async function getTranscriptKnowledgeSnapshot(forceRefresh = false): Prom
           if (rawContent && rawContent.length > 50) {
             const meta = extractTranscriptMetadata(rawContent, file);
             const candName = meta.customerName !== 'Unknown Candidate' ? meta.customerName : file.replace(/\.(docx|vtt|txt)$/i, '');
+            const talkMetrics = calculateTalkTime(rawContent, candName);
 
             // Avoid duplicate name if already present in records
             const alreadyInRecords = records.some(
@@ -216,8 +218,8 @@ export async function getTranscriptKnowledgeSnapshot(forceRefresh = false): Prom
                 course: 'Supply Chain Training',
                 score: 7,
                 callDate: meta.meetingDateText || new Date(stat.mtimeMs).toISOString().split('T')[0],
-                durationMinutes: meta.durationMinutes,
-                candidateTalkPct: 50,
+                durationMinutes: talkMetrics.durationMinutes || meta.durationMinutes || 15,
+                candidateTalkPct: talkMetrics.candidateTalkPct,
                 need: 'Extracted from local transcript file',
                 budget: 'Pending review',
                 timeline: 'Recent call',

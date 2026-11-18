@@ -165,15 +165,15 @@ export default function TrainersCard({ onRefreshParent }: TrainersCardProps) {
           </div>
         </div>
 
-        {/* Header Actions */}
+        {/* Header Actions (Image 2 Reference Style) */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleSyncWorkWithUs}
             disabled={syncing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/15 bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/25 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 backdrop-blur-xl"
             title="Sync applications from Outlook Work With Us"
           >
-            <RefreshCw size={12} className={syncing ? 'animate-spin text-indigo-400' : 'text-indigo-400'} />
+            <RefreshCw size={12} className={syncing ? 'animate-spin text-slate-300' : 'text-slate-300'} />
             <span>{syncing ? 'Syncing...' : 'Sync'}</span>
           </button>
 
@@ -182,7 +182,7 @@ export default function TrainersCard({ onRefreshParent }: TrainersCardProps) {
               setEditingTrainer(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white border border-white/25 text-xs font-bold transition-all shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl cursor-pointer active:scale-95"
           >
             <Plus size={13} />
             <span>Add Staff</span>
@@ -190,7 +190,7 @@ export default function TrainersCard({ onRefreshParent }: TrainersCardProps) {
 
           <Link
             href="/trainers"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-border text-xs font-bold transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.10] to-white/[0.04] hover:from-white/[0.16] hover:to-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 text-xs font-bold transition-all shadow-sm backdrop-blur-xl cursor-pointer no-underline active:scale-95"
             title="Open full page view with Donut Chart and all staff analytics"
           >
             <Maximize2 size={13} />
@@ -201,35 +201,43 @@ export default function TrainersCard({ onRefreshParent }: TrainersCardProps) {
 
       {/* 2. Filters & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-        <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-border text-xs font-bold overflow-x-auto">
+        <div className="flex items-center p-0.5 rounded-full bg-slate-900/60 border border-white/10 text-xs font-bold overflow-x-auto backdrop-blur-xl">
           <button
             onClick={() => setActiveRoleFilter('All')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-              activeRoleFilter === 'All' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap duration-200 active:scale-95 ${
+              activeRoleFilter === 'All'
+                ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
             }`}
           >
             All
           </button>
           <button
             onClick={() => setActiveRoleFilter('Trainer')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-              activeRoleFilter === 'Trainer' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap duration-200 active:scale-95 ${
+              activeRoleFilter === 'Trainer'
+                ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
             }`}
           >
             Trainers
           </button>
           <button
             onClick={() => setActiveRoleFilter('Employee')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-              activeRoleFilter === 'Employee' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap duration-200 active:scale-95 ${
+              activeRoleFilter === 'Employee'
+                ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
             }`}
           >
             Job Support
           </button>
           <button
             onClick={() => setActiveRoleFilter('Both')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-              activeRoleFilter === 'Both' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap duration-200 active:scale-95 ${
+              activeRoleFilter === 'Both'
+                ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
             }`}
           >
             Dual Role

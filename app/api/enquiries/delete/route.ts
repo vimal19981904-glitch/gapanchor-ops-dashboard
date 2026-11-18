@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isDemoSession } from '@/lib/demoInterceptor';
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoSession()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Record deletion simulated in demo showcase.',
+      });
+    }
+
     const body = await request.json();
     const targetId = body.enquiryId || body.recordId || body.id;
 

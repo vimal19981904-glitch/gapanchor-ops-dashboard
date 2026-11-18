@@ -8,6 +8,8 @@ import path from 'path';
 import os from 'os';
 import { writeFile } from 'fs/promises';
 import { cookies } from 'next/headers';
+import { isDemoSession } from '@/lib/demoInterceptor';
+import { maskEnquiriesForDemo } from '@/lib/demoDataMasker';
 
 const execPromise = util.promisify(exec);
 
@@ -71,12 +73,16 @@ export async function GET(request: Request) {
       uniqueCountries: uniqueCountriesCount,
     };
 
+    const isDemo = isDemoSession() || sessionUser?.role === 'DEMO' || sessionUser?.accountType === 'demo';
+    const finalEnquiries = isDemo ? maskEnquiriesForDemo(enquiries) : enquiries;
+
     return NextResponse.json({
       success: true,
       total,
-      enquiries,
+      enquiries: finalEnquiries,
       lastSynced: config?.lastSynced || null,
       summary: liveSummary,
+      isDemo,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -296,6 +302,15 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    if (isDemoSession()) {
+      const body = await request.json().catch(() => ({}));
+      return NextResponse.json({
+        success: true,
+        message: 'Action simulated in demo mode.',
+        enquiry: { id: body?.enquiryId, ...body },
+      });
+    }
+
     const body = await request.json();
     const { enquiryId, leadQuality, contactStatus, status, notes, directEnquiry } = body;
 

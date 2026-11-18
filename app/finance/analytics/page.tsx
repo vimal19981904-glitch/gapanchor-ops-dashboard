@@ -444,7 +444,7 @@ export default function FinanceAnalyticsPage() {
           <button
             onClick={handleQuickSyncStatement}
             disabled={syncing}
-            className="px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:opacity-95 text-white font-extrabold text-[11px] sm:text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer disabled:opacity-50"
+            className="px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white font-extrabold text-[11px] sm:text-xs flex items-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 active:scale-95"
             title="Auto-sync Account_Statement.xlsx"
           >
             <FileSpreadsheet size={14} className="sm:w-[15px] sm:h-[15px]" />
@@ -1378,7 +1378,7 @@ export default function FinanceAnalyticsPage() {
                               setSelectedTx(tx);
                               setIsDetailOpen(true);
                             }}
-                            className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
+                            className="py-1.5 px-3 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
                           >
                             <Eye size={12} />
                             <span>Details</span>

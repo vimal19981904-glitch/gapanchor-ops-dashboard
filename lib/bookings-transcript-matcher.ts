@@ -152,11 +152,41 @@ export function extractTranscriptMetadata(rawTranscript: string, fallbackFileNam
     }
   }
 
-  // 2. Parse Duration (e.g. "1m 24s" or "24m 10s" or "01:24")
+  // 2. Parse Duration (e.g. "1m 24s", "24m 10s", or VTT/transcript timestamp range)
   let durationMinutes = 1;
-  const minMatch = durationLine.match(/(\d+)\s*m/i);
+  const minMatch = durationLine.match(/(\d+)\s*m/i) || rawTranscript.slice(0, 500).match(/(\d+)\s*m\b/i);
   if (minMatch) {
     durationMinutes = Math.max(1, parseInt(minMatch[1], 10));
+  } else {
+    // Check for VTT timestamps: e.g. 00:18:45.123
+    const vttRegex = /(\d{2}):(\d{2}):(\d{2})\.\d{3}\s*(?:-->|--&gt;)\s*(\d{2}):(\d{2}):(\d{2})\.\d{3}/g;
+    let vttMatch: RegExpExecArray | null = null;
+    let lastVtt: RegExpExecArray | null = null;
+    while ((vttMatch = vttRegex.exec(rawTranscript)) !== null) {
+      lastVtt = vttMatch;
+    }
+    if (lastVtt) {
+      const hours = parseInt(lastVtt[4], 10);
+      const mins = parseInt(lastVtt[5], 10);
+      const secs = parseInt(lastVtt[6], 10);
+      durationMinutes = Math.max(1, Math.round(hours * 60 + mins + secs / 60));
+    } else {
+      // Check for mm:ss or hh:mm:ss timestamps throughout transcript
+      const docxTimeRegex = /\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/g;
+      let dMatch: RegExpExecArray | null = null;
+      let lastD: RegExpExecArray | null = null;
+      while ((dMatch = docxTimeRegex.exec(rawTranscript)) !== null) {
+        lastD = dMatch;
+      }
+      if (lastD) {
+        const h = lastD[1] ? parseInt(lastD[1], 10) : 0;
+        const m = parseInt(lastD[2], 10);
+        const total = h * 60 + m;
+        if (total > 0 && total < 300) {
+          durationMinutes = Math.max(1, total);
+        }
+      }
+    }
   }
 
   // 3. Extract Dialogue Text (excluding start/stop markers)

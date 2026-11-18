@@ -79,14 +79,14 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <Link
               href="/training"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition-all cursor-pointer no-underline shrink-0"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.10] to-white/[0.04] hover:from-white/[0.16] hover:to-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
             >
               <Maximize2 size={12} />
               <span>Intelligence Deck</span>
             </Link>
             <button
               onClick={onOpenModal}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
             >
               <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
               <span>Add Session</span>
