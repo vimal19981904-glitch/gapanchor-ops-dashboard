@@ -712,6 +712,58 @@ export async function savePipelinePushedTimestamps(
   }
 }
 
+export type PipelineStageKey =
+  | 'no_plan'
+  | 'uncontacted'
+  | 'aware'
+  | 'evaluating'
+  | 'negotiating'
+  | 'committed'
+  | 'lost';
+
+export function resolvePipelineStage(lead: ComprehensiveLeadProfile): PipelineStageKey {
+  const cStatus = (lead.contactStatus || '').trim().toLowerCase();
+  const sStatus = (lead.status || '').trim().toLowerCase();
+
+  // 1. Lost
+  if (cStatus === 'lost' || sStatus === 'lost' || cStatus === 'not interested') return 'lost';
+
+  // 2. Committed / Converted
+  if (
+    cStatus === 'converted' ||
+    sStatus === 'committed' ||
+    (sStatus === 'resolved' && cStatus === 'converted')
+  ) {
+    return 'committed';
+  }
+
+  // 3. Negotiating vs Evaluating (under Talked)
+  if (sStatus === 'negotiating') return 'negotiating';
+  if (sStatus === 'evaluating') return 'evaluating';
+
+  if (cStatus === 'talked') {
+    if (lead.score && lead.score >= 7) {
+      return 'negotiating';
+    }
+    return 'evaluating';
+  }
+
+  // 4. Aware (In Touch)
+  if (cStatus === 'in touch') return 'aware';
+  if (cStatus === 'future') return 'evaluating';
+
+  // 5. Uncontacted vs No Plan (Pending)
+  if (cStatus === 'pending' || !cStatus) {
+    if (sStatus === 'no_plan') return 'no_plan';
+    if (lead.email || lead.lastMessage) {
+      return 'uncontacted';
+    }
+    return 'no_plan';
+  }
+
+  return 'no_plan';
+}
+
 /**
  * Executes a pipeline action on behalf of Jarvis:
  * Resolves target leads, updates database state, and prepares spoken confirmation.
@@ -724,98 +776,99 @@ export async function executeJarvisPipelineAction(
   const allLeads = await getComprehensiveLeadContext(prisma);
   const now = new Date();
 
-  // ─── 0. Trigger Alert for Pipeline Dues (> 3 Days Overdue) ───
+  // ─── 0. Trigger Alert for Pipeline Dues (> 3 Days Overdue in target 4 stages) ───
   if (actionType === 'trigger_pipeline_due_alerts') {
     const pushedTimestamps = await getPipelinePushedTimestamps(prisma);
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
-    // Active pipeline candidates (in evaluating, negotiating, aware, uncontacted, or with follow-up dates)
-    const activeCandidates = allLeads.filter(
+    // Filter valid named leads
+    const validLeads = allLeads.filter(
       (l) =>
         l.name &&
         l.name.trim().length > 0 &&
         l.name.length < 60 &&
         !l.name.includes('<') &&
         !l.name.includes('&nbsp;') &&
-        !l.name.includes('@') &&
-        (['evaluating', 'negotiating', 'aware', 'uncontacted', 'no_plan'].includes(l.status?.toLowerCase() || '') ||
-          ['Pending', 'Talked', 'In Touch'].includes(l.contactStatus) ||
-          Boolean(pushedTimestamps[l.id]))
+        !l.name.includes('@')
     );
 
-    // Identify overdue prospects (> 3 days)
-    const overdueLeads: PipelineDueAlertLead[] = [];
-    const nonOverdueActiveLeads: PipelineDueAlertLead[] = [];
+    // Active pipeline board leads: top 10 recent + pushed + negotiating/evaluating/committed
+    const top10 = validLeads.slice(0, 10);
+    const activePipelineSet = new Set<string>();
+    top10.forEach((l) => activePipelineSet.add(l.id));
+    Object.keys(pushedTimestamps).forEach((id) => activePipelineSet.add(id));
+    validLeads.forEach((l) => {
+      if (['negotiating', 'evaluating', 'committed'].includes(l.status || '')) {
+        activePipelineSet.add(l.id);
+      }
+    });
 
-    for (const lead of activeCandidates) {
+    const pipelineLeads = validLeads.filter((l) => activePipelineSet.has(l.id));
+
+    // Target stages strictly specified: No plan yet, Uncontacted, Aware, Evaluating
+    const targetStages = new Set<PipelineStageKey>(['no_plan', 'uncontacted', 'aware', 'evaluating']);
+    const overdueLeads: PipelineDueAlertLead[] = [];
+
+    for (const lead of pipelineLeads) {
+      const stage = resolvePipelineStage(lead);
+      if (!targetStages.has(stage)) continue;
+
       const pushIso = pushedTimestamps[lead.id] || lead.dateOfEntry;
       if (!pushIso) continue;
-      const pushTime = new Date(pushIso).getTime();
-      const elapsedMs = now.getTime() - pushTime;
+
+      const elapsedMs = now.getTime() - new Date(pushIso).getTime();
       const elapsedDays = Math.max(1, Math.round(elapsedMs / (1000 * 60 * 60 * 24)));
 
-      const item: PipelineDueAlertLead = {
-        id: lead.id,
-        name: lead.name,
-        leadCode: lead.leadCode,
-        course: lead.course,
-        phone: lead.phone,
-        email: lead.email,
-        stage: lead.status || lead.contactStatus || 'Active',
-        pushedAt: pushIso,
-        elapsedDays,
-      };
-
       if (elapsedMs >= THREE_DAYS_MS) {
-        overdueLeads.push(item);
-      } else {
-        nonOverdueActiveLeads.push(item);
+        overdueLeads.push({
+          id: lead.id,
+          name: lead.name,
+          leadCode: lead.leadCode,
+          course: lead.course,
+          phone: lead.phone,
+          email: lead.email,
+          stage,
+          pushedAt: pushIso,
+          elapsedDays,
+        });
       }
     }
 
-    // Sort by longest waiting first
     overdueLeads.sort((a, b) => b.elapsedDays - a.elapsedDays);
 
-    const alertTargets = overdueLeads.length > 0 ? overdueLeads : nonOverdueActiveLeads.slice(0, 5);
-    const count = alertTargets.length;
-    const isStrictBreach = overdueLeads.length > 0;
+    const count = overdueLeads.length;
 
-    // Dispatch Mobile Push (NTFY)
-    await sendNtfyPipelineDueAlert({
-      overdueLeads: alertTargets,
-      totalCount: count,
-    });
+    if (count > 0) {
+      // Dispatch EXACTLY ONE consolidated notification to NTFY with all client details
+      await sendNtfyPipelineDueAlert({
+        overdueLeads,
+        totalCount: count,
+      });
+    }
 
-    // Dispatch Email Alert (SMTP) in background
-    sendPipelineDueAlertEmail({
-      overdueLeads: alertTargets,
-      totalCount: count,
-    }).catch((err) => console.warn('[Pipeline Due Alert] Email dispatch warning:', err?.message || err));
-
-    const sampleNames = alertTargets
-      .slice(0, 3)
-      .map((l) => `${l.name} for ${l.course}`)
+    const sampleNames = overdueLeads
+      .map((l) => l.name)
       .join(', ');
 
-    const answer = isStrictBreach
-      ? `Right away, boss! I just audited the pipeline and flagged ${count} prospect${count > 1 ? 's' : ''} that have exceeded our 3-day SLA threshold: including ${sampleNames}. I have immediately fired off high-priority mobile push notifications to NTFY and an urgent operations email so the team gets instant visibility to jump on them.`
-      : `Alert dispatched, boss! While all current pipeline leads are within the 3-day threshold, I have sent an active pipeline status notification covering our top ${count} staged prospects—including ${sampleNames}—to employee mobile push and operations email for immediate visibility.`;
+    const answer = count > 0
+      ? `Right away, boss! I audited our pipeline board across No Plan Yet, Uncontacted, Aware, and Evaluating. We have ${count} prospects who crossed the 3-day threshold: ${sampleNames}. I have dispatched a single consolidated notification with all their details to your mobile channel.`
+      : `All clear, boss! I checked all prospects across No Plan Yet, Uncontacted, Aware, and Evaluating on our pipeline board, and zero candidates have exceeded the 3-day threshold. All active deals are moving on schedule.`;
 
-    const actionAdvice = isStrictBreach
-      ? `High-priority mobile & email alerts sent for ${count} overdue prospect(s). Prioritize immediate follow-up to unblock pipeline.`
-      : `Live pipeline status alert sent to employee notification channels.`;
+    const actionAdvice = count > 0
+      ? `Dispatched single push notification for ${count} overdue candidate(s) in No Plan Yet, Uncontacted, Aware, and Evaluating.`
+      : `All pipeline candidates in target stages are within SLA limits.`;
 
     return {
       isPipelineAction: true,
       actionType: 'trigger_pipeline_due_alerts',
-      leadIds: alertTargets.map((l) => l.id),
-      leadNames: alertTargets.map((l) => l.name),
-      leadCodes: alertTargets.map((l) => l.leadCode || ''),
+      leadIds: overdueLeads.map((l) => l.id),
+      leadNames: overdueLeads.map((l) => l.name),
+      leadCodes: overdueLeads.map((l) => l.leadCode || ''),
       count,
       answer,
       actionAdvice,
       recommendedFilter: 'due_today',
-      summary: `Triggered pipeline due alert for ${count} prospect(s)`,
+      summary: `Triggered pipeline notification for ${count} prospect(s) (>3 days)`,
       pushedTimestamps,
     };
   }

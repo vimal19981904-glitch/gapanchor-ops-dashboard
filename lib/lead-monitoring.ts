@@ -59,28 +59,31 @@ export async function sendNtfyPipelineDueAlert(params: {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://dashboard-green-psi-12.vercel.app';
     const count = params.totalCount;
     const rawTitle = `Pipeline Alert: ${count} Prospect${count > 1 ? 's' : ''} Overdue (> 3 Days)`;
-    const safeTitle = '=?UTF-8?B?' + Buffer.from(rawTitle).toString('base64') + '?=';
 
     const leadSummaries = params.overdueLeads
-      .slice(0, 5)
-      .map((l) => `• ${l.name} (${l.course})`)
+      .map((l) => `• ${l.name} — ${l.course}`)
       .join('\n');
 
+    // Clean modern font styling via Markdown monospace code block + Stylized Geometric Sans Header
+    const stylizedHeader = `𝗣𝗜𝗣𝗘𝗟𝗜𝗡𝗘 𝗦𝗟𝗔 𝗕𝗥𝗘𝗔𝗖𝗛: ${count} 𝗣𝗥𝗢𝗦𝗣𝗘𝗖𝗧${count > 1 ? '𝗦' : ''} 𝗣𝗘𝗡𝗗𝗜𝗡𝗚 > 3 𝗗𝗔𝗬𝗦`;
+
     const message = [
-      `PIPELINE SLA BREACH: ${count} PROSPECT(S) PENDING > 3 DAYS`,
+      stylizedHeader,
       `Employees must immediately review and contact these prospects:`,
       '',
+      '```',
       leadSummaries,
-      params.overdueLeads.length > 5 ? `...and ${params.overdueLeads.length - 5} more.` : '',
+      '```',
       '',
       `Action: Open dashboard to update stages and advance enrollment.`,
-    ].filter(Boolean).join('\n');
+    ].join('\n');
 
     const res = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       headers: {
-        Title: safeTitle,
+        Title: rawTitle,
         Priority: 'urgent',
+        Markdown: 'yes',
         Click: `${baseUrl}/enquiries`,
       },
       body: message,
