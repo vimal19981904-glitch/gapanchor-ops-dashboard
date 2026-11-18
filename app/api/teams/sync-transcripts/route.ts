@@ -120,6 +120,54 @@ export async function POST(request: NextRequest) {
             },
           });
           if (alreadyLogged) {
+            // If already logged but lacks the comprehensive 9-section dossier, upgrade it in place!
+            const needsDossierUpgrade =
+              !alreadyLogged.customerExperience ||
+              alreadyLogged.customerExperience.length < 2500 ||
+              !alreadyLogged.customerExperience.includes('1. Candidate Profile');
+
+            if (needsDossierUpgrade) {
+              try {
+                let fullText = '';
+                if (lower.endsWith('.docx')) {
+                  const buf = fs.readFileSync(filePath);
+                  fullText = extractTextFromDocx(buf);
+                } else {
+                  fullText = fs.readFileSync(filePath, 'utf-8');
+                }
+                if (fullText && fullText.length > 50) {
+                  const candidateNameFromFile = baseNameExact
+                    .replace(/^(?:IT support\s*[_&]\s*Training|Training|Session|Meeting)\s*-\s*/i, '')
+                    .replace(/-\d{8}_\d{6}.*$/, '')
+                    .replace(/-Meeting Transcript.*$/i, '')
+                    .replace(/_\d+/g, '')
+                    .trim();
+
+                  const resolvedName =
+                    (candidateNameFromFile && candidateNameFromFile.length > 1 && !/transcript|meeting/i.test(candidateNameFromFile))
+                      ? candidateNameFromFile
+                      : 'Candidate';
+
+                  const refreshedAnalysis = await analyzeTranscript(fullText, resolvedName);
+                  await prisma.leadCall.update({
+                    where: { id: alreadyLogged.id },
+                    data: {
+                      customerExperience: refreshedAnalysis.customerExperience,
+                      clientNeed: refreshedAnalysis.clientNeed,
+                      budget: refreshedAnalysis.budget,
+                      timeline: refreshedAnalysis.timeline,
+                      objections: refreshedAnalysis.objections,
+                      counterPitch: refreshedAnalysis.counterPitch,
+                      nextAction: refreshedAnalysis.nextAction,
+                      score: refreshedAnalysis.score,
+                    },
+                  });
+                }
+              } catch (upgradeErr) {
+                console.warn('[Sync Transcripts] In-place dossier upgrade error:', upgradeErr);
+              }
+            }
+
             processedMeetingNames.add(baseMeetingKey);
             continue;
           }
