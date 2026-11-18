@@ -100,6 +100,8 @@ export function CustomerExperienceTab({
   const handleToggleActionStatus = async (itemText: string, currentStatus: string) => {
     const isCurrentlyDone = /done|completed|confirmed/i.test(currentStatus);
     const newStatus = isCurrentlyDone ? 'Pending' : 'Done';
+    const cleanItem = itemText.trim();
+    if (!cleanItem) return;
 
     const lines = cxText.split(/\r?\n/);
     let changed = false;
@@ -107,22 +109,29 @@ export function CustomerExperienceTab({
     const newLines = lines.map((line) => {
       if (changed) return line;
       const cleanLine = line.trim();
-      const cleanItem = itemText.trim();
 
-      // Check if line contains the action item text (or core substring)
-      if (cleanLine.includes(cleanItem) || cleanItem.includes(cleanLine.split('\t')[1] || cleanLine.split('|')[2] || '')) {
+      // Must match the actual action item text directly
+      if (
+        cleanLine.includes(cleanItem) ||
+        (cleanItem.length > 8 && cleanLine.toLowerCase().includes(cleanItem.toLowerCase()))
+      ) {
         changed = true;
-        // Replace current status with new status
-        if (cleanLine.includes(currentStatus)) {
+        // Replace current status with new status in this exact line
+        if (line.includes(currentStatus)) {
           return line.replace(currentStatus, newStatus);
-        } else if (/pending/i.test(cleanLine)) {
+        } else if (/pending/i.test(line)) {
           return line.replace(/pending/i, newStatus);
-        } else if (/done|completed/i.test(cleanLine)) {
+        } else if (/done|completed/i.test(line)) {
           return line.replace(/done|completed/i, newStatus);
         }
       }
       return line;
     });
+
+    if (!changed) {
+      console.warn('[CustomerExperienceTab] Could not locate line matching action item:', cleanItem);
+      return;
+    }
 
     const updatedText = newLines.join('\n');
     setCxText(updatedText);
@@ -130,9 +139,9 @@ export function CustomerExperienceTab({
     try {
       if (newStatus === 'Done') {
         try { jarvisAudioFx.playSuccessChime(); } catch {}
-        toast.success(`Action marked as Done: ${itemText.slice(0, 35)}...`);
+        toast.success(`Action marked as Done: ${cleanItem.slice(0, 35)}...`);
       } else {
-        toast.info(`Action reopened as Pending: ${itemText.slice(0, 35)}...`);
+        toast.info(`Action reopened as Pending: ${cleanItem.slice(0, 35)}...`);
       }
       if (onSaveCX) {
         await onSaveCX(updatedText);
