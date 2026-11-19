@@ -106,7 +106,7 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
 
   return (
     <div className={`relative inline-block ${className}`} ref={dropdownRef}>
-      {/* ── Sleek Bell Icon Button (No card border, seamless with X close button) ── */}
+      {/* ── Sleek Bell Icon Button (Small & Compact) ── */}
       <button
         type="button"
         onClick={handleToggle}
@@ -114,35 +114,35 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
         title="Database Activity & Ops Logs"
         aria-label="Open Notifications and DB Logs"
       >
-        <Bell size={18} className="text-slate-300 group-hover:text-white transition-colors" />
+        <Bell size={15} className="text-slate-300 group-hover:text-white transition-colors" />
 
-        {/* Unread Badge — Plain White Text (Zero glowing neon) */}
+        {/* Unread Badge — Small, Neat, Centered Pill */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 text-white font-bold text-[10px] leading-none pointer-events-none select-none tracking-tight">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-cyan-500 text-slate-950 font-black text-[8.5px] leading-none flex items-center justify-center shadow-sm pointer-events-none select-none">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* ── Notification & DB Activity Popover ── */}
+      {/* ── Notification & DB Activity Popover (Centered on Mobile, No Left Overflow) ── */}
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full mt-3.5 w-[min(380px,calc(90vw-28px))] max-w-[380px] bg-[#070b14] border border-white/25 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.98)] z-[70] overflow-hidden animate-[fadeIn_0.15s_ease]"
+          className="fixed left-3 right-3 sm:left-auto sm:right-0 top-14 sm:top-full sm:mt-2.5 sm:w-[320px] max-w-[340px] mx-auto sm:mx-0 bg-[#070b14] border border-white/20 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.98)] z-[100] overflow-hidden animate-[fadeIn_0.15s_ease]"
           style={{ maxHeight: 'calc(100vh - 120px)' }}
         >
           {/* Header */}
-          <div className="p-3.5 border-b border-white/15 bg-[#0f172a] flex items-center justify-between">
+          <div className="p-2.5 sm:p-3 border-b border-white/15 bg-[#0f172a] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                <Database className="w-4 h-4" />
+              <div className="p-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <Database className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-[11px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                   <span>DB Activity Logs</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
                 </h3>
-                <p className="text-[10px] text-slate-400 font-medium">
+                <p className="text-[9.5px] text-slate-400 font-medium">
                   {notifications.length} logged operations
                 </p>
               </div>
@@ -153,40 +153,40 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
                   title="Mark all as read"
                 >
-                  <CheckCheck className="w-3.5 h-3.5" />
+                  <CheckCheck className="w-3 h-3" />
                 </button>
               )}
               {notifications.length > 0 && (
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-300 hover:bg-slate-800 transition-colors cursor-pointer"
                   title="Clear all logs"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3" />
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ml-1"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ml-0.5"
                 title="Close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             </div>
           </div>
 
           {/* Logs List */}
-          <div className="overflow-y-auto max-h-[360px] p-2 space-y-1.5 custom-scrollbar divide-y divide-white/5">
+          <div className="overflow-y-auto max-h-[280px] p-1.5 space-y-1 custom-scrollbar divide-y divide-white/5">
             {notifications.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs space-y-1">
-                <Database className="w-6 h-6 text-slate-600 mx-auto" />
-                <p className="font-semibold text-slate-300">No database events logged yet</p>
-                <p className="text-[10px] text-slate-500">
+              <div className="text-center py-6 text-slate-400 text-xs space-y-1">
+                <Database className="w-5 h-5 text-slate-600 mx-auto" />
+                <p className="font-semibold text-slate-300 text-xs">No database events logged yet</p>
+                <p className="text-[9.5px] text-slate-500">
                   Database updates, roll actions, and syncs appear here in real time.
                 </p>
               </div>
@@ -194,31 +194,31 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
               notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  className={`p-2.5 rounded-xl transition-all flex items-start gap-2.5 pt-2 ${
+                  className={`p-2 rounded-xl transition-all flex items-start gap-2 pt-1.5 ${
                     notif.read ? 'bg-slate-900/40 hover:bg-slate-900/70' : 'bg-cyan-950/20 hover:bg-cyan-950/30 border border-cyan-500/20'
                   }`}
                 >
-                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/10 shrink-0 mt-0.5">
+                  <div className="p-1 rounded-lg bg-slate-900 border border-white/10 shrink-0 mt-0.5">
                     {getCategoryIcon(notif.category)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-bold text-white truncate">
+                      <p className="text-[11px] font-bold text-white truncate">
                         {notif.title}
                       </p>
-                      <span className="text-[9.5px] font-mono text-slate-400 shrink-0">
+                      <span className="text-[9px] font-mono text-slate-400 shrink-0">
                         {formatRelativeTime(notif.timestamp)}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-300 mt-0.5 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] text-slate-300 mt-0.5 line-clamp-2 leading-snug">
                       {notif.description}
                     </p>
                   </div>
 
                   {!notif.read && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,1)] shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,1)] shrink-0 mt-1" />
                   )}
                 </div>
               ))
@@ -226,7 +226,7 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
           </div>
 
           {/* Footer */}
-          <div className="p-2.5 border-t border-white/10 bg-slate-900/70 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <div className="p-2 border-t border-white/10 bg-slate-900/70 flex items-center justify-between text-[9px] text-slate-400 font-mono">
             <span className="flex items-center gap-1 text-emerald-400 font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
               <span>Real-time DB Active</span>
