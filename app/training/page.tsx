@@ -164,19 +164,9 @@ export default function TrainingOpsPage() {
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
               </Link>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg md:text-2xl font-black tracking-tight text-white">
-                    Training Operations
-                  </h1>
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 uppercase tracking-widest">
-                    SCM Platform Cohorts
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
-                  SCM Platform Cohorts • Session Schedule • Fee & Participant Tracking
-                </p>
-              </div>
+              <h1 className="text-lg md:text-2xl font-black tracking-tight text-white">
+                GapAnchor Training Operations
+              </h1>
             </div>
             <div className="xl:hidden"><NavDrawerButton className="!w-9 !h-9" /></div>
           </div>

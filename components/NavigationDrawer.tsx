@@ -143,7 +143,7 @@ export default function NavigationDrawer({
     },
     {
       id: 'ops',
-      title: 'Training Operations',
+      title: 'GapAnchor Training Operations',
       icon: Calendar,
       action: () => handleAction(() => { window.location.href = '/training'; }),
     },
