@@ -198,9 +198,9 @@ export default function JobSupportOpsPage() {
 
         {/* KPI Cards (Training Operations Layout) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-brand-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Support</span>
-            <span className="text-sm sm:text-2xl font-black mt-1 text-cyan-400">{totalEngagements}</span>
+            <span className="text-sm sm:text-2xl font-black mt-1 text-brand-400">{totalEngagements}</span>
             <span className="text-[9px] text-slate-500 mt-0.5 truncate">1 Consultant per Client</span>
           </div>
 
@@ -235,7 +235,7 @@ export default function JobSupportOpsPage() {
                 placeholder="Search client, engineer, platform, title…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-1.5 sm:py-2 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+                className="w-full pl-10 pr-4 py-1.5 sm:py-2 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500/50"
               />
             </div>
 
@@ -303,17 +303,17 @@ export default function JobSupportOpsPage() {
                             <h3 className="font-bold text-xs text-white leading-tight">
                               {session.title}
                             </h3>
-                            <p className="text-[10.5px] text-cyan-400 font-medium mt-0.5 truncate">
+                            <p className="text-[10.5px] text-brand-400 font-medium mt-0.5 truncate">
                               Client: {clientNames}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold text-[10px]">
+                              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold text-[10px]">
                                 {session.platform}
                               </span>
                               <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-md uppercase border ${
                                 session.status === 'Completed'
                                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                                  : 'bg-brand-500/10 text-brand-400 border-brand-500/20'
                               }`}>
                                 {session.status}
                               </span>

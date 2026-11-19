@@ -391,11 +391,11 @@ export default function OpsModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/75 backdrop-blur-md z-[9999] flex items-center justify-center p-1 sm:p-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 bg-black/75 backdrop-blur-md z-[9999] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-2xl sm:rounded-3xl border border-border p-3.5 sm:p-7 animate-slide-up my-auto shadow-2xl overflow-hidden"
+        className="w-full max-w-3xl rounded-2xl sm:rounded-3xl border border-border p-3.5 sm:p-7 animate-slide-up my-2 sm:my-auto shadow-2xl overflow-hidden"
         style={{ background: '#0b1329' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -945,43 +945,39 @@ export default function OpsModal({
             )}
           </div>
 
-          {/* Modal Footer Actions (Uniform Height, Balanced Alignment) */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3.5 border-t border-border/60">
-            <div className="w-full sm:w-auto">
+          {/* Modal Footer Actions (Uniform Height, Balanced Alignment, Same Color & Size) */}
+          <div className="pt-2.5 border-t border-border/60">
+            <div className={`grid ${sessionToEdit ? 'grid-cols-3' : 'grid-cols-2'} gap-2 w-full sm:flex sm:items-center sm:justify-between`}>
               {sessionToEdit ? (
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="w-full sm:w-auto h-8 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-400 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                  className="h-8 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5"
                 >
-                  <Trash2 size={13} className="shrink-0" />
-                  <span className="whitespace-nowrap">Delete Batch Session</span>
+                  <Trash2 size={13} className="shrink-0 text-slate-400" />
+                  <span>Delete</span>
                 </button>
-              ) : (
-                <span className="text-[10px] text-tertiary block text-center sm:text-left">
-                  * Direct database persistence on save
-                </span>
-              )}
-            </div>
+              ) : <div className="hidden sm:block" />}
 
-            <div className="flex items-center gap-2 justify-end w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 sm:flex-none h-8 px-3.5 rounded-xl text-xs font-bold border border-border hover:bg-surface-2 transition-all cursor-pointer whitespace-nowrap text-center inline-flex items-center justify-center active:scale-95"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Cancel
-              </button>
+              <div className={`contents sm:flex sm:items-center sm:gap-2.5 ${!sessionToEdit ? 'col-span-2 sm:col-span-1 sm:ml-auto' : ''}`}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5"
+                >
+                  <X size={13} className="shrink-0 text-slate-400" />
+                  <span>Cancel</span>
+                </button>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none h-8 inline-flex items-center justify-center gap-1.5 px-4 rounded-xl text-xs font-extrabold bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 active:scale-95"
-              >
-                <CheckCircle size={14} className="shrink-0" />
-                <span className="whitespace-nowrap">{loading ? 'Saving...' : 'Save Session'}</span>
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <CheckCircle size={13} className="shrink-0 text-slate-400" />
+                  <span>{loading ? 'Saving...' : 'Save'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </form>

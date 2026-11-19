@@ -317,33 +317,33 @@ export default function JobSupportModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 md:p-7 max-w-3xl w-full shadow-2xl relative my-8 space-y-5">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-700/60 sm:border-amber-500/30 rounded-2xl p-3.5 sm:p-5 md:p-7 max-w-3xl w-full shadow-2xl relative my-2 sm:my-8 space-y-3 sm:space-y-4">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
-              <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 sm:pb-3.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+              <Briefcase className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-xl font-extrabold text-white">
-                {sessionToEdit ? 'Edit Job Support & Finance Session' : 'New Job Support & Finance Session'}
+              <h2 className="text-sm sm:text-lg font-extrabold text-white leading-tight">
+                {sessionToEdit ? 'Edit Job Support & Finance' : 'New Job Support & Finance'}
               </h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3.5">
           {/* Engagement Title */}
           <div>
-            <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">
+            <label className="block text-[10.5px] sm:text-xs font-bold text-slate-300 mb-1">
               Session / Engagement Title <span className="text-rose-400">*</span>
             </label>
             <input
@@ -352,20 +352,20 @@ export default function JobSupportModal({
               placeholder="e.g. Cloud Architecture Online Job Support - [Oladayo Olawepo]"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+              className="w-full h-8 sm:h-9 px-2.5 sm:px-3 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
             />
           </div>
 
           {/* Platform & Engineer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div>
-              <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">
+              <label className="block text-[10.5px] sm:text-xs font-bold text-slate-300 mb-1">
                 Target Platform <span className="text-rose-400">*</span>
               </label>
               <select
                 value={platform}
                 onChange={(e) => handlePlatformChange(e.target.value)}
-                className="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/60 cursor-pointer"
+                className="w-full h-8 sm:h-9 px-2.5 sm:px-3 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/60 cursor-pointer"
               >
                 <option value="Manhattan WMS">Manhattan WMS</option>
                 <option value="Manhattan ProActive">Manhattan ProActive</option>
@@ -378,8 +378,8 @@ export default function JobSupportModal({
             </div>
 
             <div>
-              <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">
-                Assigned Support Engineer / Consultant <span className="text-rose-400">*</span>
+              <label className="block text-[10.5px] sm:text-xs font-bold text-slate-300 mb-1">
+                Assigned Support Engineer <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -387,51 +387,51 @@ export default function JobSupportModal({
                 placeholder="Engineer Name"
                 value={engineer}
                 onChange={(e) => setEngineer(e.target.value)}
-                className="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/60"
+                className="w-full h-8 sm:h-9 px-2.5 sm:px-3 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500/60"
               />
             </div>
           </div>
 
           {/* ENGINEER FINANCIAL COMPENSATION SECTION */}
-          <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-amber-950/20 border border-amber-500/30 space-y-2.5 sm:space-y-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-amber-950/20 border border-amber-500/30 space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-black tracking-wider text-amber-300 uppercase">
+              <span className="text-[10px] sm:text-xs font-black tracking-wider text-amber-300 uppercase">
                 Engineer Financial Compensation
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
               <div>
-                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-400 mb-1">
-                  Engineer Overall Amount (₹ / $)
+                <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-400 mb-0.5 truncate">
+                  Overall (₹)
                 </label>
                 <input
                   type="text"
                   placeholder="45000"
                   value={engineerTotalCost}
                   onChange={(e) => handleEngineerCostChange(parseInputNumber(e.target.value), engineerAmountPaid)}
-                  className="w-full px-3 py-1.5 sm:py-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500"
+                  className="w-full h-8 px-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs font-mono font-bold text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-400 mb-1">
-                  Engineer Paid Amount (₹ / $)
+                <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-400 mb-0.5 truncate">
+                  Paid (₹)
                 </label>
                 <input
                   type="text"
                   placeholder="15000"
                   value={engineerAmountPaid}
                   onChange={(e) => handleEngineerCostChange(engineerTotalCost, parseInputNumber(e.target.value))}
-                  className="w-full px-3 py-1.5 sm:py-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-amber-500"
+                  className="w-full h-8 px-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-[11px] font-semibold text-slate-400 mb-1">
-                  Engineer Payable / Due (Auto-calc)
+                <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-400 mb-0.5 truncate">
+                  Payable / Due
                 </label>
-                <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-950 border border-rose-500/30 rounded-lg text-xs font-mono font-black text-rose-400">
+                <div className="w-full h-8 px-2 flex items-center bg-slate-950 border border-rose-500/30 rounded-lg text-xs font-mono font-black text-rose-400 truncate">
                   ₹ {typeof engineerAmountDue === 'number' ? engineerAmountDue.toLocaleString() : '0'}
                 </div>
               </div>
@@ -439,12 +439,12 @@ export default function JobSupportModal({
           </div>
 
           {/* CLIENT SELECTION & DETAILS */}
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-1.5 sm:space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] sm:text-xs font-bold text-slate-300">
+              <label className="text-[10.5px] sm:text-xs font-bold text-slate-300">
                 Client / Participant Selection ({participantRows.length} selected)
               </label>
-              <span className="text-[10px] text-cyan-400">Auto-updates table & counts below</span>
+              <span className="text-[10px] text-brand-400">Auto-updates table & counts below</span>
             </div>
 
             <div ref={dropdownRef} className="relative">
@@ -463,7 +463,7 @@ export default function JobSupportModal({
                     handleAddParticipant(newParticipantInput);
                   }
                 }}
-                className="w-full px-3 py-1.5 sm:px-4 sm:py-2.5 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+                className="w-full h-8 sm:h-9 px-2.5 sm:px-3 bg-slate-950/80 border border-slate-700/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
               />
 
               {dropdownOpen && availableMasterNames.length > 0 && (
@@ -487,48 +487,48 @@ export default function JobSupportModal({
           </div>
 
           {/* Session Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
             <div>
-              <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">Total Participants</label>
+              <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-300 mb-0.5 truncate">Total Clients</label>
               <input
                 type="number"
                 disabled
                 value={totalParticipants}
-                className="w-full px-3 py-1.5 sm:py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-xs font-mono text-slate-400"
+                className="w-full h-8 px-2 bg-slate-950/60 border border-slate-800 rounded-lg text-xs font-mono text-slate-400"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">Currently Participating</label>
+              <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-300 mb-0.5 truncate">Active</label>
               <input
                 type="text"
                 value={currentlyParticipating}
                 onChange={(e) => setCurrentlyParticipating(parseInputNumber(e.target.value))}
-                className="w-full px-3 py-1.5 sm:py-2 bg-slate-950 border border-slate-700/60 rounded-xl text-xs font-mono text-white"
+                className="w-full h-8 px-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs font-mono text-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">Session Date *</label>
+              <label className="block text-[9.5px] sm:text-[11px] font-semibold text-slate-300 mb-0.5 truncate">Date *</label>
               <input
                 type="date"
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-1.5 sm:py-2 bg-slate-950 border border-slate-700/60 rounded-xl text-xs text-white"
+                className="w-full h-8 px-1 sm:px-2 bg-slate-950 border border-slate-700/60 rounded-lg text-xs text-white"
               />
             </div>
           </div>
 
           {/* Location / Sandbox */}
           <div>
-            <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1">Support Mode & Location *</label>
+            <label className="block text-[10.5px] sm:text-xs font-bold text-slate-300 mb-1">Support Mode & Location *</label>
             <input
               type="text"
               required
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-950 border border-slate-700/60 rounded-xl text-xs text-white"
+              className="w-full h-8 sm:h-9 px-2.5 sm:px-3 bg-slate-950 border border-slate-700/60 rounded-xl text-xs text-white"
             />
           </div>
 
@@ -564,7 +564,7 @@ export default function JobSupportModal({
                           type="text"
                           value={row.participantName}
                           onChange={(e) => handleParticipantChange(idx, 'participantName', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-amber-500/60"
+                          className="w-full h-8 bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 text-xs text-white font-bold focus:outline-none focus:border-amber-500/60"
                         />
                       </div>
 
@@ -575,7 +575,7 @@ export default function JobSupportModal({
                             type="text"
                             value={row.amountDue}
                             onChange={(e) => handleParticipantChange(idx, 'amountDue', parseInputNumber(e.target.value))}
-                            className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-rose-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
+                            className="w-full h-8 bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 text-xs text-rose-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
                           />
                         </div>
 
@@ -585,7 +585,7 @@ export default function JobSupportModal({
                             type="text"
                             value={row.amountPaid}
                             onChange={(e) => handleParticipantChange(idx, 'amountPaid', parseInputNumber(e.target.value))}
-                            className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
+                            className="w-full h-8 bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
                           />
                         </div>
                       </div>
@@ -595,15 +595,15 @@ export default function JobSupportModal({
                           type="button"
                           onClick={() => handleGenerateInvoice(row, idx)}
                           disabled={generatingInvoiceIndex === idx}
-                          className="flex-1 inline-flex items-center justify-center gap-1 h-7 px-2.5 bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 rounded-lg text-[11px] font-bold cursor-pointer transition-all shadow-sm active:scale-95"
+                          className="flex-1 inline-flex items-center justify-center gap-1 h-8 px-2.5 bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 rounded-lg text-xs font-bold cursor-pointer transition-all shadow-sm active:scale-95"
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          <FileText className="w-3.5 h-3.5 text-slate-400" />
                           <span>Invoice</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemoveParticipant(idx)}
-                          className="h-7 w-7 inline-flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500/30 transition-colors"
+                          className="h-8 w-8 inline-flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500/30 transition-colors shrink-0"
                           title="Remove client"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -617,35 +617,38 @@ export default function JobSupportModal({
           </div>
 
           {/* Action Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-            {sessionToEdit?.id ? (
-              <button
-                type="button"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-xs font-bold transition-all cursor-pointer active:scale-95"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Session</span>
-              </button>
-            ) : <div />}
+          <div className="pt-2.5 border-t border-slate-800">
+            <div className={`grid ${sessionToEdit?.id ? 'grid-cols-3' : 'grid-cols-2'} gap-2 w-full sm:flex sm:items-center sm:justify-between`}>
+              {sessionToEdit?.id ? (
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="h-8 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Delete</span>
+                </button>
+              ) : <div className="hidden sm:block" />}
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center justify-center h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95"
-              >
-                Cancel
-              </button>
+              <div className={`contents sm:flex sm:items-center sm:gap-2.5 ${!sessionToEdit?.id ? 'col-span-2 sm:col-span-1 sm:ml-auto' : ''}`}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Cancel</span>
+                </button>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center justify-center gap-1.5 h-8 px-4 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white text-xs font-extrabold shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl cursor-pointer disabled:opacity-60 active:scale-95"
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>{loading ? 'Saving…' : 'Save Session'}</span>
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{loading ? 'Saving…' : 'Save'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </form>

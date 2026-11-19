@@ -77,7 +77,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                 <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                   Job Support Operations
                 </h2>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
                   {totalLeads} {totalLeads === 1 ? 'Engagement' : 'Engagements'}
                 </span>
               </div>
@@ -111,7 +111,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
         <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
           {[
             { label: 'Total 1-on-1', value: totalLeads, sub: 'Consultant/Client', color: 'text-indigo-400' },
-            { label: 'Active Support', value: activeCount, sub: 'Scheduled', color: 'text-cyan-400' },
+            { label: 'Active Support', value: activeCount, sub: 'Scheduled', color: 'text-brand-400' },
             { label: 'Assigned Eng', value: assignedCount, sub: 'Matched', color: 'text-emerald-400' },
             { label: 'Pending', value: pendingAssignCount, sub: 'Needs Engineer', color: pendingAssignCount > 0 ? 'text-rose-400' : 'text-slate-400', alert: pendingAssignCount > 0 },
           ].map((m, i) => (
@@ -143,7 +143,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                 className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-semibold"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                <Layers size={10} className="text-cyan-400 shrink-0" />
+                <Layers size={10} className="text-brand-400 shrink-0" />
                 <span>{p}:</span>
                 <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{platformCounts[p] || (p.includes('Manhattan') ? 1 : 0)}</span>
               </span>
@@ -172,13 +172,13 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                 <div
                   key={item.id}
                   onClick={() => onEditSession && onEditSession(item)}
-                  className="rounded-xl border border-border p-2.5 sm:p-3.5 transition-all hover:border-cyan-500/40 cursor-pointer"
+                  className="rounded-xl border border-border p-2.5 sm:p-3.5 transition-all hover:border-brand-500/40 cursor-pointer"
                   style={{ background: 'var(--surface-2)' }}
                 >
                   {/* Row 1: Target Platform & Date + Engineer Status (Desktop) & Actions */}
                   <div className="flex items-start sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shrink-0">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
                         {platform}
                       </span>
                       <span
@@ -210,7 +210,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                           e.stopPropagation();
                           openAssignModal(item);
                         }}
-                        className="px-2 py-0.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 text-[10px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                        className="px-2 py-0.5 rounded-lg border border-border text-slate-300 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 text-[10px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1"
                         title="Assign or reassign support engineer"
                       >
                         <UserCheck size={11} />
@@ -224,7 +224,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                             e.stopPropagation();
                             onEditSession(item);
                           }}
-                          className="p-1 rounded-lg border border-border text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all shrink-0 cursor-pointer"
+                          className="p-1 rounded-lg border border-border text-slate-400 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all shrink-0 cursor-pointer"
                           title="Edit Job Support session"
                         >
                           <Edit3 size={12} />
@@ -247,16 +247,16 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                     style={{ color: 'var(--text-tertiary)' }}
                   >
                     <span>
-                      Client: <strong className="font-semibold text-cyan-300">{clientName}</strong>
+                      Client: <strong className="font-semibold text-brand-400">{clientName}</strong>
                     </span>
                     <span>
-                      Engineer: <strong className="font-semibold text-indigo-300">{engineer || 'Unassigned'}</strong>
+                      Engineer: <strong className="font-semibold text-slate-300">{engineer || 'Unassigned'}</strong>
                     </span>
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
                       style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
                     >
-                      <MapPin size={10} className="shrink-0 text-cyan-400" />
+                      <MapPin size={10} className="shrink-0 text-slate-400" />
                       <span>{item.location || item.phone || 'Online Sandbox + Teams'}</span>
                     </span>
                   </div>
@@ -271,7 +271,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                         <span>Paid: <strong className="font-bold font-mono">₹ {clientTotalPaid.toLocaleString()}</strong></span>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-brand-500/20 bg-brand-500/10 text-brand-400">
                         <span>Total Fee: <strong className="font-bold font-mono">₹ {clientTotalDue.toLocaleString()}</strong></span>
                       </span>
                     </div>
@@ -290,7 +290,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
           style={{ color: 'var(--text-tertiary)' }}
         >
           <div className="text-[10px] sm:text-[11px]">
-            Showing <span className="font-semibold text-cyan-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-cyan-400">{Math.min(currentPage * pageSize, allItems.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{allItems.length}</span> sessions
+            Showing <span className="font-semibold text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-brand-400">{Math.min(currentPage * pageSize, allItems.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{allItems.length}</span> sessions
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -323,7 +323,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
         </span>
         <Link
           href="/job-support"
-          className="flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 no-underline"
+          className="flex items-center gap-1 font-bold text-brand-400 hover:text-brand-300 no-underline"
         >
           <span>Full Job Support Ops</span>
           <ChevronRight size={14} />
