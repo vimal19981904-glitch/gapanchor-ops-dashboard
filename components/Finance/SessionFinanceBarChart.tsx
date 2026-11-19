@@ -18,43 +18,43 @@ const CustomBarTooltip = ({ active, payload }: any) => {
   if (!data) return null;
 
   return (
-    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#0b1329]/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl text-white text-xs max-w-sm space-y-2 font-sans z-50">
-      {/* Header with Full Title, Platform & Trainer */}
-      <div className="border-b border-slate-700/60 pb-2 space-y-1">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="px-2 py-0.5 text-[9px] font-extrabold rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-2xl backdrop-blur-xl text-white text-[11px] max-w-[260px] space-y-1.5 font-sans z-50 pointer-events-none">
+      {/* Compact Header */}
+      <div className="border-b border-white/10 pb-1 space-y-0.5">
+        <div className="flex items-center justify-between gap-1.5">
+          <span className="px-1.5 py-0.2 text-[8px] font-semibold rounded bg-white/10 text-slate-300 border border-white/10">
             {data.platform}
           </span>
-          <span className="text-[11px] text-slate-300 font-semibold">
-            Trainer: <strong className="text-emerald-400">{data.trainer || 'Unassigned'}</strong>
+          <span className="text-[10px] text-slate-400 truncate">
+            {data.trainer || 'Unassigned'}
           </span>
         </div>
-        <h4 className="text-xs sm:text-sm font-extrabold text-white leading-snug">
+        <h4 className="text-[11px] font-bold text-slate-100 truncate">
           {data.fullTitle}
         </h4>
       </div>
 
-      {/* 5 Financial Metrics Breakdown */}
-      <div className="space-y-1.5 font-mono text-[11px] pt-0.5">
-        <div className="flex items-center justify-between gap-2 text-cyan-300">
-          <span className="font-semibold text-slate-300">1. Participant Fee (Total Due):</span>
-          <span className="font-bold">{formatCurrency(data.participantTotalDue)}</span>
+      {/* 5 Financial Metrics (Compact 2-Column Grid) */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-[10px]">
+        <div>
+          <span className="text-slate-400 block text-[9px]">1. Due:</span>
+          <span className="font-bold text-sky-300">{formatCurrency(data.participantTotalDue)}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-emerald-300">
-          <span className="font-semibold text-slate-300">2. Participant Cash Paid:</span>
-          <span className="font-bold">{formatCurrency(data.participantCollections)}</span>
+        <div>
+          <span className="text-slate-400 block text-[9px]">2. Paid:</span>
+          <span className="font-bold text-emerald-300">{formatCurrency(data.participantCollections)}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-indigo-300">
-          <span className="font-semibold text-slate-300">3. Trainer Total Cost:</span>
-          <span className="font-bold">{formatCurrency(data.trainerTotal)}</span>
+        <div>
+          <span className="text-slate-400 block text-[9px]">3. Trainer:</span>
+          <span className="font-bold text-indigo-300">{formatCurrency(data.trainerTotal)}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-rose-300">
-          <span className="font-semibold text-slate-300">4. Trainer Amount Paid:</span>
-          <span className="font-bold">{formatCurrency(data.trainerPaid)}</span>
+        <div>
+          <span className="text-slate-400 block text-[9px]">4. Trainer Paid:</span>
+          <span className="font-bold text-rose-300">{formatCurrency(data.trainerPaid)}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-amber-300">
-          <span className="font-semibold text-slate-300">5. Trainer Payable (Due):</span>
-          <span className="font-bold">{formatCurrency(data.trainerPayable)}</span>
+        <div className="col-span-2 pt-0.5 border-t border-white/10 flex justify-between items-center">
+          <span className="text-slate-400 text-[9px]">5. Trainer Due:</span>
+          <span className="font-bold text-amber-300">{formatCurrency(data.trainerPayable)}</span>
         </div>
       </div>
     </div>
@@ -165,7 +165,7 @@ const CustomAnimatedBatchDropdown = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search batch, platform or trainer..."
-            className="w-full pl-8 pr-7 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 bg-slate-950/90 border border-slate-700/80 rounded-lg focus:outline-none focus:border-cyan-400 font-medium"
+            className="w-full pl-8 pr-7 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 bg-slate-950/95 border border-white/15 rounded-lg focus:outline-none focus:border-white/30 font-medium"
           />
           {searchQuery && (
             <button
@@ -177,7 +177,7 @@ const CustomAnimatedBatchDropdown = ({
           )}
         </div>
 
-        {/* Batch Cards List */}
+        {/* Batch Cards List (High-Contrast Opaque Glass) */}
         <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {filteredBatches.length === 0 ? (
             <div className="p-3 text-center text-[11px] text-slate-400 font-medium">
@@ -195,43 +195,43 @@ const CustomAnimatedBatchDropdown = ({
                   }}
                   className={`p-2.5 rounded-lg border transition-all duration-200 cursor-pointer flex items-center justify-between gap-2.5 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-cyan-950/60 to-slate-900 border-cyan-500/50 shadow-sm shadow-cyan-500/10'
-                      : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-800/80 hover:border-cyan-500/30'
+                      ? 'bg-slate-800/95 border-white/30 shadow-md'
+                      : 'bg-slate-900/95 border-white/10 hover:bg-slate-800/90 hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <span
-                      className={`px-1.5 py-0.5 text-[9px] font-mono font-black rounded border shrink-0 ${
+                      className={`px-1.5 py-0.5 text-[9px] font-mono font-bold rounded border shrink-0 ${
                         isSelected
-                          ? 'bg-cyan-500 text-slate-950 border-cyan-400'
-                          : 'bg-slate-800 text-slate-300 border-slate-700'
+                          ? 'bg-white text-slate-950 border-white'
+                          : 'bg-white/10 text-slate-300 border-white/10'
                       }`}
                     >
                       #{b.originalIndex + 1}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h5 className="text-[11px] font-bold text-white truncate max-w-[180px] sm:max-w-[220px]">
+                        <h5 className="text-[11px] font-bold text-slate-100 truncate max-w-[180px] sm:max-w-[220px]">
                           {b.fullTitle}
                         </h5>
                         {b.platform && (
-                          <span className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          <span className="px-1.5 py-0.5 text-[8px] font-semibold rounded bg-white/10 text-slate-300 border border-white/10">
                             {b.platform}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-[9px] text-slate-400 font-medium mt-0.5">
                         <span>
-                          Trainer: <strong className="text-emerald-400">{b.trainer || 'Unassigned'}</strong>
+                          Trainer: <strong className="text-slate-200">{b.trainer || 'Unassigned'}</strong>
                         </span>
                         <span>•</span>
-                        <span>Tuition: <strong className="text-cyan-300">{formatCurrency(b.participantTotalDue)}</strong></span>
+                        <span>Tuition: <strong className="text-slate-200">{formatCurrency(b.participantTotalDue)}</strong></span>
                       </div>
                     </div>
                   </div>
 
                   {isSelected && (
-                    <div className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/40">
+                    <div className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 border border-white/40">
                       <CheckCircle2 size={12} />
                     </div>
                   )}
@@ -242,9 +242,9 @@ const CustomAnimatedBatchDropdown = ({
         </div>
 
         {/* Dropdown Menu Footer */}
-        <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[9px] text-slate-400 px-1 font-mono">
+        <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[9px] text-slate-400 px-1 font-mono">
           <span>{chartData.length} total active batches</span>
-          <span className="text-cyan-400">Click batch to select</span>
+          <span className="text-slate-300">Click batch to select</span>
         </div>
       </div>
     </div>
