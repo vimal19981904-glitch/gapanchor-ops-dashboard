@@ -106,7 +106,7 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
   const runSingleSynthesis = async (selectedVoice: string): Promise<Buffer> => {
     const tts = new MsEdgeTTS({ connectionTimeoutMs: 7000, synthesisTimeoutMs: 14000 });
     try {
-      await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+      await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
       const { audioStream } = tts.toStream(cleanText, { rate, pitch });
       const chunks: Buffer[] = [];
       audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));

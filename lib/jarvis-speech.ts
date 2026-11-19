@@ -432,18 +432,19 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
 
 /**
  * Splits text into natural spoken chunks for streaming pipeline:
- * Responses under 750 chars remain a single seamless audio file (eliminating inter-sentence pauses).
- * Longer detailed briefings split at natural 350-450 char paragraph/sentence boundaries.
+ * - Chunk 0 is the opening sentence (40-90 chars) for instant ~1.1s playback start.
+ * - Subsequent sentences are grouped into smooth, substantial chunks (300-380 chars)
+ *   that stream concurrently in the background while Chunk 0 is speaking.
  */
 export function chunkTextForPipelinedSpeech(
   text: string,
-  maxChunkLen = 450
+  maxChunkLen = 380
 ): string[] {
   if (!text || !text.trim()) return [];
 
   const trimmed = text.trim();
-  // Responses up to 750 chars are synthesized in a single audio buffer for 100% continuous, zero-pause playback
-  if (trimmed.length <= 750) {
+  // Short one-liner responses (under 120 chars) remain a single instantaneous chunk
+  if (trimmed.length <= 120) {
     return [trimmed];
   }
 
@@ -462,14 +463,14 @@ export function chunkTextForPipelinedSpeech(
     return [trimmed];
   }
 
-  // Group sentences into balanced, substantial chunks (350-450 chars) so each chunk
-  // provides 10-15s of continuous audio while subsequent chunks buffer concurrently
   const chunks: string[] = [];
+  // Chunk 0: Always the first sentence to unlock instant playback in ~1.1s
+  chunks.push(rawSentences[0]);
+
+  // Subsequent chunks: Group remaining sentences into balanced ~350 char segments
   let current = '';
-
-  for (let i = 0; i < rawSentences.length; i++) {
+  for (let i = 1; i < rawSentences.length; i++) {
     const s = rawSentences[i];
-
     if (!current) {
       current = s;
     } else if (current.length + s.length + 1 <= maxChunkLen) {

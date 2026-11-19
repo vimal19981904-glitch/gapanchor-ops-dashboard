@@ -474,6 +474,11 @@ export function FollowUpAssistantBar({
       const followUpPhrase = getJarvisFollowUpPhrase();
       const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
 
+      // Transition voice stage out of thinking state immediately as text is on-screen
+      setVoiceStage('speaking_output');
+      setIsAskingAi(false);
+      setVoiceStatusMessage('Briefing executive summary...');
+
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {

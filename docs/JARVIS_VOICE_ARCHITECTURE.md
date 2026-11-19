@@ -61,8 +61,8 @@ stateDiagram-v2
    - *Morning*: `"Good morning, boss! Ready and listening—what can I get done for you?"`
    - *Afternoon*: `"Good afternoon, boss! Ready and listening—what can I get done for you?"`
    - *Evening*: `"Online, boss! Ready and listening—what can I get done for you?"`
-2. **Zero Speech Pauses**:
-   Sentences under 750 characters are synthesized in a single audio buffer. Do **NOT** break sentences into 3-word chunks that create 2–3 second artificial pauses.
+2. **Zero Speech Pauses & Sentence-1 Pipelining**:
+   The opening sentence (Chunk 0, ~40–90 chars) is synthesized and streamed immediately within ~1.1s so speech begins without stalling. Remaining sentences are grouped into balanced ~350 char segments that stream and buffer concurrently in the background while Chunk 0 is speaking, ensuring 100% zero-pause continuous playback. Do **NOT** revert to monolithic 750+ char chunks that create 20-second network stalls on serverless environments.
 3. **Immediate Answer Display**:
    When asking a question, `setAiResponse` MUST be invoked immediately when `data.answer` arrives from `/api/enquiries/ask-ai`. Do NOT gate UI rendering behind the completion of the TTS network fetch.
 4. **Intent Isolation**:
