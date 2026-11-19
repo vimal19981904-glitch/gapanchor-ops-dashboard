@@ -18,49 +18,45 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
   const badgeStyles = {
     emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     rose: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-    cyan: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-    purple: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+    cyan: 'bg-white/[0.06] text-slate-300 border border-white/15',
+    purple: 'bg-white/[0.06] text-slate-300 border border-white/15',
   };
 
   return (
     <div
-      className="group relative rounded-2xl p-3 sm:p-4 transition-all duration-300 border"
+      className="group relative rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 transition-all duration-200 border border-white/10 bg-slate-900/60 hover:border-white/20"
       style={{
-        background: expenseDashboardTheme.colors.surfaces.cardBg,
-        borderColor: expenseDashboardTheme.colors.surfaces.borderDefault,
         backdropFilter: 'blur(12px)',
       }}
     >
-      <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1">
         <span
-          className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider truncate"
-          style={{ color: expenseDashboardTheme.colors.text.muted }}
+          className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 truncate"
         >
           {label}
         </span>
         {Icon && (
-          <div className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-slate-800/60 text-slate-400 group-hover:text-white transition-colors shrink-0">
-            <Icon size={13} className="sm:w-3.5 sm:h-3.5" />
+          <div className="p-1 rounded-lg bg-white/[0.04] text-slate-400 group-hover:text-white transition-colors shrink-0">
+            <Icon size={13} />
           </div>
         )}
       </div>
 
       {loading ? (
         <div className="space-y-1.5 my-1">
-          <div className="h-6 sm:h-7 w-24 sm:w-28 rounded-lg bg-slate-800 animate-pulse" />
-          <div className="h-3 w-20 rounded bg-slate-800/60 animate-pulse" />
+          <div className="h-5 sm:h-6 w-20 sm:w-24 rounded-lg bg-slate-800 animate-pulse" />
+          <div className="h-3 w-16 rounded bg-slate-800/60 animate-pulse" />
         </div>
       ) : (
         <>
           <div className="flex items-baseline justify-between gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
             <span
-              className="text-sm sm:text-xl font-extrabold tracking-tight font-mono truncate"
-              style={{ color: expenseDashboardTheme.colors.text.primary }}
+              className="text-xs sm:text-lg font-bold tracking-tight font-mono text-white truncate"
             >
               {value}
             </span>
             {badge && (
-              <span className={`px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-extrabold rounded-full border shrink-0 ${badgeStyles[badgeType]}`}>
+              <span className={`px-1.5 py-0.2 text-[8.5px] sm:text-[9.5px] font-semibold rounded-full border shrink-0 ${badgeStyles[badgeType]}`}>
                 {badge}
               </span>
             )}
@@ -68,8 +64,7 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
 
           {subtext && (
             <p
-              className="text-[11px] mt-1 font-medium truncate"
-              style={{ color: expenseDashboardTheme.colors.text.secondary }}
+              className="text-[10.5px] mt-0.5 font-medium text-slate-400 truncate"
             >
               {subtext}
             </p>
@@ -79,4 +74,3 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
     </div>
   );
 }
-

@@ -372,16 +372,6 @@ export function FollowUpAssistantBar({
         const greeting = getJarvisCallResponse();
         setVoiceStatusMessage(greeting);
 
-        setAiResponse({
-          answer: greeting,
-          actionAdvice: 'Standing by for your command.',
-          matchedIds: [],
-          recommendedFilter: 'all',
-          isRealAi: false,
-          model: 'J.A.R.V.I.S. Core Neural Voice',
-          prompt: promptText.trim(),
-        });
-
         await speakJarvis(greeting, {
           includeIntro: false,
           onStart: () => setIsSpeakingJarvis(true),
@@ -447,9 +437,7 @@ export function FollowUpAssistantBar({
       // 1. Immediately transition UI into active thinking state & launch Gemini query in parallel
       setVoiceStage('thinking');
       setIsAskingAi(true);
-      setVoiceStatusMessage('Reasoning with GAP Gemini Neural Engine...');
-
-      const thinkingStartTime = Date.now();
+      setVoiceStatusMessage('Analyzing operations intelligence...');
 
       const res = await fetch('/api/enquiries/ask-ai', {
         method: 'POST',
@@ -462,23 +450,6 @@ export function FollowUpAssistantBar({
         throw new Error(data?.error || 'Failed to process AI query');
       }
 
-      // 2. Render response data into state while neural speech buffers
-      setIsAskingAi(false);
-      setVoiceStage('thinking');
-      setVoiceStatusMessage('Synthesizing neural briefing...');
-
-      setAiResponse({
-        answer: data.answer,
-        actionAdvice: data.actionAdvice,
-        matchedIds: data.matchedIds || [],
-        recommendedFilter: data.recommendedFilter,
-        isRealAi: Boolean(data.isRealGemini),
-        missingApiKey: Boolean(data.missingApiKey),
-        apiError: data.apiError,
-        model: data.model,
-        prompt: cleanPrompt,
-      });
-
       onFilterChange('all');
       if (data.matchedIds && data.matchedIds.length > 0 && onAiMatchedIdsChange) {
         onAiMatchedIdsChange(data.matchedIds);
@@ -489,8 +460,8 @@ export function FollowUpAssistantBar({
         );
       }
 
-      // 3. Simultaneously stream neural voice in parallel
-      const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, data.actionAdvice);
+      // 2. Stream neural voice without reading Tactical Directive
+      const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, null);
       const followUpPhrase = getJarvisFollowUpPhrase();
       const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
 
@@ -499,6 +470,17 @@ export function FollowUpAssistantBar({
         onStart: () => {
           setIsSpeakingJarvis(true);
           setVoiceStage('speaking_output');
+          setAiResponse({
+            answer: data.answer,
+            actionAdvice: '',
+            matchedIds: data.matchedIds || [],
+            recommendedFilter: data.recommendedFilter,
+            isRealAi: Boolean(data.isRealGemini),
+            missingApiKey: Boolean(data.missingApiKey),
+            apiError: data.apiError,
+            model: data.model,
+            prompt: cleanPrompt,
+          });
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);
@@ -718,19 +700,12 @@ export function FollowUpAssistantBar({
 
       // Pre-warm audio in parallel during remaining thinking time
       if (data.answer) {
-        const fullSpeech = `${data.answer}. Tactical Directive: ${data.actionAdvice || ''}`;
-        prepareJarvisSpeech(fullSpeech);
-      }
-
-      // Ensure minimum 2000ms thinking duration
-      const elapsed = Date.now() - thinkingStartTime;
-      if (elapsed < 2000) {
-        await new Promise((r) => setTimeout(r, 2000 - elapsed));
+        prepareJarvisSpeech(data.answer);
       }
 
       setAiResponse({
         answer: data.answer,
-        actionAdvice: data.actionAdvice,
+        actionAdvice: '',
         matchedIds: data.matchedIds || [],
         recommendedFilter: data.recommendedFilter,
         isRealAi: Boolean(data.isRealGemini),
@@ -762,10 +737,9 @@ export function FollowUpAssistantBar({
       }
 
       if (data.answer) {
-        const fullSpeech = `${data.answer}. Tactical Directive: ${data.actionAdvice || ''}`;
         if (autoSpeakJarvis) {
           setIsSpeakingJarvis(true);
-          speakJarvis(fullSpeech, {
+          speakJarvis(data.answer, {
             includeIntro: false,
             onStart: () => setIsSpeakingJarvis(true),
             onEnd: () => setIsSpeakingJarvis(false),
@@ -783,7 +757,7 @@ export function FollowUpAssistantBar({
 
   const handleCopyAnswer = () => {
     if (!aiResponse) return;
-    const textToCopy = `${aiResponse.answer}\n\nTactical Directive: ${aiResponse.actionAdvice || ''}`;
+    const textToCopy = aiResponse.answer;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     toast.success('AI insight copied to clipboard!');
@@ -842,8 +816,7 @@ export function FollowUpAssistantBar({
       }
 
       if (data.answer) {
-        const fullSpeech = `${data.answer}. Tactical Directive: ${data.actionAdvice || ''}`;
-        prepareJarvisSpeech(fullSpeech);
+        prepareJarvisSpeech(data.answer);
       }
 
       return {
@@ -1092,17 +1065,6 @@ export function FollowUpAssistantBar({
 
                 {/* Answer Content */}
                 <p className="whitespace-pre-line leading-relaxed">{aiResponse.answer}</p>
-
-                {/* Tactical Advice Box */}
-                {aiResponse.actionAdvice && (
-                  <div className="mt-2.5 p-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/30 flex items-start gap-2">
-                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="text-[11px] text-cyan-200">
-                      <span className="font-bold text-amber-300">Tactical Directive: </span>
-                      {aiResponse.actionAdvice}
-                    </div>
-                  </div>
-                )}
 
                 {/* Filter table footer */}
                 <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">

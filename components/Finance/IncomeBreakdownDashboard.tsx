@@ -44,20 +44,16 @@ export default function IncomeBreakdownDashboard() {
 
   return (
     <div
-      className="relative rounded-3xl p-5 sm:p-7 border backdrop-blur-xl shadow-2xl transition-all duration-300 space-y-6"
-      style={{
-        background: expenseDashboardTheme.colors.surfaces.containerBg,
-        borderColor: 'rgba(148, 163, 184, 0.25)',
-      }}
+      className="relative rounded-3xl p-4 sm:p-6 border border-white/10 bg-slate-950/40 backdrop-blur-xl shadow-2xl transition-all duration-300 space-y-4 sm:space-y-5"
     >
       {/* Header Section & Time-Based Filter Toggles */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-100 via-slate-300 to-slate-400 bg-clip-text text-transparent">
+            <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
               Income Overview & Money Flow
             </h2>
-            <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-full bg-slate-800 text-slate-200 border border-slate-700 flex items-center gap-1">
+            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/[0.06] text-slate-300 border border-white/12 flex items-center gap-1">
               <Sparkles size={11} className="text-slate-400" /> Revenue Intelligence
             </span>
           </div>
@@ -66,8 +62,8 @@ export default function IncomeBreakdownDashboard() {
           </p>
         </div>
 
-        {/* Time-Based Filtering Controls */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-900/80 border border-slate-800 self-start sm:self-auto">
+        {/* Time-Based Filtering Controls - Grey Glass Pills */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/80 border border-white/10 self-start sm:self-auto">
           {[
             { id: 'week', label: 'Week' },
             { id: 'month', label: 'Month' },
@@ -78,10 +74,10 @@ export default function IncomeBreakdownDashboard() {
             <button
               key={item.id}
               onClick={() => setDateRange(item.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
                 dateRange === item.id
-                  ? 'bg-slate-700 text-white shadow-md border border-slate-500/40'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
               {item.label}
@@ -91,7 +87,7 @@ export default function IncomeBreakdownDashboard() {
       </div>
 
       {/* KPI Cards (Metric Grid) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <MetricCard
           label="Total Income"
           value={formatCurrency(metrics.totalIncome)}
@@ -125,13 +121,13 @@ export default function IncomeBreakdownDashboard() {
           subtext="Income categorization"
           icon={Activity}
           badge="Structured"
-          badgeType="emerald"
+          badgeType="cyan"
           loading={loading}
         />
       </div>
 
       {/* Donut Chart & Interactive Legend Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-5 rounded-3xl bg-slate-900/40 border border-slate-800/80">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-900/40 border border-white/10">
         {/* Left: Doughnut Chart */}
         <div className="lg:col-span-6 flex flex-col items-center">
           <ExpenseChart
@@ -145,23 +141,25 @@ export default function IncomeBreakdownDashboard() {
         </div>
 
         {/* Right: Interactive Legend */}
-        <div className="lg:col-span-6 space-y-2.5">
-          <div className="flex items-center justify-between px-1 mb-1">
+        <div className="lg:col-span-6 space-y-2">
+          <div className="flex items-center justify-between px-1 mb-0.5">
             <span className="text-xs font-bold text-slate-300">Revenue Source Breakdown</span>
             <span className="text-[10px] text-slate-500 font-medium">Click row to drill-down</span>
           </div>
 
-          {categoriesData.map((category) => (
-            <LegendItem
-              key={category.name}
-              name={category.name}
-              amount={category.amount}
-              percentage={category.percentage}
-              isActive={activeCategory === category.name}
-              onHover={setActiveCategory}
-              onClick={handleLegendClick}
-            />
-          ))}
+          <div className="space-y-2">
+            {categoriesData.map((category) => (
+              <LegendItem
+                key={category.name}
+                name={category.name}
+                amount={category.amount}
+                percentage={category.percentage}
+                isActive={activeCategory === category.name}
+                onHover={setActiveCategory}
+                onClick={handleLegendClick}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

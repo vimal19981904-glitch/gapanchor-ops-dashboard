@@ -20,7 +20,7 @@ import SessionFinanceBarChart from '@/components/Finance/SessionFinanceBarChart'
 import { NavDrawerButton } from '@/components/NavigationContext';
 
 
-const CHART_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6', '#3b82f6'];
+const CHART_COLORS = ['#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
 const EXPENSE_CATEGORIES = ['Salary', 'Operation Cost', 'Software', 'Marketing', 'Infrastructure', 'Ops & Venue Logistics'];
 const INCOME_CATEGORIES = ['Training Fees', 'Consulting & Projects', 'Member Payments', 'Enterprise Solutions', 'Other Revenue'];
 const PAYMENT_METHODS = ['UPI', 'Bank Transfer', 'Credit Card', 'Cash', 'IMPS', 'NEFT'];
@@ -435,29 +435,29 @@ export default function FinanceAnalyticsPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="btn-secondary !py-1.5 sm:!py-2.5 !px-3 sm:!px-4 !text-[11px] sm:!text-xs cursor-pointer flex items-center gap-1.5"
+            className="btn-secondary !py-1.5 !px-3 !text-xs cursor-pointer flex items-center gap-1.5"
           >
-            <Upload size={13} className="sm:w-3.5 sm:h-3.5" />
+            <Upload size={13} />
             <span>{uploading ? 'Uploading...' : 'Upload Excel'}</span>
           </button>
 
           <button
             onClick={handleQuickSyncStatement}
             disabled={syncing}
-            className="px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white font-extrabold text-[11px] sm:text-xs flex items-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+            className="btn-secondary !py-1.5 !px-3 !text-xs !text-white !bg-white/[0.08] hover:!bg-white/[0.14] !border-white/25 flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
             title="Auto-sync Account_Statement.xlsx"
           >
-            <FileSpreadsheet size={14} className="sm:w-[15px] sm:h-[15px]" />
+            <FileSpreadsheet size={13} />
             <span>{syncing ? 'Syncing...' : 'Sync Statement'}</span>
           </button>
 
-          <button onClick={handleExportCSV} className="btn-secondary !py-1.5 sm:!py-2.5 !px-2.5 sm:!px-3.5 !text-[11px] sm:!text-xs">
-            <Download size={13} className="sm:w-3.5 sm:h-3.5" />
+          <button onClick={handleExportCSV} className="btn-secondary !py-1.5 !px-2.5 !text-xs">
+            <Download size={13} />
             <span>CSV</span>
           </button>
 
-          <button onClick={fetchFinanceData} disabled={loading} className="btn-secondary !p-1.5 sm:!p-2.5 !rounded-xl">
-            <RefreshCw size={14} className={`sm:w-[15px] sm:h-[15px] ${loading ? 'animate-spin' : ''}`} />
+          <button onClick={fetchFinanceData} disabled={loading} className="btn-secondary !p-1.5 !rounded-xl" title="Refresh data">
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
 
           {/* Desktop Navigation Drawer Button */}
@@ -479,20 +479,20 @@ export default function FinanceAnalyticsPage() {
       )}
 
       {/* KPI Summary Scorecards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-emerald-500/20 bg-emerald-950/20">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
+        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-emerald-500/20 bg-emerald-950/20">
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Income</span>
-            <TrendingUp size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
+            <TrendingUp size={16} className="shrink-0" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-emerald-500/20 animate-pulse" />
+              <div className="h-6 w-28 rounded-lg bg-emerald-500/20 animate-pulse" />
               <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-base sm:text-3xl font-black font-mono text-emerald-300 truncate">
+              <p className="text-sm sm:text-2xl font-black font-mono text-emerald-300 truncate">
                 {formatCurrency(totalIncome)}
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
@@ -502,19 +502,19 @@ export default function FinanceAnalyticsPage() {
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-rose-500/20 bg-rose-950/20">
+        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-rose-500/20 bg-rose-950/20">
           <div className="flex items-center justify-between text-rose-400">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Expense</span>
-            <TrendingDown size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
+            <TrendingDown size={16} className="shrink-0" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-rose-500/20 animate-pulse" />
+              <div className="h-6 w-28 rounded-lg bg-rose-500/20 animate-pulse" />
               <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-base sm:text-3xl font-black font-mono text-rose-300 truncate">
+              <p className="text-sm sm:text-2xl font-black font-mono text-rose-300 truncate">
                 {formatCurrency(totalExpense)}
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
@@ -524,19 +524,19 @@ export default function FinanceAnalyticsPage() {
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-indigo-500/20 bg-indigo-950/20">
+        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-indigo-500/20 bg-indigo-950/20">
           <div className="flex items-center justify-between text-indigo-400">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Net Profit</span>
-            <DollarSign size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
+            <DollarSign size={16} className="shrink-0" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-indigo-500/20 animate-pulse" />
+              <div className="h-6 w-28 rounded-lg bg-indigo-500/20 animate-pulse" />
               <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className={`text-base sm:text-3xl font-black font-mono truncate ${netProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
+              <p className={`text-sm sm:text-2xl font-black font-mono truncate ${netProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
                 {formatCurrency(netProfit)}
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
@@ -546,19 +546,19 @@ export default function FinanceAnalyticsPage() {
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-5 rounded-2xl sm:rounded-3xl space-y-1 sm:space-y-2 border-cyan-500/20 bg-cyan-950/20">
+        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-cyan-500/20 bg-cyan-950/20">
           <div className="flex items-center justify-between text-cyan-400">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Transactions</span>
-            <Layers size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
+            <Layers size={16} className="shrink-0" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 sm:h-8 w-28 sm:w-36 rounded-lg bg-cyan-500/20 animate-pulse" />
+              <div className="h-6 w-28 rounded-lg bg-cyan-500/20 animate-pulse" />
               <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-base sm:text-3xl font-black font-mono text-cyan-300 truncate">
+              <p className="text-sm sm:text-2xl font-black font-mono text-cyan-300 truncate">
                 {transactions.length} Records
               </p>
               <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
@@ -592,7 +592,7 @@ export default function FinanceAnalyticsPage() {
 
             {/* Timeframe Granularity Toggle & Calendar Popover Button */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center p-1 bg-surface-2 border border-border/80 rounded-xl gap-1 shrink-0">
+              <div className="flex items-center p-1 bg-slate-900/80 border border-white/10 rounded-xl gap-1 shrink-0">
                 {[
                   { id: 'hourly', label: 'Hourly' },
                   { id: 'day', label: 'Day' },
@@ -601,10 +601,10 @@ export default function FinanceAnalyticsPage() {
                   <button
                     key={gran.id}
                     onClick={() => setTimelineGranularity(gran.id as any)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       timelineGranularity === gran.id
-                        ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-md shadow-emerald-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-surface-3'
+                        ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
                     {gran.label}
@@ -616,14 +616,14 @@ export default function FinanceAnalyticsPage() {
               <div className="relative">
                 <button
                   onClick={() => setIsDatePopoverOpen(!isDatePopoverOpen)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                     timelinePreset !== 'all' || timelineStartDate || timelineEndDate
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md shadow-emerald-500/10'
-                      : 'bg-surface-2 border-border/80 text-slate-300 hover:text-white hover:bg-surface-3'
+                      ? 'bg-white/[0.12] border-white/25 text-white shadow-sm'
+                      : 'bg-white/[0.04] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08]'
                   }`}
                   title="Filter Chart Date Range"
                 >
-                  <Calendar size={14} className={timelinePreset !== 'all' || timelineStartDate || timelineEndDate ? 'text-emerald-400' : 'text-slate-400'} />
+                  <Calendar size={13} className="text-slate-400" />
                   <span>
                     {timelinePreset === 'all'
                       ? 'All Time'
@@ -639,7 +639,7 @@ export default function FinanceAnalyticsPage() {
                       ? `${timelineStartDate || 'Start'} → ${timelineEndDate || 'End'}`
                       : 'Calendar Filter'}
                   </span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${isDatePopoverOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${isDatePopoverOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Floating Calendar Dropdown Popover */}
@@ -784,7 +784,7 @@ export default function FinanceAnalyticsPage() {
             </div>
 
             {/* View Selector Pills */}
-            <div className="flex rounded-xl p-1 border border-border/80 bg-surface-2 text-xs font-bold shrink-0">
+            <div className="flex rounded-xl p-1 border border-white/10 bg-slate-900/80 text-xs font-semibold shrink-0">
               {[
                 { id: 'combined', label: 'Single Pie' },
                 { id: 'income', label: 'Income' },
@@ -793,10 +793,10 @@ export default function FinanceAnalyticsPage() {
                 <button
                   key={v.id}
                   onClick={() => setBreakdownView(v.id as any)}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs font-semibold ${
                     breakdownView === v.id
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   {v.label}
@@ -814,7 +814,7 @@ export default function FinanceAnalyticsPage() {
                       breakdownView === 'combined'
                         ? [
                             ...incomePieData.map((item, i) => {
-                              const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                              const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                               const color = fallbackInc[i % fallbackInc.length];
                               return {
                                 ...item,
@@ -825,7 +825,7 @@ export default function FinanceAnalyticsPage() {
                               };
                             }),
                             ...expensePieData.map((item, i) => {
-                              const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                              const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
                               const color = fallbackExp[i % fallbackExp.length];
                               return {
                                 ...item,
@@ -838,7 +838,7 @@ export default function FinanceAnalyticsPage() {
                           ]
                         : breakdownView === 'income'
                         ? incomePieData.map((item, i) => {
-                            const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                            const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                             return {
                               ...item,
                               rawName: item.name,
@@ -848,7 +848,7 @@ export default function FinanceAnalyticsPage() {
                             };
                           })
                         : expensePieData.map((item, i) => {
-                            const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                            const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
                             return {
                               ...item,
                               rawName: item.name,
@@ -885,21 +885,21 @@ export default function FinanceAnalyticsPage() {
                     {(breakdownView === 'combined'
                       ? [
                           ...incomePieData.map((item, i) => {
-                            const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                            const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                             return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
                           }),
                           ...expensePieData.map((item, i) => {
-                            const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                            const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
                             return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
                           }),
                         ]
                       : breakdownView === 'income'
                       ? incomePieData.map((item, i) => {
-                          const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                          const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                           return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
                         })
                       : expensePieData.map((item, i) => {
-                          const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                          const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
                           return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
                         })
                     ).map((entry, i) => (
@@ -962,7 +962,7 @@ export default function FinanceAnalyticsPage() {
                   </span>
                   <div className="space-y-1.5">
                     {incomePieData.map((item, i) => {
-                      const fallbackInc = ['#10b981', '#06b6d4', '#3b82f6', '#14b8a6'];
+                      const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                       const color = fallbackInc[i % fallbackInc.length];
                       const isHovered = activePieSlice?.name === item.name;
                       const totalVol = totalIncome + totalExpense;
@@ -974,8 +974,8 @@ export default function FinanceAnalyticsPage() {
                           onMouseLeave={() => setActivePieSlice(null)}
                           className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
                             isHovered
-                              ? 'bg-surface-3 border-emerald-500/50 shadow-sm'
-                              : 'bg-surface-2 border-border/60 hover:bg-surface-3'
+                              ? 'bg-slate-800 border-white/30 shadow-sm'
+                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
                           }`}
                         >
                           <div className="flex justify-between font-bold">
@@ -999,7 +999,7 @@ export default function FinanceAnalyticsPage() {
                   </span>
                   <div className="space-y-1.5">
                     {expensePieData.map((item, i) => {
-                      const fallbackExp = ['#6366f1', '#8b5cf6', '#f59e0b', '#ec4899', '#f43f5e'];
+                      const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
                       const color = fallbackExp[i % fallbackExp.length];
                       const isHovered = activePieSlice?.name === item.name;
                       const pct = totalExpense > 0 ? ((item.value / totalExpense) * 100).toFixed(0) : 0;
@@ -1010,8 +1010,8 @@ export default function FinanceAnalyticsPage() {
                           onMouseLeave={() => setActivePieSlice(null)}
                           className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
                             isHovered
-                              ? 'bg-surface-3 border-rose-500/50 shadow-sm'
-                              : 'bg-surface-2 border-border/60 hover:bg-surface-3'
+                              ? 'bg-slate-800 border-white/30 shadow-sm'
+                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
                           }`}
                         >
                           <div className="flex justify-between font-bold">
@@ -1066,13 +1066,15 @@ export default function FinanceAnalyticsPage() {
         {/* Table Filter Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex rounded-full border border-border p-1 bg-surface-2">
+            <div className="flex rounded-xl border border-white/10 p-1 bg-slate-900/80">
               {(['all', 'income', 'expense'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-2.5 sm:px-3.5 py-1 text-[11px] sm:text-xs font-bold rounded-full transition-all cursor-pointer ${
-                    filterType === type ? 'bg-brand-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    filterType === type
+                      ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="sm:hidden">{type === 'all' ? 'All' : type === 'income' ? '↑ Credit' : '↓ Debit'}</span>

@@ -453,16 +453,19 @@ export function chunkTextForPipelinedSpeech(
     .map((s) => s.replace(/___DOT___/g, '.').trim())
     .filter((s) => s.length > 0);
 
-  if (rawSentences.length <= 1 || text.length <= 500) {
+  if (rawSentences.length <= 1) {
     return [text.trim()];
   }
 
+  // Ultra-low latency sentence pipeline:
+  // Isolate first sentence (~140 chars) into chunk 0 so Edge-TTS starts playing in ~250ms
+  // while subsequent sentences buffer concurrently in parallel!
   const chunks: string[] = [];
   let current = '';
 
   for (let i = 0; i < rawSentences.length; i++) {
     const s = rawSentences[i];
-    const limit = chunks.length === 0 ? maxInitialLen : maxChunkLen;
+    const limit = chunks.length === 0 ? 150 : maxChunkLen;
 
     if (!current) {
       current = s;
@@ -493,6 +496,10 @@ export async function prewarmJarvisVoiceCache(): Promise<void> {
   const phrases = [
     'Online, boss. Ready.',
     'Right away, boss.',
+    'Good morning, boss! Ready and listening—what can I get done for you?',
+    'Good afternoon, boss! Ready and listening—what can I get done for you?',
+    'Online, boss! Ready and listening—what can I get done for you?',
+    'Good evening, boss! Ready and listening—what can I get done for you?',
   ];
 
   for (const phrase of phrases) {
@@ -1129,17 +1136,7 @@ export function formatHumanizedJarvisBriefing(answer: string, actionAdvice?: str
     .replace(/\b2nd\b/gi, 'second')
     .replace(/\b3rd\b/gi, 'third');
 
-  let speech = clean;
-
-  // 3. Elegant Tactical Next Step (Only if distinct and helpful)
-  if (actionAdvice && actionAdvice.trim().length > 0) {
-    const cleanAdvice = sanitizeForSpeech(actionAdvice);
-    if (!speech.toLowerCase().includes(cleanAdvice.toLowerCase().slice(0, 20))) {
-      speech += ` Next step: ${cleanAdvice}.`;
-    }
-  }
-
-  return speech;
+  return clean;
 }
 
 /**

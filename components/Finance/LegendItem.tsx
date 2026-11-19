@@ -31,53 +31,42 @@ export default function LegendItem({
       onMouseEnter={() => onHover(name)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(name)}
-      className={`group relative flex items-center justify-between p-3 rounded-2xl border transition-all duration-300 cursor-pointer ${
-        isActive ? 'shadow-lg shadow-black/40 border-cyan-500/50' : ''
+      className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
+        isActive
+          ? 'bg-slate-800/90 border-white/30 shadow-lg shadow-black/40'
+          : 'bg-slate-900/60 border-white/10 hover:border-white/20 hover:bg-slate-800/60'
       }`}
       style={{
-        background: isActive
-          ? categoryConfig.bgAlpha || 'rgba(30, 41, 59, 0.95)'
-          : expenseDashboardTheme.colors.surfaces.cardBg,
-        borderColor: isActive
-          ? categoryConfig.stroke
-          : expenseDashboardTheme.colors.surfaces.borderDefault,
         backdropFilter: 'blur(10px)',
       }}
     >
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <div
-          className="w-3.5 h-3.5 rounded-[4px] shrink-0 transition-transform duration-300"
+          className="w-3 h-3 rounded-[3px] shrink-0 transition-transform duration-200"
           style={{
             background: `linear-gradient(135deg, ${categoryConfig.solid}, ${categoryConfig.stroke})`,
-            boxShadow: `0 0 10px ${categoryConfig.solid}66`,
+            boxShadow: `0 0 6px ${categoryConfig.solid}40`,
           }}
         />
         <span
-          className="text-xs sm:text-sm font-semibold truncate transition-colors group-hover:text-white"
-          style={{ color: isActive ? '#ffffff' : expenseDashboardTheme.colors.text.primary }}
+          className="text-xs sm:text-sm font-semibold truncate transition-colors text-slate-200 group-hover:text-white"
         >
           {name}
         </span>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <div className="text-right">
-          <div
-            className="text-xs sm:text-sm font-bold font-mono"
-            style={{ color: isActive ? '#ffffff' : expenseDashboardTheme.colors.text.primary }}
-          >
+          <div className="text-xs sm:text-sm font-bold font-mono text-slate-100">
             {formatCurrency(amount)}
           </div>
-          <div
-            className="text-[10px] font-semibold"
-            style={{ color: expenseDashboardTheme.colors.text.secondary }}
-          >
+          <div className="text-[10px] font-medium text-slate-400">
             {percentage}% of total
           </div>
         </div>
         <ChevronRight
           size={14}
-          className={`transition-transform duration-300 ${
+          className={`transition-transform duration-200 ${
             isActive ? 'translate-x-0.5 text-white' : 'text-slate-500 group-hover:text-slate-300'
           }`}
         />

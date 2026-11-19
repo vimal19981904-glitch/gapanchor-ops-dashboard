@@ -128,7 +128,7 @@ export function OpsNotificationBell({ className = '' }: { className?: string }) 
       {isOpen && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-[-32px] sm:right-0 mt-2.5 w-[calc(92vw-32px)] sm:w-[380px] max-w-[380px] bg-[#070b14] border border-white/25 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.98)] z-[70] overflow-hidden animate-[fadeIn_0.15s_ease]"
+          className="absolute right-0 top-full mt-3.5 w-[min(380px,calc(90vw-28px))] max-w-[380px] bg-[#070b14] border border-white/25 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.98)] z-[70] overflow-hidden animate-[fadeIn_0.15s_ease]"
           style={{ maxHeight: 'calc(100vh - 120px)' }}
         >
           {/* Header */}

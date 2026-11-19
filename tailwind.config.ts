@@ -41,10 +41,10 @@ const config: Config = {
       animation: {
         'shimmer': 'shimmer 2s infinite linear',
         'fade-in': 'fadeIn 0.3s ease-out',
-        'fade-only': 'fadeOnly 0.8s ease-out',
+        'fade-only': 'fadeOnly 0.85s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-in-right': 'slideInRight 0.3s ease-out',
-        'drawer-slide-in': 'drawerSlideIn 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        'drawer-slide-in': 'drawerSlideIn 1.1s cubic-bezier(0.16, 1, 0.3, 1)',
         'page-enter': 'pageEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         'pulse-glow': 'pulseGlow 2s infinite',
       },
@@ -70,8 +70,8 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         drawerSlideIn: {
-          '0%': { transform: 'translateX(100%)' },
-          '100%': { transform: 'translateX(0%)' },
+          '0%': { transform: 'translateX(100%)', opacity: '0.15' },
+          '100%': { transform: 'translateX(0%)', opacity: '1' },
         },
         pageEnter: {
           '0%': { opacity: '0', transform: 'translateY(16px)' },

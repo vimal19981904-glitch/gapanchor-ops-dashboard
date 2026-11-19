@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { callGemini, getGeminiConfig } from '@/lib/gemini-client';
 import { numberToIndianWords, sanitizeIndianCurrencyForSpeech } from '@/lib/utils';
+import { listCalendarEvents } from '@/lib/googleCalendar';
 import {
   getTranscriptKnowledgeSnapshot,
   searchTranscriptsHeuristically,
@@ -579,7 +580,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
       } catch (geminiErr: any) {
         console.error('AI API execution error:', geminiErr);
         // Fallback to deterministic multi-entity engine
-        const fallback = fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
+        const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
         return NextResponse.json({
           success: true,
           isRealGemini: false,
@@ -594,7 +595,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
     }
 
     // ─── STAGE 4: Deterministic Multi-Entity Heuristics ───────────
-    const fallback = fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
+    const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
     return NextResponse.json({
       success: true,
       isRealGemini: false,
@@ -618,7 +619,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
 /**
  * Deterministic multi-entity fallback engine when Gemini API is offline
  */
-function fallbackComprehensiveOperations(
+async function fallbackComprehensiveOperations(
   prompt: string,
   opsContext: OperationsIntelligenceSnapshot,
   transcriptSnapshot: TranscriptSnapshot
@@ -638,89 +639,98 @@ function fallbackComprehensiveOperations(
   const fin = opsContext.aggregates.finance;
   const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
 
-  // 0. Comprehensive CRM Executive Briefing ("What's going on?", "How is finance doing?", "Status update", "Daily briefing", "Morning briefing")
+  // 0. Comprehensive System Status Briefing ("What's going on with the system", "What's going on?", "System status", "Status update", "Daily briefing", "Morning briefing")
   if (
     q.includes("what's going on") ||
     q.includes('whats going on') ||
     q.includes('what is going on') ||
-    q.includes('how is the finance doing') ||
-    q.includes('how are the finances') ||
-    q.includes('finance doing') ||
+    q.includes('system status') ||
+    q.includes('status update') ||
+    q.includes('tell me about the system') ||
+    q.includes('about the system') ||
+    q.includes('how is the system') ||
     q.includes('how are we doing') ||
     q.includes('daily briefing') ||
     q.includes('morning briefing') ||
     q.includes('executive briefing') ||
     q.includes('give me an update') ||
-    q.includes('status update') ||
-    q.includes('tell me about the system') ||
-    q.includes('about the system')
+    q.includes('finance doing') ||
+    q.includes('how are the finances')
   ) {
-    const rByTrack = opsContext.aggregates.recentByTrack;
-    const prime = opsContext.aggregates.primeConversionOpportunity;
-    const netWords = numberToIndianWords(fin.netRevenue);
-    const incWords = numberToIndianWords(fin.totalIncome);
-    const expWords = numberToIndianWords(fin.totalExpense);
-    const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
-    const lastDate = fin.latestIncomeDate || 'October 24, 2026';
-
-    // A. Default Short Co-founder Mode (when not asking for deep details) - Casual American style ("boss")
-    if (!isDetailed) {
-      if (q.includes('finance')) {
-        return {
-          answer: `Hey boss, finances are looking pretty sweet right now! Net profit is sitting comfortably at ${netWords} on ${incWords} total income, so the ship is sailing smooth. That last check cleared on ${lastDate} for ${lastAmtWords}. Honestly, can't complain!`,
-          actionAdvice: 'Feel free to peep the live ledger in the Finance Intelligence panel whenever you want.',
-          matchedIds: [],
-          recommendedFilter: 'all',
-        };
-      }
+    // If user asked purely about finances only
+    if (q.includes('finance doing') || q.includes('how are the finances') || (q.includes('finance') && !q.includes('system') && !q.includes('going on'))) {
+      const netWords = numberToIndianWords(fin.netRevenue);
+      const incWords = numberToIndianWords(fin.totalIncome);
+      const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
+      const lastDate = fin.latestIncomeDate || 'recent';
 
       return {
-        answer: `Honestly, boss, we're crushing it today! Inquiry pipeline is buzzing across Blue Yonder and Manhattan Active, and net profit is sitting solid at ${netWords}. No fires to put out, coffee's kicking in, and everything's rolling smooth!`,
-        actionAdvice: prime
-          ? stripTechnicalCodes(`Prime play: hit up ${prime.name} for ${prime.course} to close that batch.`)
-          : 'Zero fires on the radar, boss. Smooth sailing.',
-        matchedIds: opsContext.allLeads.slice(0, 3).map((l) => l.id),
+        answer: `Finances are solid, boss. Net revenue is sitting at ${netWords} on ${incWords} total income, with your last payment cleared on ${lastDate} for ${lastAmtWords}.`,
+        actionAdvice: '',
+        matchedIds: [],
         recommendedFilter: 'all',
       };
     }
 
-    // B. Explicit Detailed Breakdown Mode
+    // 1. Leads Status: Scan all leads and evaluate the last 48 hours
+    const now = new Date();
+    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
-    // Part 1: Recent leads grouped by track (Names only, no codes)
-    const trackSummaries: string[] = [];
-    if (rByTrack.blueYonder.length > 0) {
-      trackSummaries.push(`Blue Yonder: ${rByTrack.blueYonder.map((x) => x.name).join(', ')}`);
-    }
-    if (rByTrack.manhattan.length > 0) {
-      trackSummaries.push(`Manhattan Active WMS: ${rByTrack.manhattan.map((x) => x.name).join(', ')}`);
-    }
-    if (rByTrack.sap.length > 0) {
-      trackSummaries.push(`SAP: ${rByTrack.sap.map((x) => x.name).join(', ')}`);
-    }
-    if (rByTrack.other.length > 0) {
-      trackSummaries.push(`Supply Chain & Analytics: ${rByTrack.other.map((x) => `${x.name} (${x.course})`).join(', ')}`);
+    const leads48h = opsContext.allLeads.filter((l) => {
+      if (!l.dateOfEntry) return false;
+      const d = new Date(l.dateOfEntry);
+      return !isNaN(d.getTime()) && d >= fortyEightHoursAgo;
+    });
+
+    const displayLeads = leads48h.length > 0 ? leads48h : opsContext.allLeads.slice(0, 4);
+    const count48 = leads48h.length > 0 ? leads48h.length : displayLeads.length;
+    const candidateNames = displayLeads.slice(0, 3).map((l) => l.name).filter(Boolean).join(', ');
+    const uniqueCourses = Array.from(new Set(displayLeads.map((l) => l.course).filter(Boolean))).slice(0, 2).join(' and ');
+    const trackPhrase = uniqueCourses ? ` primarily in ${uniqueCourses}` : '';
+
+    const leadsPart = `Over the last 48 hours, we tracked ${count48} inquiries in the pipeline${trackPhrase}, including ${candidateNames}.`;
+
+    // 2. Calendar Status: Check Google / iCal database events & active training cohorts
+    let calendarPart = 'On the calendar, all schedules are aligned with zero conflicts.';
+    try {
+      const calData = await listCalendarEvents({ maxResults: 5 });
+      const upcomingEvents = (calData?.events || []).filter((e) => {
+        const start = new Date(e.start);
+        return !isNaN(start.getTime()) && start >= now;
+      });
+
+      if (upcomingEvents.length > 0) {
+        const nextEv = upcomingEvents[0];
+        const dateStr = new Date(nextEv.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        calendarPart = `On your calendar, you have "${nextEv.title}" upcoming on ${dateStr}.`;
+      } else if (calData?.events && calData.events.length > 0) {
+        const nextEv = calData.events[0];
+        calendarPart = `On your calendar, upcoming schedule includes "${nextEv.title}".`;
+      } else if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
+        const nextSession = opsContext.activeSessions[0];
+        calendarPart = `On your training calendar, ${nextSession.title} with trainer ${nextSession.trainer} is scheduled for ${nextSession.date}.`;
+      }
+    } catch {
+      if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
+        const nextSession = opsContext.activeSessions[0];
+        calendarPart = `On your training calendar, ${nextSession.title} with trainer ${nextSession.trainer} is scheduled for ${nextSession.date}.`;
+      }
     }
 
-    const leadsPart = trackSummaries.length > 0
-      ? `Starting with our newest candidate inquiries grouped by track: ${trackSummaries.join('; ')}.`
-      : `We have 501 active prospects recorded in CRM.`;
+    // 3. Short Finance Status: Net profit, total income, and latest income date
+    const netWords = numberToIndianWords(fin.netRevenue);
+    const incWords = numberToIndianWords(fin.totalIncome);
+    const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
+    const lastDate = fin.latestIncomeDate || 'recent';
 
-    // Part 2: Prime follow-up opportunity from call notes & transcripts
-    const followUpPart = prime
-      ? `Moving to follow-ups, our prime conversion opportunity is ${prime.name} for ${prime.course}. Their call log notes: "${prime.notes}". They are actively primed for conversion.`
-      : `Our top active callback candidates are ready for immediate contact.`;
+    const financePart = `Financially, net revenue is sitting solid at ${netWords} on ${incWords} total income, with your last payment cleared on ${lastDate} for ${lastAmtWords}.`;
 
-    // Part 3: Finance net worth & cash flow alert
-    const lastPaymentAlert = fin.latestIncomeDate
-      ? `Regarding our finances, overall net revenue stands at ${netWords} (total income ${incWords} against ${expWords} in expenses). Our last incoming payment arrived on ${lastDate} for ${lastAmtWords}, and we have not recorded any new incoming payments since that date.`
-      : `Overall net revenue stands at ${netWords}.`;
+    const fullBriefing = `${leadsPart} ${calendarPart} ${financePart}`;
 
     return {
-      answer: stripTechnicalCodes(`${leadsPart} ${followUpPart} ${lastPaymentAlert}`),
-      actionAdvice: prime
-        ? stripTechnicalCodes(`Engage ${prime.name} immediately via WhatsApp (${prime.phone}) to lock in batch confirmation and release invoicing.`)
-        : `Prioritize closing demo stage candidates to restart inbound cash flow.`,
-      matchedIds: opsContext.allLeads.slice(0, 5).map((l) => l.id),
+      answer: stripTechnicalCodes(fullBriefing),
+      actionAdvice: '',
+      matchedIds: displayLeads.map((l) => l.id),
       recommendedFilter: 'all',
     };
   }

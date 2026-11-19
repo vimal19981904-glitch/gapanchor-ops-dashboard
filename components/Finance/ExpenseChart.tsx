@@ -26,10 +26,10 @@ export default function ExpenseChart({
 }: ExpenseChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="relative w-full h-72 sm:h-80 flex flex-col items-center justify-center space-y-3">
-        <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin flex items-center justify-center">
-          <div className="w-32 h-32 rounded-full border-2 border-slate-800 border-b-cyan-400 animate-pulse flex flex-col items-center justify-center text-center p-2">
-            <Loader2 size={22} className="text-cyan-400 animate-spin mb-1" />
+      <div className="relative w-full h-64 sm:h-72 flex flex-col items-center justify-center space-y-3">
+        <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full border-4 border-slate-800 border-t-slate-500 animate-spin flex items-center justify-center">
+          <div className="w-28 h-28 rounded-full border-2 border-slate-800 border-b-slate-400 animate-pulse flex flex-col items-center justify-center text-center p-2">
+            <Loader2 size={20} className="text-slate-400 animate-spin mb-1" />
             <span className="text-[10px] font-bold text-slate-400">Loading...</span>
           </div>
         </div>
@@ -45,8 +45,8 @@ export default function ExpenseChart({
     : null;
 
   return (
-    <div className="relative w-full h-72 sm:h-80 flex items-center justify-center animate-fade-in">
-      {/* SVG Gradient definitions for chart slices */}
+    <div className="relative w-full h-64 sm:h-72 flex items-center justify-center animate-fade-in">
+      {/* SVG Gradient definitions for monochrome chart slices */}
       <svg className="absolute w-0 h-0 overflow-hidden">
         <defs>
           {Object.entries(expenseDashboardTheme.colors.categories).map(([key, config]) => (
@@ -61,17 +61,17 @@ export default function ExpenseChart({
       {/* Top-Right Background Space Hover Badge (Zero Center Overlap) */}
       {activeData && activeConfig && (
         <div
-          className="absolute top-0 right-0 z-30 p-2.5 sm:p-3 rounded-2xl border shadow-xl backdrop-blur-md animate-fade-in text-xs space-y-0.5 pointer-events-none"
+          className="absolute top-0 right-0 z-30 p-2 sm:p-2.5 rounded-xl border shadow-xl backdrop-blur-md animate-fade-in text-xs space-y-0.5 pointer-events-none"
           style={{
-            background: 'rgba(15, 23, 42, 0.92)',
-            borderColor: activeConfig.stroke || 'rgba(148, 163, 184, 0.3)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
           }}
         >
           <div className="flex items-center gap-1.5 font-bold text-slate-200">
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: activeConfig.solid }} />
             <span className="truncate max-w-[120px]">{activeData.name}</span>
           </div>
-          <div className="text-sm font-black font-mono text-white">
+          <div className="text-xs font-bold font-mono text-white">
             {formatCurrency(activeData.amount)}
           </div>
           <div className="text-[10px] text-slate-400 font-semibold">
@@ -90,7 +90,7 @@ export default function ExpenseChart({
             outerRadius={expenseDashboardTheme.chart.outerRadius}
             paddingAngle={expenseDashboardTheme.chart.paddingAngle}
             dataKey="amount"
-            stroke="rgba(15, 23, 42, 0.8)"
+            stroke="rgba(15, 23, 42, 0.9)"
             strokeWidth={4}
             cornerRadius={6}
             onMouseEnter={(_, index) => onHoverCategory(data[index]?.name || null)}
@@ -107,8 +107,8 @@ export default function ExpenseChart({
                   fill={`url(#${gradId})`}
                   className="transition-all duration-300 cursor-pointer outline-none"
                   style={{
-                    filter: isActive ? 'brightness(1.25) drop-shadow(0 0 14px rgba(99, 102, 241, 0.6))' : 'brightness(1.0)',
-                    transform: isActive ? 'scale(1.04)' : 'scale(1)',
+                    filter: isActive ? 'brightness(1.3) drop-shadow(0 0 10px rgba(255, 255, 255, 0.35))' : 'brightness(1.0)',
+                    transform: isActive ? 'scale(1.03)' : 'scale(1)',
                     transformOrigin: 'center center',
                   }}
                 />
@@ -118,22 +118,18 @@ export default function ExpenseChart({
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Donut Center Display Overlay (Dynamic & Clean) */}
+      {/* Donut Center Display Overlay (Dynamic, Minimal & Refined) */}
       <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none z-10">
-        <span
-          className="text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-colors duration-200"
-          style={{ color: activeConfig ? activeConfig.solid : expenseDashboardTheme.colors.text.muted }}
-        >
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 transition-colors duration-200">
           {activeData ? activeData.name : centerTitle}
         </span>
-        <span className="text-lg sm:text-2xl font-black font-mono text-white mt-0.5 transition-all duration-200">
+        <span className="text-base sm:text-xl font-bold font-mono text-white mt-0.5 transition-all duration-200">
           {formatCurrency(activeData ? activeData.amount : totalExpense)}
         </span>
-        <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
+        <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
           {activeData ? `${activeData.percentage}% of total` : `${data.length} Categories`}
         </span>
       </div>
     </div>
   );
 }
-
