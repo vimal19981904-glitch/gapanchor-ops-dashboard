@@ -149,9 +149,9 @@ const CustomAnimatedBatchDropdown = ({
         </div>
       </button>
 
-      {/* Animated Dropdown Menu Popover (Compact Glass Card) */}
+      {/* Animated Dropdown Menu Popover (Ultra-Blurred Liquid Glass) */}
       <div
-        className={`absolute top-full left-0 right-0 mt-1.5 z-50 min-w-[280px] sm:min-w-[340px] bg-[#0c1427]/98 border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl rounded-2xl p-2.5 space-y-2 transition-all duration-300 ease-out origin-top transform ${
+        className={`absolute top-full left-0 right-0 mt-1.5 z-50 min-w-[280px] sm:min-w-[340px] bg-[#070c18]/95 border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.95)] backdrop-blur-2xl rounded-2xl p-2.5 space-y-2 transition-all duration-300 ease-out origin-top transform ${
           isOpen
             ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
@@ -177,8 +177,8 @@ const CustomAnimatedBatchDropdown = ({
           )}
         </div>
 
-        {/* Batch Cards List (High-Contrast Opaque Glass) */}
-        <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        {/* Batch Cards List */}
+        <div className="max-h-[220px] overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {filteredBatches.length === 0 ? (
             <div className="p-3 text-center text-[11px] text-slate-400 font-medium">
               No matching batches found.
@@ -193,18 +193,18 @@ const CustomAnimatedBatchDropdown = ({
                     onSelectBatch(b.originalIndex);
                     setIsOpen(false);
                   }}
-                  className={`p-2.5 rounded-lg border transition-all duration-200 cursor-pointer flex items-center justify-between gap-2.5 ${
+                  className={`p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-2.5 backdrop-blur-xl ${
                     isSelected
-                      ? 'bg-slate-800/95 border-white/30 shadow-md'
-                      : 'bg-slate-900/95 border-white/10 hover:bg-slate-800/90 hover:border-white/20'
+                      ? 'bg-slate-800/95 border-brand-500/50 shadow-md ring-1 ring-brand-500/30'
+                      : 'bg-slate-900/92 border-white/10 hover:bg-slate-800/95 hover:border-white/20'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
                       className={`px-1.5 py-0.5 text-[9px] font-mono font-bold rounded border shrink-0 ${
                         isSelected
-                          ? 'bg-white text-slate-950 border-white'
-                          : 'bg-white/10 text-slate-300 border-white/10'
+                          ? 'bg-white/20 text-white border-white/30'
+                          : 'bg-white/[0.06] text-slate-400 border-white/10'
                       }`}
                     >
                       #{b.originalIndex + 1}
@@ -215,24 +215,21 @@ const CustomAnimatedBatchDropdown = ({
                           {b.fullTitle}
                         </h5>
                         {b.platform && (
-                          <span className="px-1.5 py-0.5 text-[8px] font-semibold rounded bg-white/10 text-slate-300 border border-white/10">
+                          <span className="px-1.5 py-0.5 text-[8px] font-bold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             {b.platform}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[9px] text-slate-400 font-medium mt-0.5">
-                        <span>
-                          Trainer: <strong className="text-slate-200">{b.trainer || 'Unassigned'}</strong>
-                        </span>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                        <span>Trainer: <strong className="text-slate-300 font-semibold">{b.trainer || 'Arul Xavier'}</strong></span>
                         <span>•</span>
-                        <span>Tuition: <strong className="text-slate-200">{formatCurrency(b.participantTotalDue)}</strong></span>
+                        <span>Tuition: <strong className="text-emerald-400 font-mono font-semibold">{formatCurrency(b.participantTotalDue)}</strong></span>
                       </div>
                     </div>
                   </div>
-
                   {isSelected && (
-                    <div className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 border border-white/40">
-                      <CheckCircle2 size={12} />
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
+                      <Check size={11} />
                     </div>
                   )}
                 </div>
