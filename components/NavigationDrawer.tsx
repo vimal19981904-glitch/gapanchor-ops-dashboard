@@ -155,7 +155,7 @@ export default function NavigationDrawer({
     },
     {
       id: 'calendar',
-      title: 'Google Calendar Events',
+      title: 'GapAnchor Calendar',
       icon: Calendar,
       action: () => handleAction(() => { window.location.href = '/calendar'; }),
     },

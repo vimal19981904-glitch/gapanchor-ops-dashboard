@@ -402,24 +402,9 @@ export default function CalendarPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-base sm:text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                    <span className="sm:hidden">Calendar Hub</span>
-                    <span className="hidden sm:inline">Calendar & Events Hub</span>
+                    GapAnchor Calendar
                   </h1>
-                  {status.connected ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 max-w-[180px] sm:max-w-none truncate">
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0" />
-                      <span className="truncate">Google Calendar</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400">
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 shrink-0" />
-                      Sandbox
-                    </span>
-                  )}
                 </div>
-                <p className="text-[10px] sm:text-xs font-medium truncate hidden sm:block" style={{ color: 'var(--text-tertiary)' }}>
-                  Training batches, client consultations, mock interviews & operational reviews
-                </p>
               </div>
             </div>
 
