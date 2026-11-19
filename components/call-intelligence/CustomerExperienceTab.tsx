@@ -455,26 +455,26 @@ export function CustomerExperienceTab({
         elements.push(
           <div
             key={i}
-            className="pb-3 mb-2 border-b border-slate-800 flex items-center justify-between gap-2 flex-wrap"
+            className="pb-2.5 mb-2 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                <FileText className="w-4 h-4" />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+                <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
-              <div>
-                <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-extrabold text-white tracking-tight truncate">
                   {trimmed}
                 </h2>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono block">
                   Verified Executive Record · GapAnchor Consulting
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                 Score: {leadScore}/10
               </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
                 {leadTemp} Lead
               </span>
             </div>
@@ -493,13 +493,13 @@ export function CustomerExperienceTab({
         elements.push(
           <div
             key={i}
-            className="flex items-center gap-2 py-0.5 text-xs text-slate-300"
+            className="grid grid-cols-[105px_minmax(0,1fr)] sm:grid-cols-[140px_minmax(0,1fr)] items-start gap-2 py-0.5 text-[11px] sm:text-xs text-slate-300"
           >
-            <span className="font-semibold text-slate-400 text-[11px] min-w-[130px]">
+            <span className="font-semibold text-slate-400 text-[11px] sm:text-xs shrink-0">
               {label}:
             </span>
             <span
-              className={`font-semibold ${
+              className={`font-semibold break-words leading-snug ${
                 isPriority
                   ? 'text-amber-300'
                   : isStatus
@@ -522,12 +522,12 @@ export function CustomerExperienceTab({
 
       if (isNumberedHeading || isNamedHeading) {
         elements.push(
-          <div key={i} className="pt-5 pb-1">
-            <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+          <div key={i} className="pt-3.5 sm:pt-4 pb-1">
+            <h3 className="text-[11px] sm:text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
               <span>{trimmed}</span>
             </h3>
-            <div className="w-full h-px bg-gradient-to-r from-slate-700 via-slate-800 to-transparent mt-1.5" />
+            <div className="w-full h-px bg-gradient-to-r from-slate-700 via-slate-800 to-transparent mt-1" />
           </div>
         );
         continue;
@@ -642,9 +642,9 @@ export function CustomerExperienceTab({
         elements.push(
           <div
             key={i}
-            className="flex items-start gap-2.5 py-1 text-xs sm:text-sm text-slate-200 leading-relaxed pl-1"
+            className="flex items-start gap-2 py-0.5 text-[11px] sm:text-xs text-slate-200 leading-relaxed pl-0.5"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0 shadow-[0_0_6px_rgba(129,140,248,0.6)]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0 shadow-[0_0_6px_rgba(129,140,248,0.6)]" />
             <span>{bulletText}</span>
           </div>
         );
@@ -653,7 +653,7 @@ export function CustomerExperienceTab({
 
       // 6. Regular paragraphs / body sentences
       elements.push(
-        <p key={i} className="py-1 text-xs sm:text-sm text-slate-200 leading-relaxed pl-1">
+        <p key={i} className="py-0.5 text-[11px] sm:text-xs text-slate-200 leading-relaxed pl-0.5">
           {trimmed}
         </p>
       );
@@ -708,42 +708,42 @@ export function CustomerExperienceTab({
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200">
       {/* ── Top Executive Notepad Toolbar ── */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-700/80 shadow-2xl flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500/20 via-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center shadow-lg">
-            <FileText className="w-5 h-5 text-cyan-400" />
+      <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-700/80 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500/20 via-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center shadow-lg shrink-0">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
                 <span>Executive Dossier & Notepad</span>
               </h3>
-              <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+              <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
                 {enquiry?.leadCode || `#${enquiry?.id?.slice(-6)}`}
               </span>
               {actionStats.total > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  <CheckCheck className="w-3 h-3 text-emerald-400" />
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  <CheckCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
                   <span>
-                    {actionStats.completed}/{actionStats.total} Actions Done ({actionStats.pct}%)
+                    {actionStats.completed}/{actionStats.total} Done ({actionStats.pct}%)
                   </span>
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">
               Live interactive action items, pricing intelligence & scheduling feasibility
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-[11px] sm:text-xs font-semibold transition-all shadow-sm cursor-pointer"
             title="Copy full dossier to clipboard"
           >
             {copied ? (
@@ -762,7 +762,7 @@ export function CustomerExperienceTab({
           <button
             type="button"
             onClick={() => setIsEditing(!isEditing)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer ${
               isEditing
                 ? 'bg-indigo-600 text-white border-indigo-500'
                 : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -822,9 +822,9 @@ export function CustomerExperienceTab({
         </div>
       ) : (
         /* Mode B: Executive Notepad Dossier View */
-        <div className="p-6 rounded-2xl bg-[#090f1d] border border-slate-800/90 shadow-2xl backdrop-blur-md space-y-1 relative">
+        <div className="p-3.5 sm:p-6 rounded-xl sm:rounded-2xl bg-[#090f1d] border border-slate-800/90 shadow-2xl backdrop-blur-md space-y-1 relative">
           {/* Subtle Notepad Top Accent Strip */}
-          <div className="absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500" />
+          <div className="absolute top-0 left-4 right-4 sm:left-6 sm:right-6 h-[2px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500" />
           {renderedContent}
         </div>
       )}

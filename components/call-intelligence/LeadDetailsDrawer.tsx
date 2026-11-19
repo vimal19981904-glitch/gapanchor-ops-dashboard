@@ -313,6 +313,17 @@ export function LeadDetailsDrawer({
     }
   }, [isOpen, enquiry?.id]);
 
+  // Freeze background body scrolling when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || 'unset';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen || !enquiry) return null;
 
   const latestCall = callHistory[0];
@@ -384,12 +395,12 @@ export function LeadDetailsDrawer({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain"
     >
       {/* 40% Width Drawer Container */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:w-[540px] md:w-[48vw] lg:w-[42vw] xl:w-[40vw] h-full bg-[#0b1324] border-l border-slate-700/80 shadow-[-20px_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden text-slate-100 animate-in slide-in-from-right duration-300"
+        className="w-full sm:w-[540px] md:w-[48vw] lg:w-[42vw] xl:w-[40vw] h-full bg-[#0b1324] border-l border-slate-700/80 shadow-[-20px_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden text-slate-100 animate-in slide-in-from-right duration-300 overscroll-contain"
       >
         {/* Header */}
         <div className="p-3 sm:p-5 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md flex items-start justify-between shrink-0">
@@ -695,7 +706,7 @@ export function LeadDetailsDrawer({
         </div>
 
         {/* Drawer Body Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-2.5 sm:p-5 space-y-2.5 sm:space-y-5 pb-8 sm:pb-5">
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-5 space-y-2.5 sm:space-y-5 pb-8 sm:pb-5 no-scrollbar overscroll-contain">
           {activeTab === 'overview' ? (
             /* ── TAB 1: INQUIRY OVERVIEW ── */
             <div className="animate-in fade-in duration-150">
@@ -1110,6 +1121,7 @@ export function LeadDetailsDrawer({
                       <span className="text-emerald-400 font-semibold">{latestCall.budget || 'In evaluation'}</span>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                      <span className="text-slate-400 font-medium block mb-1">Timeline:</span>
                       <span className="text-cyan-400 font-semibold">{latestCall.timeline || 'Flexible'}</span>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">

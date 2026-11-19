@@ -297,16 +297,16 @@ export default function MobileLeadCards({
                     <span>Notes</span>
                   </button>
 
-                  {/* View Detail Button (Gradient like desktop) */}
+                  {/* View Detail Button (Sleek slate/grey merged with background) */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onViewDetail) onViewDetail(lead);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
+                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <Eye size={13} />
+                    <Eye size={13} className="text-slate-400" />
                     <span>View Detail</span>
                   </button>
 
