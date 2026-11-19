@@ -432,18 +432,23 @@ export async function prepareJarvisSpeech(text: string, voiceId?: string): Promi
 
 /**
  * Splits text into natural spoken chunks for streaming pipeline:
- * Responses under 500 chars remain a single seamless audio file (eliminating inter-sentence pauses).
- * Longer detailed briefings split at natural 500-600 char paragraph boundaries.
+ * Responses under 750 chars remain a single seamless audio file (eliminating inter-sentence pauses).
+ * Longer detailed briefings split at natural 350-450 char paragraph/sentence boundaries.
  */
 export function chunkTextForPipelinedSpeech(
   text: string,
-  maxInitialLen = 500,
-  maxChunkLen = 600
+  maxChunkLen = 450
 ): string[] {
   if (!text || !text.trim()) return [];
 
+  const trimmed = text.trim();
+  // Responses up to 750 chars are synthesized in a single audio buffer for 100% continuous, zero-pause playback
+  if (trimmed.length <= 750) {
+    return [trimmed];
+  }
+
   // Protect acronyms with dots like W.M.S., U.S., A.I.
-  let safe = text.replace(/([A-Za-z]\.){2,}[A-Za-z]?/g, (m) => m.replace(/\./g, '___DOT___'));
+  let safe = trimmed.replace(/([A-Za-z]\.){2,}[A-Za-z]?/g, (m) => m.replace(/\./g, '___DOT___'));
   // Protect decimal numbers like 3.5, 4.0
   safe = safe.replace(/(\d+)\.(\d+)/g, (_m, p1, p2) => `${p1}___DOT___${p2}`);
 
@@ -454,22 +459,20 @@ export function chunkTextForPipelinedSpeech(
     .filter((s) => s.length > 0);
 
   if (rawSentences.length <= 1) {
-    return [text.trim()];
+    return [trimmed];
   }
 
-  // Ultra-low latency sentence pipeline:
-  // Isolate first sentence (~140 chars) into chunk 0 so Edge-TTS starts playing in ~250ms
-  // while subsequent sentences buffer concurrently in parallel!
+  // Group sentences into balanced, substantial chunks (350-450 chars) so each chunk
+  // provides 10-15s of continuous audio while subsequent chunks buffer concurrently
   const chunks: string[] = [];
   let current = '';
 
   for (let i = 0; i < rawSentences.length; i++) {
     const s = rawSentences[i];
-    const limit = chunks.length === 0 ? 150 : maxChunkLen;
 
     if (!current) {
       current = s;
-    } else if (current.length + s.length + 1 <= limit) {
+    } else if (current.length + s.length + 1 <= maxChunkLen) {
       current += ' ' + s;
     } else {
       chunks.push(current);
@@ -742,14 +745,19 @@ export function speakJarvis(
     };
 
     try {
-      // Chunk the body into natural sentences
-      const bodyChunks = chunkTextForPipelinedSpeech(cleanBody);
-      const playlist: string[] = [];
+      const lowerClean = cleanBody.toLowerCase();
+      const needsIntro =
+        includeIntro &&
+        !lowerClean.startsWith('right away') &&
+        !lowerClean.startsWith('online') &&
+        !lowerClean.startsWith('alright') &&
+        !lowerClean.startsWith('boss') &&
+        !lowerClean.startsWith('good morning') &&
+        !lowerClean.startsWith('good afternoon') &&
+        !lowerClean.startsWith('good evening');
 
-      if (includeIntro && !cleanBody.toLowerCase().startsWith('right away') && !cleanBody.toLowerCase().startsWith('online')) {
-        playlist.push('Right away, boss.');
-      }
-      playlist.push(...bodyChunks);
+      const fullSpokenText = needsIntro ? `Right away, boss. ${cleanBody}` : cleanBody;
+      const playlist = chunkTextForPipelinedSpeech(fullSpokenText);
 
       if (playlist.length > 0) {
         liveSpeechState.chunkText = playlist[0];

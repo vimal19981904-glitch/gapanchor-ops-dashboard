@@ -327,13 +327,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── STAGE 2: Load Full Multi-Entity Operations Snapshot ──────
-    // Covers: Leads (463+), Batches & Participants, Finances, Trainers, Transcripts
-    const [opsContext, transcriptSnapshot] = await Promise.all([
+    // Covers: Leads (503+), Batches & Participants, Finances, Trainers, Transcripts, Calendar Events
+    const [opsContext, transcriptSnapshot, calendarData] = await Promise.all([
       getComprehensiveOperationsSnapshot(prisma),
       getTranscriptKnowledgeSnapshot().catch(() => ({ records: [], highInterestCandidates: [], compactPromptContext: '', totalTranscripts: 0 })),
+      listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] })),
     ]);
 
-    // Full 502+ database filter intent evaluation (never truncated)
+    // Full 503+ database filter intent evaluation (never truncated)
     const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
 
     // ─── STAGE 3: If Gemini API Key Available: Real Neural Reasoning ───
@@ -347,6 +348,36 @@ export async function POST(req: NextRequest) {
             w.length >= 3 &&
             !['what', 'when', 'where', 'who', 'how', 'show', 'tell', 'the', 'are', 'is', 'for', 'and', 'with', 'about', 'from', 'all', 'our', 'my'].includes(w)
         );
+
+      // Query Intent Classification
+      const isSystemStatusQuery =
+        /\b(how\s+is\s+the\s+system|how\s+is\s+gap\s*anchor\s+doing|how\s+are\s+we\s+doing|system\s+status|what's\s+going\s+on\s+with\s+the\s+system|what\s+is\s+going\s+on\s+with\s+the\s+system|daily\s+briefing|morning\s+briefing|executive\s+briefing|overall\s+status|update\s+on\s+the\s+system)\b/i.test(pLower) ||
+        (/\bwhat('s|\s+is)\s+going\s+on\b/i.test(pLower) && !/\blead|candidate|prospect|enquir|detail|next\s+step/i.test(pLower));
+
+      const isFinanceOnlyQuery =
+        /\b(how\s+are\s+the\s+finances|finance\s+status|how's\s+finance\s+doing|financial\s+update|revenue|expenses|net\s+profit)\b/i.test(pLower) &&
+        !/\blead|candidate|prospect|system\s+status|going\s+on/i.test(pLower);
+
+      // Full Database 503+ leads distribution & intelligence statistics
+      const totalLeadsCount = opsContext.allLeads.length;
+      const leadsWithNotesCount = opsContext.allLeads.filter((l) => l.notes && l.notes.trim().length > 0).length;
+      const dueFollowUpsCount = opsContext.allLeads.filter((l) => l.isDue || Boolean(l.followUpDate)).length;
+      const courseBreakdown: Record<string, number> = {};
+      const statusBreakdown: Record<string, number> = {};
+      for (const l of opsContext.allLeads) {
+        const c = l.course || 'Other';
+        courseBreakdown[c] = (courseBreakdown[c] || 0) + 1;
+        const s = l.status || 'Unknown';
+        statusBreakdown[s] = (statusBreakdown[s] || 0) + 1;
+      }
+
+      // Upcoming Calendar Events & Cohorts
+      const upcomingCalendarEvents = (calendarData?.events || []).map((e: any) => ({
+        title: e.title || e.summary || 'Meeting / Session',
+        start: e.start,
+        end: e.end,
+        description: e.description || '',
+      }));
 
       // Dynamically match any specific prospects across all 500+ leads
       // Full deep search across name, code, notes, message, phone, email, country, course, transcripts
@@ -385,7 +416,7 @@ export async function POST(req: NextRequest) {
         })
         .filter((item) => item.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 25)
+        .slice(0, 30)
         .map((item) => item.lead);
 
       // All leads with active Call Notes & Follow-up Due Dates
@@ -398,7 +429,7 @@ export async function POST(req: NextRequest) {
           if (bMatch !== aMatch) return bMatch - aMatch;
           return (b.dateOfEntry || '').localeCompare(a.dateOfEntry || '');
         })
-        .slice(0, 30)
+        .slice(0, 35)
         .map((l) => ({
           leadCode: l.leadCode,
           name: l.name,
@@ -414,7 +445,7 @@ export async function POST(req: NextRequest) {
       // Evaluated candidates with scores, call transcripts, callback reminders
       const evaluatedCandidates = opsContext.allLeads
         .filter((l) => l.score || l.transcriptSummary || l.notes || l.followUpDate || l.hasRedFlag)
-        .slice(0, 20)
+        .slice(0, 25)
         .map((l) => ({
           id: l.id,
           primaryKey: l.leadCode,
@@ -445,14 +476,13 @@ export async function POST(req: NextRequest) {
       const lastPaymentWords = numberToIndianWords(fin.latestIncomeAmount || 0);
       const lastPaymentDate = fin.latestIncomeDate || 'October 24, 2026';
 
-      const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
-
       const systemPrompt = `You are J.A.R.V.I.S., the co-founder, partner, and operations controller for GapAnchor enterprise academy (Manhattan Active WMS, Blue Yonder, SAP, Kinaxis). You are speaking directly to your CEO / business partner.
 You have live neural database access across all GapAnchor systems:
-1. All 500+ candidate leads (full contact details: email, phone, country, course, service type, initial query message, entry dates, status, CRM call notes, call transcripts & scores).
+1. All ${totalLeadsCount} candidate leads (full contact details: email, phone, country, course, service type, initial query message, entry dates, status, CRM call notes, call transcripts & scores).
 2. Live Training Batches & Sessions (platform, trainer, scheduled times, trainer total payout, trainer amount paid/due, trainee participants with fees & payment statuses: PAID, PARTIAL, PENDING).
-3. Financial Ledger Transactions (income, expenses, payment methods, transaction notes, amounts).
-4. Trainer Registrations (work-with-us candidate profiles, experience years, primary domains, contact info).
+3. Live Calendar Events & Training Schedules (upcoming demos, meetings, batches).
+4. Financial Ledger Transactions (income, expenses, payment methods, transaction notes, amounts).
+5. Trainer Registrations (work-with-us candidate profiles, experience years, primary domains, contact info).
 
 USER INQUIRY: "${prompt}"
 
@@ -472,14 +502,21 @@ ${JSON.stringify(evaluatedCandidates, null, 2)}
 5. ACTIVE TRAINING BATCHES & TRAINER PAYOUTS (Session & SessionParticipant):
 ${JSON.stringify(opsContext.activeSessions.slice(0, 6), null, 2)}
 
-6. RECENT FINANCIAL TRANSACTIONS:
+6. UPCOMING CALENDAR EVENTS & SCHEDULED SESSIONS:
+${JSON.stringify(upcomingCalendarEvents, null, 2)}
+
+7. RECENT FINANCIAL TRANSACTIONS:
 ${JSON.stringify(opsContext.financialTransactions.slice(0, 6), null, 2)}
 
-7. TRAINER REGISTRATIONS (Work With Us Applications):
-${JSON.stringify(opsContext.trainerRegistrations.slice(0, 6), null, 2)}
-
-8. DATABASE TOTALS & AGGREGATES:
-${JSON.stringify(opsContext.aggregates, null, 2)}
+8. DATABASE TOTALS & 503+ LEADS SCAN:
+${JSON.stringify({
+  totalLeads: totalLeadsCount,
+  leadsWithNotes: leadsWithNotesCount,
+  dueFollowUps: dueFollowUpsCount,
+  courseBreakdown,
+  statusBreakdown,
+  aggregates: opsContext.aggregates,
+}, null, 2)}
 ${fullDbFilter.intentDetected ? `
 9. COMPREHENSIVE FULL-DATABASE SCAN RESULTS (Evaluated ALL ${opsContext.allLeads.length} CRM Enquiries):
 User Request Category: "${fullDbFilter.categoryLabel}"
@@ -500,36 +537,41 @@ ${JSON.stringify(fullDbFilter.matchedLeads.map(l => ({
 
 OPERATIONAL INSTRUCTIONS & PERSONA:
 1. CASUAL AMERICAN STYLE (MANDATORY SALUTATION: ALWAYS ADDRESS USER AS "BOSS"):
-   - When the user asks general questions, greetings, or quick summaries (e.g. "what's going on", "tell me about the system", "how's it going", "how are we doing", "what's up", "how's finance doing"):
-     * Speak like a casual, witty American co-founder talking directly to his CEO.
-     * STRICT ADDRESS DIRECTIVE: ALWAYS call the user "boss" (e.g. "Honestly, boss, we're crushing it today!", "Pipeline's looking pretty slick, boss—no fires to put out, coffee's kicking in!", "Net profit is sitting pretty at ${finNetWords}, boss, so nobody's going broke today!").
-     * NEVER call the user "man" or "partner" or "sir". Use "boss" exclusively.
-     * Keep it funny, relaxed, and lighthearted with natural American idioms.
-     * Keep it SHORT and PUNCHY: 2 to 3 sentences MAXIMUM.
-     * NEVER dump long lists of candidates or recite raw data tables during small talk.
-2. STRICT DATA FIDELITY IN DETAIL MODE:
-   - When the user says "give me the things in detail", "breakdown", "in depth", "detail", "detailed", "full report", "deep dive":
-     * STOP JOKING AND DO NOT PLAY WITH THE DATA. Shift immediately into precise, high-rigor executive data delivery with uncompromised accuracy, addressing the user as "boss" (e.g. "Alright boss, here is the full executive breakdown across our active operations...").
-     * Deliver the exact 3-part CRM briefing:
-       - Part 1: Priority new leads from the recent influx grouped cleanly by training track (e.g. Blue Yonder, Manhattan Active, SAP). Speak only candidate real names without technical codes.
-       - Part 2: Review call notes and transcripts to highlight our prime high-conversion lead (e.g. Pramod P who needs a demo session conducted in 2 days) and specify the tactical next step.
-       - Part 3: Deliver the financial standing and cash flow alert: Total net revenue (${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses), and explicitly state when the last payment came in: "Our last incoming payment was recorded on ${lastPaymentDate} for ${lastPaymentWords}."
-3. CURRENCY IN SPOKEN INDIAN WORDS:
+   - ALWAYS address the user as "boss" (e.g. "Alright boss...", "Here's what's going on, boss...").
+   - Speak like a sharp, confident, trustworthy operations partner.
+   - NEVER output or read "practical directive" or include a heading called practical directive.
+
+2. STRICT INTENT-BASED REPORTING (CRITICAL):
+${isSystemStatusQuery ? `
+   - THIS IS A SYSTEM / GAPANCHOR STATUS BRIEFING:
+     Deliver a crisp, cohesive 3-part operational report:
+     1. Leads Status: Scan of recent pipeline and last 48-hour inquiries across our ${totalLeadsCount} leads (state courses, active inquiries).
+     2. Calendar Status: State upcoming scheduled sessions or calendar events (from UPCOMING CALENDAR EVENTS & SESSIONS). If calendar has zero conflicts or is clear, state that cleanly.
+     3. Finance Status: Short concise finance update (net revenue is ${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}). Keep finance short and concise (1 to 2 sentences max).
+` : isFinanceOnlyQuery ? `
+   - THIS IS A FINANCE-SPECIFIC QUERY:
+     Deliver concise financial standing: Net revenue is ${finNetWords} on ${finIncomeWords} total income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}.
+` : `
+   - THIS IS A LEADS / CANDIDATES / CRM QUERY:
+     * DO NOT MENTION FINANCES UNDER ANY CIRCUMSTANCE: Do NOT mention net revenue, income, expenses, or payment records! The user is asking about LEADS.
+     * SCAN ALL ${totalLeadsCount} LEADS ACROSS THE FULL DATABASE: You have live access to the entire database of ${totalLeadsCount} enquiries. Provide a thorough, insightful breakdown answering the user's specific prompt.
+     * DETAIL THE EXACT NEXT STEPS: When the user asks for next steps, details, or priorities, clearly articulate who to call, which candidates have high intent (demo requests, active notes, callbacks), their specific course tracks (Manhattan Active, Blue Yonder, etc.), and the immediate operational actions to take.
+`}
+
+3. CURRENCY IN SPOKEN INDIAN WORDS (WHEN APPLICABLE):
    - When stating money amounts, ALWAYS write them in natural Indian spoken words (e.g. "${finNetWords}", "${lastPaymentWords}", "800 US dollars").
    - NEVER output bare currency symbols like ₹ or Rs. or numbers with commas like ₹6,57,062. This ensures text-to-speech reads the money naturally without mispronouncing.
+
 4. STRICT NAME DIRECTIVE:
    - Under NO circumstance should you speak or include primary key codes like [GAMA-0224], [GABY-0002], [GAGN-0001], or bare codes in "answer" or "actionAdvice". Speak ONLY the real person's name (e.g. 'Bovani Anusha', 'Pramod P', 'Karandeep Singh'). Technical codes are strictly forbidden in speech.
-5. If asked about "call notes", cite the exact candidate name, phone, and their exact call note from "ACTIVE CRM CALL NOTES & DISCUSSION LOGS" (without codes).
-6. If asked about "latest inquiry" or "recent enquiries", cite the exact candidates from "LATEST INCOMING ENQUIRIES" by name.
-7. If asked for a candidate's contact info (phone, email, country), provide the exact real data from the database.
-8. If asked about batches, trainer payouts, or trainee fees, cite the exact platform, trainer name, trainer amount due/paid, participant names, and payment status.
-9. "answer": Spoken operational briefing directly answering the prompt with exact data (never include GAMA/GABY codes, write money in words).
-10. "actionAdvice": Crisp tactical next directive for the operations team.
-11. "matchedIds": Array of matching lead ID strings from the provided dataset (never invented IDs).
-12. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
-13. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
+
+5. "answer": Spoken operational briefing directly answering the prompt with exact data (never include GAMA/GABY codes, write money in words).
+6. "actionAdvice": Crisp tactical next directive for the operations team.
+7. "matchedIds": Array of matching lead ID strings from the provided dataset. If the user asked a general system status overview, leave matchedIds as [] so the table retains all leads. If the user asked about next steps or specific leads, return all relevant lead IDs.
+8. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
+9. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
 ${fullDbFilter.intentDetected ? `
-14. MANDATORY FULL-DATABASE QUERY DIRECTIVE:
+10. MANDATORY FULL-DATABASE QUERY DIRECTIVE:
     - The user specifically requested: "${prompt}".
     - We evaluated ALL ${opsContext.allLeads.length} enquiries across our CRM database and identified EXACTLY ${fullDbFilter.uniqueCandidateNames.length} matching candidates.
     - You MUST:
@@ -556,7 +598,9 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
         const cleanAdvice = parsed.actionAdvice ? cleanOutput(parsed.actionAdvice) : null;
 
         let finalMatchedIds: string[] = [];
-        if (fullDbFilter.intentDetected && fullDbFilter.matchedLeadIds.length > 0) {
+        if (isSystemStatusQuery) {
+          finalMatchedIds = []; // System overview keeps all CRM leads visible
+        } else if (fullDbFilter.intentDetected && fullDbFilter.matchedLeadIds.length > 0) {
           // Guarantee that ALL matching candidates across the database are retained
           const idSet = new Set([
             ...fullDbFilter.matchedLeadIds,
@@ -639,24 +683,27 @@ async function fallbackComprehensiveOperations(
   const fin = opsContext.aggregates.finance;
   const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
 
-  // 0. Comprehensive System Status Briefing ("What's going on with the system", "What's going on?", "System status", "Status update", "Daily briefing", "Morning briefing")
-  if (
-    q.includes("what's going on") ||
-    q.includes('whats going on') ||
-    q.includes('what is going on') ||
-    q.includes('system status') ||
-    q.includes('status update') ||
-    q.includes('tell me about the system') ||
-    q.includes('about the system') ||
-    q.includes('how is the system') ||
-    q.includes('how are we doing') ||
-    q.includes('daily briefing') ||
-    q.includes('morning briefing') ||
-    q.includes('executive briefing') ||
-    q.includes('give me an update') ||
-    q.includes('finance doing') ||
-    q.includes('how are the finances')
-  ) {
+  // 0. Comprehensive System Status Briefing ("What's going on with the system", "How is the system", "How is GapAnchor doing", "Daily briefing", "System status")
+  const isSystemStatusFallback =
+    (
+      q.includes("what's going on with the system") ||
+      q.includes('what is going on with the system') ||
+      q.includes('system status') ||
+      q.includes('status update') ||
+      q.includes('tell me about the system') ||
+      q.includes('about the system') ||
+      q.includes('how is the system') ||
+      q.includes('how is gap anchor') ||
+      q.includes('gap anchor doing') ||
+      q.includes('how are we doing') ||
+      q.includes('daily briefing') ||
+      q.includes('morning briefing') ||
+      q.includes('executive briefing') ||
+      q.includes('give me an update') ||
+      (q.includes("what's going on") && !q.includes('lead') && !q.includes('candidate') && !q.includes('prospect'))
+    );
+
+  if (isSystemStatusFallback || q.includes('finance doing') || q.includes('how are the finances')) {
     // If user asked purely about finances only
     if (q.includes('finance doing') || q.includes('how are the finances') || (q.includes('finance') && !q.includes('system') && !q.includes('going on'))) {
       const netWords = numberToIndianWords(fin.netRevenue);
@@ -730,7 +777,7 @@ async function fallbackComprehensiveOperations(
     return {
       answer: stripTechnicalCodes(fullBriefing),
       actionAdvice: '',
-      matchedIds: displayLeads.map((l) => l.id),
+      matchedIds: [],
       recommendedFilter: 'all',
     };
   }
