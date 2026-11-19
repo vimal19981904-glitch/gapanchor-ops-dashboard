@@ -230,20 +230,20 @@ export function CustomerExperienceTab({
     return (
       <div
         key={`tbl-${keyPrefix}`}
-        className="my-3.5 overflow-x-auto rounded-xl border border-slate-800 bg-[#070d18]/90 shadow-xl"
+        className="my-1.5 sm:my-3.5 overflow-x-auto rounded-lg sm:rounded-xl border border-slate-800/80 bg-slate-950/70 sm:bg-[#070d18]/90 shadow-sm sm:shadow-xl"
       >
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="border-b border-slate-800/90 text-[10px] uppercase tracking-wider text-slate-400 bg-slate-950/70 font-mono">
+            <tr className="border-b border-slate-800/90 text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400 bg-slate-950/70 font-mono">
               {isActionTable && (
-                <th className="py-2.5 px-3 font-bold w-10 text-center text-cyan-400">
+                <th className="py-1 px-1.5 sm:py-2.5 sm:px-3 font-bold w-6 sm:w-10 text-center text-cyan-400">
                   Done
                 </th>
               )}
               {headerRow.map((col, cIdx) => (
                 <th
                   key={cIdx}
-                  className={`py-2.5 px-3.5 font-bold ${
+                  className={`py-1 px-2 sm:py-2.5 sm:px-3.5 font-bold ${
                     cIdx === headerRow.length - 1 && isActionTable ? 'text-right' : ''
                   }`}
                 >
@@ -268,19 +268,19 @@ export function CustomerExperienceTab({
                 >
                   {/* Interactive Checkbox for Action Items */}
                   {isActionTable && (
-                    <td className="py-2.5 px-3 text-center align-middle">
+                    <td className="py-1 px-1.5 sm:py-2.5 sm:px-3 text-center align-middle">
                       <button
                         type="button"
                         onClick={() => handleToggleActionStatus(actionItemText, statusVal)}
-                        className="inline-flex items-center justify-center p-1 rounded-md text-slate-400 hover:text-white transition-all cursor-pointer group"
+                        className="inline-flex items-center justify-center p-0.5 rounded text-slate-400 hover:text-white transition-all cursor-pointer group"
                         title={isDone ? 'Mark as Pending' : 'Mark as Done'}
                       >
                         {isDone ? (
-                          <div className="w-4 h-4 rounded bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]">
-                            <Check className="w-3 h-3 stroke-[3]" />
+                          <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                            <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
                           </div>
                         ) : (
-                          <div className="w-4 h-4 rounded border border-slate-600 group-hover:border-amber-400 group-hover:bg-amber-500/10 transition-colors" />
+                          <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border border-slate-600 group-hover:border-amber-400 group-hover:bg-amber-500/10 transition-colors" />
                         )}
                       </button>
                     </td>
@@ -296,9 +296,9 @@ export function CustomerExperienceTab({
                       const isHigh = /high/i.test(cell);
                       const isMed = /medium/i.test(cell);
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 whitespace-nowrap">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8.5px] sm:text-[10px] font-bold border ${
                               isHigh
                                 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                                 : isMed
@@ -315,11 +315,11 @@ export function CustomerExperienceTab({
                     // Interactive Status Cell
                     if (isStatusCell) {
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 text-right whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleToggleActionStatus(actionItemText, statusVal)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[8.5px] sm:text-[10px] font-bold border transition-all cursor-pointer ${
                               isDone
                                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
                                 : isAwaiting
@@ -329,9 +329,9 @@ export function CustomerExperienceTab({
                             title="Click to toggle Pending / Done status"
                           >
                             {isDone ? (
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
                             ) : (
-                              <Clock className="w-3 h-3 text-amber-400" />
+                              <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
                             )}
                             <span>{cell}</span>
                           </button>
@@ -342,7 +342,7 @@ export function CustomerExperienceTab({
                     // Action Item Cell
                     if (isActionCell) {
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 font-medium">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 font-medium text-[10.5px] sm:text-xs">
                           <span
                             className={`transition-colors ${
                               isDone ? 'line-through text-slate-500' : 'text-slate-200'
@@ -361,8 +361,8 @@ export function CustomerExperienceTab({
 
                     if (isNotFeasible) {
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 text-rose-300 font-semibold">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[10px]">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 text-rose-300 font-semibold text-[10px] sm:text-xs">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-rose-500/10 border border-rose-500/20 text-[9px] sm:text-[10px]">
                             {cell}
                           </span>
                         </td>
@@ -371,8 +371,8 @@ export function CustomerExperienceTab({
 
                     if (isFeasible || isYes) {
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 text-emerald-300 font-semibold">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px]">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 text-emerald-300 font-semibold text-[10px] sm:text-xs">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] sm:text-[10px]">
                             {cell}
                           </span>
                         </td>
@@ -382,7 +382,7 @@ export function CustomerExperienceTab({
                     // Currency or pricing cell
                     if (/₹|k\b/i.test(cell)) {
                       return (
-                        <td key={cIdx} className="py-2.5 px-3.5 text-cyan-300 font-mono font-bold">
+                        <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 text-cyan-300 font-mono font-bold text-[10px] sm:text-xs">
                           {cell}
                         </td>
                       );
@@ -390,7 +390,7 @@ export function CustomerExperienceTab({
 
                     // Regular cell
                     return (
-                      <td key={cIdx} className="py-2.5 px-3.5 text-slate-300">
+                      <td key={cIdx} className="py-1 px-2 sm:py-2.5 sm:px-3.5 text-slate-300 text-[10px] sm:text-xs">
                         {cell}
                       </td>
                     );
@@ -569,23 +569,23 @@ export function CustomerExperienceTab({
         elements.push(
           <div
             key={i}
-            className="my-3 p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-slate-900 border border-cyan-500/30 flex items-center justify-between gap-3 shadow-lg"
+            className="my-1.5 sm:my-3 p-2 sm:p-3.5 rounded-lg sm:rounded-xl bg-slate-900/90 sm:bg-gradient-to-r sm:from-cyan-950/40 sm:via-indigo-950/30 sm:to-slate-900 border border-cyan-500/30 flex items-center justify-between gap-2 shadow-sm sm:shadow-lg"
           >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono font-bold text-base">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-mono font-bold text-xs sm:text-base shrink-0">
                 {val}
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wider block truncate">
                   Lead Qualification Scorecard
                 </span>
-                <p className="text-xs text-slate-300 font-medium mt-0.5">
+                <p className="text-[10px] text-slate-400 font-medium truncate hidden sm:block">
                   Assessed from real call dialogue, technical maturity & conversion probability
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-bold shrink-0">
-              <TrendingUp className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[9px] sm:text-xs font-bold shrink-0">
+              <TrendingUp className="w-3 h-3" />
               <span>High Potential</span>
             </div>
           </div>
@@ -618,16 +618,16 @@ export function CustomerExperienceTab({
         elements.push(
           <div
             key={i}
-            className="my-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/25 via-slate-900/70 to-slate-900/70 border-l-4 border-emerald-400 border-y border-r border-emerald-500/20 flex items-start gap-3 shadow-lg"
+            className="my-1.5 sm:my-4 p-2.5 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-950/25 via-slate-900/70 to-slate-900/70 border-l-4 border-emerald-400 border-y border-r border-emerald-500/20 flex items-start gap-2 sm:gap-3 shadow-md sm:shadow-lg"
           >
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
                 Overall Outcome & Directive
               </span>
-              <p className="text-xs sm:text-sm font-medium text-slate-200 mt-1 leading-relaxed">
+              <p className="text-[11px] sm:text-xs font-medium text-slate-200 mt-0.5 leading-relaxed">
                 {text}
               </p>
             </div>
@@ -708,53 +708,53 @@ export function CustomerExperienceTab({
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-1.5 sm:space-y-4 animate-in fade-in duration-200">
       {/* ── Top Executive Notepad Toolbar ── */}
-      <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-700/80 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500/20 via-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center shadow-lg shrink-0">
-            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+      <div className="p-2 sm:p-4 rounded-lg sm:rounded-2xl bg-slate-900/90 sm:bg-gradient-to-r sm:from-slate-900 sm:via-indigo-950/40 sm:to-slate-900 border border-slate-800 sm:border-slate-700/80 shadow-sm sm:shadow-xl flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+            <FileText className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                <span>Executive Dossier & Notepad</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate">
+                Executive Dossier
               </h3>
-              <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+              <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 shrink-0">
                 {enquiry?.leadCode || `#${enquiry?.id?.slice(-6)}`}
               </span>
               {actionStats.total > 0 && (
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.2 rounded-full text-[9px] sm:text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  <CheckCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">
+                  <CheckCheck className="w-2.5 h-2.5 text-emerald-400" />
                   <span>
-                    {actionStats.completed}/{actionStats.total} Done ({actionStats.pct}%)
+                    {actionStats.completed}/{actionStats.total} Done
                   </span>
                 </span>
               )}
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">
+            <p className="text-[10px] text-slate-400 mt-0.5 truncate hidden sm:block">
               Live interactive action items, pricing intelligence & scheduling feasibility
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={handleCopy}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-[11px] sm:text-xs font-semibold transition-all shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-[10px] sm:text-xs font-semibold transition-all shadow-sm cursor-pointer"
             title="Copy full dossier to clipboard"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3 h-3 text-emerald-400" />
                 <span className="text-emerald-400 font-bold">Copied!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Copy Dossier</span>
+                <Copy className="w-3 h-3 text-cyan-400" />
+                <span>Copy</span>
               </>
             )}
           </button>
@@ -762,21 +762,21 @@ export function CustomerExperienceTab({
           <button
             type="button"
             onClick={() => setIsEditing(!isEditing)}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[10px] sm:text-xs font-semibold border transition-all cursor-pointer ${
               isEditing
                 ? 'bg-indigo-600 text-white border-indigo-500'
-                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
             }`}
           >
             {isEditing ? (
               <>
-                <Eye className="w-3.5 h-3.5" />
-                <span>Dossier View</span>
+                <Eye className="w-3 h-3" />
+                <span>View</span>
               </>
             ) : (
               <>
-                <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Edit Notepad</span>
+                <Edit3 className="w-3 h-3 text-indigo-400" />
+                <span>Edit</span>
               </>
             )}
           </button>
@@ -785,27 +785,27 @@ export function CustomerExperienceTab({
 
       {/* Mode A: Raw Markdown / Text Editor */}
       {isEditing ? (
-        <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+        <div className="p-3 sm:p-5 rounded-lg sm:rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-2.5 sm:space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-semibold text-slate-300">
+            <span className="font-semibold text-slate-300 text-[11px] sm:text-xs">
               Edit Notepad & Dossier Markdown
             </span>
-            <span className="font-mono text-[10px]">Direct CRM persistence enabled</span>
+            <span className="font-mono text-[9px] sm:text-[10px]">Direct CRM persistence enabled</span>
           </div>
 
           <textarea
             value={cxText}
             onChange={(e) => setCxText(e.target.value)}
-            rows={24}
-            className="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-4 text-xs sm:text-sm text-slate-200 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-y"
+            rows={20}
+            className="w-full bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl p-3 text-[11px] sm:text-sm text-slate-200 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-y"
             placeholder="Paste or write Customer Experience call summary..."
           />
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={handleCancel}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all cursor-pointer"
+              className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer"
             >
               Cancel
             </button>
@@ -813,18 +813,18 @@ export function CustomerExperienceTab({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all disabled:opacity-50 cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-[11px] sm:text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all disabled:opacity-50 cursor-pointer active:scale-95"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3 h-3" />
               <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </div>
       ) : (
         /* Mode B: Executive Notepad Dossier View */
-        <div className="p-3.5 sm:p-6 rounded-xl sm:rounded-2xl bg-[#090f1d] border border-slate-800/90 shadow-2xl backdrop-blur-md space-y-1 relative">
+        <div className="p-1 sm:p-6 rounded-none sm:rounded-2xl bg-transparent sm:bg-[#090f1d] border-0 sm:border sm:border-slate-800/90 shadow-none sm:shadow-2xl backdrop-blur-none sm:backdrop-blur-md space-y-1 relative">
           {/* Subtle Notepad Top Accent Strip */}
-          <div className="absolute top-0 left-4 right-4 sm:left-6 sm:right-6 h-[2px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500" />
+          <div className="hidden sm:block absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500" />
           {renderedContent}
         </div>
       )}

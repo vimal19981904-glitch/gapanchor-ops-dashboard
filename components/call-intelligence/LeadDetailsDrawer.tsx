@@ -706,7 +706,9 @@ export function LeadDetailsDrawer({
         </div>
 
         {/* Drawer Body Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-2.5 sm:p-5 space-y-2.5 sm:space-y-5 pb-8 sm:pb-5 no-scrollbar overscroll-contain">
+        <div className={`flex-1 overflow-y-auto pb-8 sm:pb-5 no-scrollbar overscroll-contain ${
+          activeTab === 'cx' ? 'p-1.5 sm:p-5 space-y-1.5 sm:space-y-5' : 'p-2.5 sm:p-5 space-y-2.5 sm:space-y-5'
+        }`}>
           {activeTab === 'overview' ? (
             /* ── TAB 1: INQUIRY OVERVIEW ── */
             <div className="animate-in fade-in duration-150">
