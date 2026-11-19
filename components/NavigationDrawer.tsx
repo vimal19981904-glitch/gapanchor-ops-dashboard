@@ -9,17 +9,11 @@ import {
   Calendar,
   Code2,
   Settings,
-  ChevronRight,
-  ExternalLink,
   Layers,
   ArrowUpRight,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
   Briefcase,
   BarChart3
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
 import UserNav from '@/components/UserNav';
 
 
@@ -122,93 +116,59 @@ export default function NavigationDrawer({
     }, 150);
   };
 
-  const totalIncome = financeSummary?.totalIncome || 0;
-  const netProfit = financeSummary?.netProfit || 0;
-  const totalSessions = opsSummary?.totalSessions || 0;
-  const totalParticipants = opsSummary?.totalParticipants || 0;
-  const enquiryTotal = commsSummary?.total || 0;
-  const actionCount = commsSummary?.actionRequiredCount || 0;
-  const devCount = devSummary?.updates?.length || 0;
-
   const sections = [
     {
       id: 'ops-analytics',
-      title: 'Ops Peak Analytics & Trends',
-      subtitle: 'Daily & Weekly Peak Volume Bar Graphs (Full View)',
+      title: 'Ops Peak Analytics',
       icon: BarChart3,
-      color: 'emerald',
-      badge: 'Peak Trends',
       action: () => handleAction(() => { window.location.href = '/ops-analytics'; }),
     },
     {
       id: 'finance',
       title: 'Finance Intelligence',
-      subtitle: 'Finance & Revenue Intelligence (Full View)',
       icon: DollarSign,
-      color: 'emerald',
-      badge: netProfit > 0 ? formatCurrency(netProfit) : 'Active Ledger',
       action: () => handleAction(() => { window.location.href = '/finance/analytics'; }),
     },
     {
       id: 'comms',
       title: 'Leads',
-      subtitle: 'Leads & Enquiries Command Center (Full View)',
       icon: MessageSquare,
-      color: 'cyan',
-      badge: actionCount > 0 ? `${actionCount} Action Required` : `${enquiryTotal} Total Leads`,
       action: () => handleAction(() => { window.location.href = '/enquiries'; }),
     },
     {
       id: 'job-support',
       title: 'Job Support Operations',
-      subtitle: '1-on-1 Dedicated Support Assignments (Full View)',
       icon: Briefcase,
-      color: 'amber',
-      badge: '1-on-1 Support Ops',
       action: () => handleAction(() => { window.location.href = '/job-support'; }),
     },
     {
       id: 'ops',
       title: 'Training Operations',
-      subtitle: 'SCM Batches, Manhattan/BY Training & Rosters',
       icon: Calendar,
-      color: 'indigo',
-      badge: `${totalSessions} Sessions • ${totalParticipants} Trainees`,
       action: () => scrollToSection('ops-section'),
     },
     {
       id: 'dev',
       title: 'Dev Progress & Infra',
-      subtitle: 'Shipped Features, Fixes & Roadmap',
       icon: Code2,
-      color: 'amber',
-      badge: `${devCount} Updates Shipped`,
       action: () => scrollToSection('dev-section'),
     },
     {
       id: 'calendar',
       title: 'Google Calendar Events',
-      subtitle: 'Calendar & Ops Schedule (Full View)',
       icon: Calendar,
-      color: 'purple',
-      badge: 'Live Schedules',
       action: () => handleAction(() => { window.location.href = '/calendar'; }),
     },
     {
       id: 'setup',
       title: 'API & Integration Setup',
-      subtitle: 'WhatsApp Meta API & Outlook OAuth Config',
       icon: Settings,
-      color: 'blue',
-      badge: 'Live Config',
       action: () => scrollToSection('setup-section'),
     },
   ];
 
-  const filteredSections = sections.filter(
-    (sec) =>
-      sec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sec.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSections = sections.filter((sec) =>
+    sec.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -292,45 +252,22 @@ export default function NavigationDrawer({
                   <div
                     key={sec.id}
                     onClick={sec.action}
-                    className="group p-3 rounded-xl border border-white/20 bg-slate-900/95 transition-all duration-200 hover:border-brand-500/70 hover:bg-slate-800 shadow-lg hover:shadow-brand-500/20 cursor-pointer flex items-center justify-between gap-3"
+                    className="group p-3 sm:py-3.5 sm:px-4 rounded-xl border border-white/20 bg-slate-900/95 transition-all duration-200 hover:border-cyan-500/70 hover:bg-slate-800 shadow-lg hover:shadow-cyan-500/15 cursor-pointer flex items-center justify-between gap-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${
-                          sec.color === 'emerald'
-                            ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                            : sec.color === 'cyan'
-                            ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
-                            : sec.color === 'indigo'
-                            ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
-                            : sec.color === 'amber'
-                            ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                            : sec.color === 'purple'
-                            ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
-                            : 'bg-blue-500/30 text-blue-300 border border-blue-500/50'
-                        }`}
-                      >
-                        <IconComp size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-brand-300 transition-colors truncate">
-                          {sec.title}
-                        </h3>
-                        <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate">{sec.subtitle}</p>
-                      </div>
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <IconComp
+                        size={18}
+                        className="text-cyan-400 group-hover:text-cyan-300 transition-colors shrink-0"
+                      />
+                      <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-200 transition-colors truncate">
+                        {sec.title}
+                      </h3>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {sec.badge && (
-                        <span className="hidden sm:inline-block text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-slate-950 text-slate-100 border border-white/20 font-mono truncate max-w-[140px]">
-                          {sec.badge}
-                        </span>
-                      )}
-                      <ArrowUpRight
-                        size={15}
-                        className="text-slate-400 group-hover:text-brand-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-                      />
-                    </div>
+                    <ArrowUpRight
+                      size={16}
+                      className="text-slate-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0"
+                    />
                   </div>
                 );
               })
