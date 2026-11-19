@@ -142,29 +142,29 @@ export default function JobSupportOpsPage() {
           'radial-gradient(ellipse at 20% 0%, rgba(6,182,212,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.08) 0%, transparent 60%)',
       }}
     >
-      <div className="w-full max-w-full px-3 sm:px-6 md:px-8 py-4 sm:py-6 space-y-4 flex-1 flex flex-col">
+      <div className="w-full max-w-full px-2.5 sm:px-6 md:px-8 py-2.5 sm:py-6 space-y-2.5 sm:space-y-4 flex-1 flex flex-col">
 
         {/* Top Header Bar */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-2xl shadow-2xl">
-          <div className="flex items-center justify-between w-full xl:w-auto gap-3">
-            <div className="flex items-center space-x-3">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-xl sm:rounded-2xl shadow-2xl">
+          <div className="flex items-center justify-between w-full xl:w-auto gap-2.5 sm:gap-3">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
               <Link
                 href="/"
-                className="group flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
+                className="group flex items-center gap-2 p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
               >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
               </Link>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg md:text-2xl font-black tracking-tight bg-gradient-to-r from-amber-400 via-orange-200 to-amber-100 bg-clip-text text-transparent">
+                  <h1 className="text-base sm:text-lg md:text-2xl font-black tracking-tight bg-gradient-to-r from-amber-400 via-orange-200 to-amber-100 bg-clip-text text-transparent">
                     Job Support Operations
                   </h1>
-                  <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-widest">
+                  <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-widest">
                     1-on-1 Dedicated Support
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="hidden sm:block text-[11px] text-slate-400 mt-0.5">
                   1-on-1 Engineer Assignment, Session Schedule & Financial Compensation Tracking
                 </p>
               </div>
@@ -175,7 +175,7 @@ export default function JobSupportOpsPage() {
           <div className="flex items-center gap-2 w-full xl:w-auto xl:justify-end">
             <button
               onClick={handleOpenAddModal}
-              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer truncate"
+              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer truncate"
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">New Support</span>
@@ -184,7 +184,7 @@ export default function JobSupportOpsPage() {
             <button
               onClick={handleSyncOutlook}
               disabled={syncing}
-              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all disabled:opacity-60 cursor-pointer truncate"
+              className="flex-1 xl:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all disabled:opacity-60 cursor-pointer truncate"
             >
               <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${syncing ? 'animate-spin' : ''}`} />
               <span className="truncate">{syncing ? 'Syncing…' : 'Sync'}</span>
@@ -198,25 +198,25 @@ export default function JobSupportOpsPage() {
 
         {/* KPI Cards (Training Operations Layout) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Support</span>
             <span className="text-sm sm:text-2xl font-black mt-1 text-cyan-400">{totalEngagements}</span>
             <span className="text-[9px] text-slate-500 mt-0.5 truncate">1 Consultant per Client</span>
           </div>
 
-          <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-900/70 border border-indigo-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-indigo-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active Engagements</span>
             <span className="text-sm sm:text-2xl font-black mt-1 text-indigo-400">{activeEngagements}</span>
             <span className="text-[9px] text-slate-500 mt-0.5 truncate">Scheduled</span>
           </div>
 
-          <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-900/70 border border-emerald-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-emerald-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">Client Revenue</span>
             <span className="text-xs sm:text-2xl font-black mt-1 text-emerald-400">₹ {totalClientRevenue.toLocaleString()}</span>
             <span className="text-[9px] text-slate-500 mt-0.5 truncate">Client Paid Fees</span>
           </div>
 
-          <div className="p-2.5 sm:p-4 rounded-2xl bg-slate-900/70 border border-rose-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-rose-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-400">
               Engineer <span className="hidden sm:inline">Compensation </span>Payable
             </span>
@@ -226,8 +226,8 @@ export default function JobSupportOpsPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl space-y-3">
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+        <div className="p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-xl sm:rounded-2xl space-y-2.5 sm:space-y-3">
+          <div className="flex flex-col lg:flex-row gap-2.5 sm:gap-3 items-center justify-between">
             <div className="relative w-full lg:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
@@ -235,7 +235,7 @@ export default function JobSupportOpsPage() {
                 placeholder="Search client, engineer, platform, title…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+                className="w-full pl-10 pr-4 py-1.5 sm:py-2 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
               />
             </div>
 
@@ -243,7 +243,7 @@ export default function JobSupportOpsPage() {
               <select
                 value={platformFilter}
                 onChange={e => setPlatformFilter(e.target.value)}
-                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Target Platforms</option>
                 <option value="Manhattan">Manhattan WMS / ProActive</option>
@@ -256,12 +256,12 @@ export default function JobSupportOpsPage() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="In Progress">⚡ In Progress</option>
-                <option value="Scheduled">📅 Scheduled</option>
-                <option value="Completed">✅ Completed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
               </select>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function JobSupportOpsPage() {
           ) : (
             <>
               {/* Mobile View: Expandable Dropdown Cards (md:hidden) */}
-              <div className="md:hidden space-y-2.5 p-2 flex-1">
+              <div className="md:hidden space-y-2 p-1 sm:p-2 flex-1">
                 {filteredSessions.map((session) => {
                   const isExpanded = expandedSessionId === session.id;
                   const clientNames = session.participants.map(p => p.participantName).join(', ') || '1-on-1 Client';
@@ -291,7 +291,7 @@ export default function JobSupportOpsPage() {
                   return (
                     <div
                       key={session.id}
-                      className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl flex flex-col gap-2.5 transition-all shadow-md"
+                      className="p-2.5 sm:p-3 bg-slate-900/90 border border-slate-800 rounded-xl flex flex-col gap-2 transition-all shadow-md"
                     >
                       {/* Card Header & Chevron Toggle */}
                       <div className="flex items-start justify-between gap-2">
@@ -304,7 +304,7 @@ export default function JobSupportOpsPage() {
                               {session.title}
                             </h3>
                             <p className="text-[10.5px] text-cyan-400 font-medium mt-0.5 truncate">
-                              👤 Client: {clientNames}
+                              Client: {clientNames}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold text-[10px]">
@@ -435,7 +435,7 @@ export default function JobSupportOpsPage() {
                               </div>
                               <div>
                                 <p className="font-bold text-white text-xs">{session.title}</p>
-                                <p className="text-[10px] text-cyan-400 font-medium mt-0.5">👤 Client: {clientNames}</p>
+                                <p className="text-[10px] text-cyan-400 font-medium mt-0.5">Client: {clientNames}</p>
                               </div>
                             </div>
                           </td>

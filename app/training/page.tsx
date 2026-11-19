@@ -450,7 +450,7 @@ export default function TrainingOpsPage() {
                               </div>
                               <div>
                                 <p className="font-bold text-white text-xs">{session.title}</p>
-                                <p className="text-[10px] text-cyan-400 font-medium mt-0.5">👨‍🏫 Trainer: {session.trainer}</p>
+                                <p className="text-[10px] text-cyan-400 font-medium mt-0.5">Trainer: {session.trainer}</p>
                               </div>
                             </div>
                           </td>

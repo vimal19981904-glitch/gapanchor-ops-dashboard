@@ -409,9 +409,6 @@ export default function OpsModal({
               <h3 className="text-sm sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {sessionToEdit ? 'Edit Training & Finance Session' : 'Schedule Training & Finance Session'}
               </h3>
-              <p className="text-[10px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Manual entry for training enrollment and participant payment status persistence
-              </p>
             </div>
           </div>
           <button
@@ -423,10 +420,10 @@ export default function OpsModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-4">
           {/* 3.1 Session Title */}
           <div>
-            <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-[11px] sm:text-xs font-bold mb-1 sm:mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
               Session Title <span className="text-rose-400">*</span>
             </label>
             <input
@@ -435,21 +432,21 @@ export default function OpsModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Manhattan WMS Inbound Deep Dive"
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2.5 text-xs sm:text-sm outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
               style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
             />
           </div>
 
           {/* 3.2 Platform Selection & 3.3 Trainer */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             <div>
-              <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[11px] sm:text-xs font-bold mb-1 sm:mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
                 Platform <span className="text-rose-400">*</span>
               </label>
               <select
                 value={platform}
                 onChange={(e) => handlePlatformChange(e.target.value)}
-                className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-cyan-500 transition-all cursor-pointer"
+                className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2.5 text-xs sm:text-sm outline-none focus:border-cyan-500 transition-all cursor-pointer"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
               >
                 <option value="Manhattan WMS">Manhattan WMS</option>
@@ -460,7 +457,7 @@ export default function OpsModal({
             </div>
 
             <div>
-              <label className="text-xs font-bold mb-1.5 flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[11px] sm:text-xs font-bold mb-1 sm:mb-1.5 flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
                 <span>Trainer Name <span className="text-rose-400">*</span></span>
                 <button
                   type="button"
@@ -477,7 +474,7 @@ export default function OpsModal({
                   value={trainer}
                   onChange={(e) => setTrainer(e.target.value)}
                   placeholder="e.g. Meghana, Arul Xavier, Specialist Trainer"
-                  className="w-full rounded-xl border border-cyan-500/50 px-3.5 py-2.5 text-sm outline-none font-semibold text-cyan-300 transition-all"
+                  className="w-full rounded-xl border border-cyan-500/50 px-3 py-1.5 sm:px-3.5 sm:py-2.5 text-xs sm:text-sm outline-none font-semibold text-cyan-300 transition-all"
                   style={{ background: 'var(--surface-2)' }}
                 />
               ) : (
@@ -490,16 +487,16 @@ export default function OpsModal({
                       setTrainer(e.target.value);
                     }
                   }}
-                  className="w-full rounded-xl border border-cyan-500/50 px-3.5 py-2.5 text-sm outline-none focus:border-cyan-400 font-bold text-cyan-300 transition-all cursor-pointer"
+                  className="w-full rounded-xl border border-cyan-500/50 px-3 py-1.5 sm:px-3.5 sm:py-2.5 text-xs sm:text-sm outline-none focus:border-cyan-400 font-bold text-cyan-300 transition-all cursor-pointer"
                   style={{ background: 'var(--surface-2)' }}
                 >
                   {registeredTrainers.map((tName) => (
                     <option key={tName} value={tName} className="bg-slate-900 text-white font-medium">
-                      👨‍🏫 {tName}
+                      {tName}
                     </option>
                   ))}
                   <option value="__custom__" className="bg-slate-900 text-cyan-400 font-bold">
-                    ✍️ + Add / Enter Custom Trainer Name...
+                    + Add / Enter Custom Trainer Name...
                   </option>
                 </select>
               )}
@@ -508,10 +505,10 @@ export default function OpsModal({
 
 
           {/* TRAINER FINANCIALS (MANUAL OVERALL & PAID; AUTO-CALC PAYABLE/DUE) */}
-          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2.5 sm:space-y-3">
+          <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2 sm:space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                👨‍🏫 Trainer Financial Compensation
+              <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                Trainer Financial Compensation
               </span>
               <span className="text-[10px] text-indigo-400 font-mono font-bold hidden sm:inline">
                 Session Trainer Tracking
@@ -562,8 +559,8 @@ export default function OpsModal({
           {/* 3.4 Participants Selection Dropdown */}
 
           <div ref={dropdownRef} className="relative">
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="text-xs font-bold block" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] sm:text-xs font-bold block" style={{ color: 'var(--text-secondary)' }}>
                 Select Participants ({participantRows.length} selected)
               </label>
               <span className="text-[10px] text-cyan-400 font-semibold">
@@ -574,7 +571,7 @@ export default function OpsModal({
             <button
               type="button"
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm text-left flex items-center justify-between cursor-pointer transition-all hover:border-cyan-500/50"
+              className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2.5 text-xs sm:text-sm text-left flex items-center justify-between cursor-pointer transition-all hover:border-cyan-500/50"
               style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
             >
               <span className="truncate text-slate-300 font-medium">
@@ -637,9 +634,9 @@ export default function OpsModal({
           </div>
 
           {/* 3.5 Total Participants & 3.6 Currently Participating */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
             <div>
-              <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[11px] sm:text-xs font-bold mb-1 block" style={{ color: 'var(--text-secondary)' }}>
                 Total Participants
               </label>
               <input
@@ -647,13 +644,13 @@ export default function OpsModal({
                 min="0"
                 value={totalParticipants === 0 ? '0' : totalParticipants}
                 onChange={(e) => setTotalParticipants(typeof parseInputNumber(e.target.value) === 'number' ? (parseInputNumber(e.target.value) as number) : 0)}
-                className="w-full rounded-xl border border-border px-3.5 py-2 text-sm outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm outline-none focus:border-cyan-500"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[11px] sm:text-xs font-bold mb-1 block" style={{ color: 'var(--text-secondary)' }}>
                 Currently Participating
               </label>
               <input
@@ -662,13 +659,13 @@ export default function OpsModal({
                 max={totalParticipants}
                 value={currentlyParticipating === '' ? '' : currentlyParticipating}
                 onChange={(e) => setCurrentlyParticipating(parseInputNumber(e.target.value))}
-                className="w-full rounded-xl border border-border px-3.5 py-2 text-sm outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm outline-none focus:border-cyan-500"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[11px] sm:text-xs font-bold mb-1 block" style={{ color: 'var(--text-secondary)' }}>
                 Session Date <span className="text-rose-400">*</span>
               </label>
               <input
@@ -676,7 +673,7 @@ export default function OpsModal({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-border px-3.5 py-2 text-sm outline-none focus:border-cyan-500"
+                className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm outline-none focus:border-cyan-500"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
               />
             </div>
@@ -684,7 +681,7 @@ export default function OpsModal({
 
           {/* 3.8 Location */}
           <div>
-            <label className="text-xs font-bold mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>
+            <label className="text-[11px] sm:text-xs font-bold mb-1 block" style={{ color: 'var(--text-secondary)' }}>
               Location <span className="text-rose-400">*</span>
             </label>
             <input
@@ -693,13 +690,13 @@ export default function OpsModal({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Online Sandbox + Teams, HYD Enterprise Center"
-              className="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-cyan-500"
+              className="w-full rounded-xl border border-border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm outline-none focus:border-cyan-500"
               style={{ background: 'var(--surface-2)', color: 'var(--text-primary)' }}
             />
           </div>
 
           {/* 3.9 PAYMENT TRACKING TABLE ACCORDION (COLLAPSIBLE DROPDOWN) */}
-          <div className="pt-3 border-t border-border/60">
+          <div className="pt-2 sm:pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={() => setIsTableExpanded(!isTableExpanded)}
@@ -707,7 +704,7 @@ export default function OpsModal({
             >
               <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                  💳 Payment Tracking For Participants ({participantRows.length})
+                  Payment Tracking For Participants ({participantRows.length})
                 </h4>
                 <div className="flex items-center gap-1.5 text-[10px] font-bold">
                   <span className="px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-500/30">
