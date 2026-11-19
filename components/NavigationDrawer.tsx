@@ -145,7 +145,7 @@ export default function NavigationDrawer({
       id: 'ops',
       title: 'Training Operations',
       icon: Calendar,
-      action: () => scrollToSection('ops-section'),
+      action: () => handleAction(() => { window.location.href = '/training'; }),
     },
     {
       id: 'dev',
