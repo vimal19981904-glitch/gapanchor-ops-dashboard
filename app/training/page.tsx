@@ -10,7 +10,6 @@ import {
   MapPin, Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
-import UserNav from '@/components/UserNav';
 import { NavDrawerButton } from '@/components/NavigationContext';
 import OpsModal from '@/components/OpsModal';
 
@@ -151,84 +150,91 @@ export default function TrainingOpsPage() {
           'radial-gradient(ellipse at 20% 0%, rgba(6,182,212,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.08) 0%, transparent 60%)',
       }}
     >
-      <div className="w-full max-w-full px-3 sm:px-6 md:px-8 py-4 sm:py-6 space-y-4 flex-1 flex flex-col">
+      <div className="w-full max-w-full px-2.5 sm:px-6 md:px-8 py-3 sm:py-6 space-y-3 sm:space-y-4 flex-1 flex flex-col">
 
         {/* Top Header Bar */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-xl shadow-2xl">
-          <div className="flex items-center justify-between w-full xl:w-auto gap-3">
-            <div className="flex items-center space-x-3">
+        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-xl shadow-2xl space-y-2.5 xl:space-y-0 xl:flex xl:items-center xl:justify-between">
+          {/* Top Row: Back button, Title, Mobile Drawer Toggle */}
+          <div className="flex items-center justify-between w-full xl:w-auto gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <Link
                 href="/"
-                className="group flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all"
+                className="group flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shrink-0"
+                title="Return to Dashboard"
               >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                <span className="text-xs font-semibold hidden md:inline">Dashboard</span>
+                <span className="text-xs font-semibold hidden md:inline ml-1.5">Dashboard</span>
               </Link>
-              <h1 className="text-lg md:text-2xl font-black tracking-tight text-white">
+              <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-white truncate">
                 GapAnchor Training Operations
               </h1>
             </div>
-            <div className="xl:hidden"><NavDrawerButton className="!w-9 !h-9" /></div>
+            <div className="xl:hidden shrink-0">
+              <NavDrawerButton className="!w-8 !h-8 sm:!w-9 sm:!h-9" />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5 w-full xl:w-auto justify-between xl:justify-end flex-wrap">
+          {/* Action Buttons: Add Session & Sync (Cleanly balanced on mobile) */}
+          <div className="flex items-center gap-2 w-full xl:w-auto">
             <button
               onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
+              className="flex-1 xl:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95 whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>+ Add Session</span>
             </button>
 
-            <UserNav />
             <button
               onClick={handleSyncOutlook}
               disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95"
+              className="flex-1 xl:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95 whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing…' : 'Sync'}</span>
             </button>
-            <div className="hidden xl:block"><NavDrawerButton /></div>
+
+            <div className="hidden xl:block shrink-0">
+              <NavDrawerButton />
+            </div>
           </div>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-4 rounded-xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Training Batches</span>
-            <span className="text-2xl font-black mt-1 text-cyan-400">{totalSessions}</span>
+            <span className="text-xl sm:text-2xl font-black mt-1 text-cyan-400">{totalSessions}</span>
             <span className="text-[10px] text-slate-500 mt-1">SCM Cohorts Pipeline</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/70 border border-indigo-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-indigo-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Active Enrollees</span>
-            <span className="text-2xl font-black mt-1 text-indigo-400">{totalActive} / {totalEnrolled}</span>
+            <span className="text-xl sm:text-2xl font-black mt-1 text-indigo-400">{totalActive} / {totalEnrolled}</span>
             <span className="text-[10px] text-slate-500 mt-1">Active vs Enrolled</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/70 border border-emerald-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-emerald-500/20 shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Paid Enrollees</span>
-            <span className="text-2xl font-black mt-1 text-emerald-400">{totalPaidCount}</span>
+            <span className="text-xl sm:text-2xl font-black mt-1 text-emerald-400">{totalPaidCount}</span>
             <span className="text-[10px] text-slate-500 mt-1">Full Fee Completed</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-900/70 border border-amber-500/25 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-amber-500/25 shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Partial / Pending Fee</span>
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/25 uppercase tracking-wider">
                 Status
               </span>
             </div>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-amber-400">{totalPartialCount}</span>
-                <span className="text-xs font-semibold text-amber-300/80">partial</span>
+            <div className="flex items-center gap-2 sm:gap-4 mt-1.5 sm:mt-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-amber-400">{totalPartialCount}</span>
+                <span className="text-[10px] sm:text-xs font-semibold text-amber-300/80">partial</span>
               </div>
-              <div className="h-5 w-px bg-slate-800" />
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-rose-400">{totalPendingCount}</span>
-                <span className="text-xs font-semibold text-rose-300/80">pending</span>
+              <div className="h-4 sm:h-5 w-px bg-slate-800" />
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-rose-400">{totalPendingCount}</span>
+                <span className="text-[10px] sm:text-xs font-semibold text-rose-300/80">pending</span>
               </div>
             </div>
             <span className="text-[10px] text-slate-500 mt-1">Fee Tracking Status</span>
@@ -236,8 +242,8 @@ export default function TrainingOpsPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl space-y-3">
-          <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-xl space-y-2.5 sm:space-y-3">
+          <div className="flex flex-col lg:flex-row gap-2.5 sm:gap-3 items-center justify-between">
             <div className="relative w-full lg:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
@@ -249,11 +255,11 @@ export default function TrainingOpsPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <div className="grid grid-cols-2 lg:flex lg:items-center gap-2 w-full lg:w-auto">
               <select
                 value={platformFilter}
                 onChange={e => setPlatformFilter(e.target.value)}
-                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="w-full lg:w-auto bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Platforms</option>
                 <option value="Manhattan">Manhattan WMS</option>
@@ -277,7 +283,7 @@ export default function TrainingOpsPage() {
         </div>
 
         {/* Main Training Sessions Table */}
-        <div className="flex-1 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-2xl overflow-hidden flex flex-col">
+        <div className="flex-1 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-xl overflow-hidden flex flex-col">
           {loading ? (
             <div className="flex items-center justify-center py-24 text-slate-400">Loading Training operations…</div>
           ) : filteredSessions.length === 0 ? (
@@ -289,7 +295,7 @@ export default function TrainingOpsPage() {
           ) : (
             <>
               {/* Mobile View (< md) */}
-              <div className="md:hidden space-y-2.5 p-2 flex-1">
+              <div className="md:hidden space-y-2.5 p-2 sm:p-3 flex-1">
                 {filteredSessions.map((session) => {
                   const isExpanded = expandedSessionId === session.id;
                   const pSummary = session.paymentSummary || { paidCount: 0, partialCount: 0, pendingCount: 0 };
@@ -297,11 +303,11 @@ export default function TrainingOpsPage() {
                   return (
                     <div
                       key={session.id}
-                      className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl flex flex-col gap-2.5 transition-all shadow-md"
+                      className="p-3 sm:p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl flex flex-col gap-2.5 transition-all shadow-md"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+                          <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
                             <Calendar className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
@@ -328,47 +334,56 @@ export default function TrainingOpsPage() {
 
                         <button
                           onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
-                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-colors shrink-0 cursor-pointer"
+                          className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-colors shrink-0 cursor-pointer"
                         >
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                       </div>
 
                       {isExpanded && (
-                        <div className="pt-2.5 mt-1 border-t border-slate-800/80 space-y-2.5 animate-fade-in text-xs">
+                        <div className="pt-2.5 mt-1 border-t border-slate-800/80 space-y-2 animate-fade-in text-xs">
                           {/* Enrollment */}
-                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                              Enrollment & Active
+                          <div className="flex items-center justify-between py-1">
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              Enrollment
                             </span>
-                            <span className="text-slate-200 font-bold text-xs">
-                              {session.currentlyParticipating || session.participantsCount} / {session.participantsCount} Active
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                              <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                              <span>{session.currentlyParticipating || session.participantsCount} / {session.participantsCount} Active</span>
                             </span>
                           </div>
 
                           {/* Fee Status Summary */}
-                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
-                            <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                              Fee Status Summary
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap pt-1">
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Paid: {pSummary.paidCount}
+                          <div className="flex items-center justify-between py-1 gap-2 flex-wrap">
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              Fee Status
+                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Paid: <strong className="font-bold">{pSummary.paidCount}</strong>
                               </span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                Partial: {pSummary.partialCount}
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Partial: <strong className="font-bold">{pSummary.partialCount}</strong>
                               </span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                                Pending: {pSummary.pendingCount}
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-400">
+                                Pending: <strong className="font-bold">{pSummary.pendingCount}</strong>
                               </span>
                             </div>
                           </div>
 
+                          {/* Location */}
+                          {session.location && (
+                            <div className="flex items-center justify-between py-1">
+                              <span className="text-[11px] text-slate-400 font-medium">Location</span>
+                              <span className="text-slate-300 text-xs font-medium">{session.location}</span>
+                            </div>
+                          )}
+
                           {/* Action Button */}
-                          <div className="pt-1 flex items-center justify-end">
+                          <div className="pt-1.5">
                             <button
                               onClick={() => handleOpenEditModal(session)}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
+                              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Edit Training Session</span>
