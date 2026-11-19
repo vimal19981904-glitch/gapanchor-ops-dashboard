@@ -152,15 +152,11 @@ export function FollowUpAssistantBar({
     return unsub;
   }, []);
 
-  // Enable background wake-word on mount (active by default unless explicitly disabled by user)
+  // Enable background wake-word on mount (active by default)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedPref = localStorage.getItem('jarvis_wake_word_enabled');
-    if (savedPref === 'false') {
-      setWakeWordEnabled(false);
-      return;
-    }
     setWakeWordEnabled(true);
+    localStorage.setItem('jarvis_wake_word_enabled', 'true');
   }, []);
 
   // Stop voice and all listeners on component unmount
@@ -523,6 +519,7 @@ export function FollowUpAssistantBar({
     if (wakeWordEnabled && !isVoiceModeActive) {
       startWakeWordMonitor(
         (trailingPrompt?: string) => {
+          unlockJarvisAudio();
           pauseWakeWordMonitor();
           try { jarvisAudioFx.playWakeTone(); } catch {}
           setIsVoiceModeActive(true);
@@ -533,19 +530,44 @@ export function FollowUpAssistantBar({
           }
         },
         (err: any) => {
-          const code = err?.error;
-          // Only permanently disable if user explicitly denies microphone access in browser dialog
-          if (code === 'not-allowed') {
-            setWakeWordEnabled(false);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('jarvis_wake_word_enabled', 'false');
-            }
-          }
+          console.debug('Wake word notification:', err?.error || err);
         }
       );
     } else {
       pauseWakeWordMonitor();
     }
+  }, [wakeWordEnabled, isVoiceModeActive]);
+
+  // Seamless audio unlock & wake-word assurance on user page interaction
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      unlockJarvisAudio();
+      if (wakeWordEnabled && !isVoiceModeActive) {
+        startWakeWordMonitor(
+          (trailingPrompt?: string) => {
+            unlockJarvisAudio();
+            pauseWakeWordMonitor();
+            try { jarvisAudioFx.playWakeTone(); } catch {}
+            setIsVoiceModeActive(true);
+            if (trailingPrompt && trailingPrompt.trim().length > 0 && !isCallingJarvis(trailingPrompt)) {
+              latestVoiceHandlersRef.current.executeVoicePrompt(trailingPrompt.trim());
+            } else {
+              latestVoiceHandlersRef.current.executeVoicePrompt('Hey Jarvis');
+            }
+          }
+        );
+      }
+    };
+
+    window.addEventListener('click', handleUserInteraction, { once: true, passive: true });
+    window.addEventListener('keydown', handleUserInteraction, { once: true, passive: true });
+    window.addEventListener('touchstart', handleUserInteraction, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+    };
   }, [wakeWordEnabled, isVoiceModeActive]);
 
   const handleToggleWakeWord = () => {

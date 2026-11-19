@@ -71,8 +71,9 @@ function isMobileOrSafariBrowser(): boolean {
 }
 
 // Stricter wake-word pattern: requires intentional invocation
-const STRICT_WAKE_WORD_REGEX = /^\s*(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|jar\s*vis|travis|service|davis)\b/i;
-const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|hello|ok|okay)[\s,.]+(?:jarvis|javis|jervis|travis|service|davis)\b/i;
+const STRICT_WAKE_WORD_REGEX = /^\s*(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|jar\s*vis|travis|service|davis|harvest|starburst)\b/i;
+const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|hello|ok|okay)[\s,.]+(?:jarvis|javis|jervis|travis|service|davis|harvest|starburst)\b/i;
+const PURE_JARVIS_REGEX = /\b(?:jarvis|javis|jervis|jar\s*vis)\b/i;
 
 // Common Jarvis self-echoes or speaker bleeds to ignore
 const ECHO_PHRASES = [
@@ -635,24 +636,35 @@ function spawnWakeWordRecognition(): any {
 
     const recognition = new SpeechRecognitionClass();
     recognition.lang = 'en-US';
-    recognition.continuous = !isMobileOrSafariBrowser();
+    // Use non-continuous short cycles with auto-restart on silence.
+    // This prevents Chromium's background recognizer from silently stalling/hanging after 15s.
+    recognition.continuous = false;
     recognition.interimResults = true;
 
-    const wakeStartedAt = Date.now();
-    let wakeGotResult = false;
+    // Safety watchdog: cycle recognizer every 12s so it never freezes in limbo
+    const watchdogTimer = setTimeout(() => {
+      try {
+        if (wakeWordRecognition === recognition && isWakeWordActive) {
+          recognition.abort();
+        }
+      } catch {}
+    }, 12000);
 
     recognition.onresult = (event: any) => {
       wakeConsecutiveErrors = 0;
-      wakeGotResult = true;
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const rawText = (event.results[i][0]?.transcript || '').trim();
 
         const isStrictMatch = STRICT_WAKE_WORD_REGEX.test(rawText);
         const isInlineMatch = INLINE_WAKE_WORD_REGEX.test(rawText);
+        const isPureMatch = PURE_JARVIS_REGEX.test(rawText);
 
-        if (isStrictMatch || isInlineMatch) {
-          const match = rawText.match(/(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|jar\s*vis)\b/i);
+        if (isStrictMatch || isInlineMatch || isPureMatch) {
+          clearTimeout(watchdogTimer);
+          clearTimeout(wakeWordRestartTimer);
+
+          const match = rawText.match(/(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|harvest|starburst|jar\s*vis)\b/i);
           let trailing = '';
           if (match && typeof match.index === 'number') {
             trailing = rawText.slice(match.index + match[0].length).replace(/^[\s,.]+/, '').trim();
@@ -673,41 +685,39 @@ function spawnWakeWordRecognition(): any {
     };
 
     recognition.onerror = (e: any) => {
+      clearTimeout(watchdogTimer);
       const err = e?.error;
       if (err === 'no-speech' || err === 'aborted') {
         return;
       }
-      // Fatal background errors: only shut down when user explicitly denies microphone
-      if (err === 'not-allowed') {
-        isWakeWordActive = false;
-        clearTimeout(wakeWordRestartTimer);
-      } else if (err === 'service-not-allowed' || err === 'network' || err === 'audio-capture') {
-        // Transient network or audio-capture flutter: schedule restart with backoff
-        clearTimeout(wakeWordRestartTimer);
-        wakeWordRestartTimer = setTimeout(() => {
-          if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
-            spawnWakeWordRecognition();
-          }
-        }, 1500);
-      }
+      
+      // Auto-restart with delay on transient errors or background permissions
+      clearTimeout(wakeWordRestartTimer);
+      wakeWordRestartTimer = setTimeout(() => {
+        if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
+          spawnWakeWordRecognition();
+        }
+      }, err === 'not-allowed' ? 2500 : 1200);
+
       if (wakeWordErrorCallback) {
         wakeWordErrorCallback(e);
       }
     };
 
     recognition.onend = () => {
+      clearTimeout(watchdogTimer);
       wakeWordRecognition = null;
       if (!isWakeWordActive || activePromptRecognition || activeMediaRecorder || isListeningSessionOpen) {
         return;
       }
 
-      // Smooth background restart (Chrome naturally ends idle recognition cycles on silence)
+      // Smooth background restart (re-arm recognizer instantly on silence cycle)
       clearTimeout(wakeWordRestartTimer);
       wakeWordRestartTimer = setTimeout(() => {
         if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
           spawnWakeWordRecognition();
         }
-      }, 300);
+      }, 150);
     };
 
     recognition.start();
@@ -715,18 +725,12 @@ function spawnWakeWordRecognition(): any {
     return recognition;
   } catch (err: any) {
     console.debug('Wake word init notice:', err);
-    if (err?.name === 'NotAllowedError' || err?.error === 'not-allowed') {
-      isWakeWordActive = false;
-      if (wakeWordErrorCallback) wakeWordErrorCallback(err);
-    } else {
-      // Transient error (InvalidStateError, AudioCaptureError, etc.) - retry after delay!
-      clearTimeout(wakeWordRestartTimer);
-      wakeWordRestartTimer = setTimeout(() => {
-        if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
-          spawnWakeWordRecognition();
-        }
-      }, 1200);
-    }
+    clearTimeout(wakeWordRestartTimer);
+    wakeWordRestartTimer = setTimeout(() => {
+      if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
+        spawnWakeWordRecognition();
+      }
+    }, 1500);
     return null;
   }
 }

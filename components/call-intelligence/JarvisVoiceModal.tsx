@@ -108,7 +108,6 @@ export function JarvisVoiceModal({
         startGreetingSequence();
       }
     } else {
-      pauseWakeWordMonitor();
       stopJarvis();
       setStage('idle');
       setTranscript('');
