@@ -929,28 +929,9 @@ export function DailyPipelineBoard({
         {/* ── Top Header Bar ── */}
       <div className="flex items-center justify-between gap-4 flex-wrap px-1">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-base font-extrabold text-white tracking-tight">
-              Pipeline
-            </h2>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/25">
-              Interactive Workflow
-            </span>
-            {pushedLeadIds.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                {pushedLeadIds.length} Pushed by J.A.R.V.I.S.
-              </span>
-            )}
-            {removedLeadIds.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                {removedLeadIds.length} Hidden
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {displayedLeads.length} prospects active on this board (say &quot;Remove [Key]&quot; or &quot;Remove lost&quot; to J.A.R.V.I.S.)
-          </p>
+          <h2 className="text-base font-extrabold text-white tracking-tight">
+            Pipeline
+          </h2>
         </div>
 
         {/* View Mode Filters & Quick Actions */}

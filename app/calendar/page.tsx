@@ -466,7 +466,7 @@ export default function CalendarPage() {
             {/* Create Event Button */}
             <button
               onClick={() => handleOpenCreateForDate(new Date())}
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:opacity-95 text-white shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
             >
               <Plus size={14} />
               <span className="sm:hidden">New Event</span>

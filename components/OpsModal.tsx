@@ -707,10 +707,10 @@ export default function OpsModal({
                   Payment Tracking For Participants ({participantRows.length})
                 </h4>
                 <div className="flex items-center gap-1.5 text-[10px] font-bold">
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-500/30">
+                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-500/30">
                     Paid: {participantRows.filter(r => (typeof r.amountPaid === 'number' ? r.amountPaid : 0) >= (typeof r.amountDue === 'number' ? r.amountDue : 0) && (typeof r.amountDue === 'number' ? r.amountDue : 0) > 0).length}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-rose-950/40 text-rose-300 border border-rose-500/30">
+                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-rose-950/40 text-rose-300 border border-rose-500/30">
                     Pending: {participantRows.filter(r => (typeof r.amountPaid === 'number' ? r.amountPaid : 0) < (typeof r.amountDue === 'number' ? r.amountDue : 0)).length}
                   </span>
                 </div>
@@ -945,16 +945,16 @@ export default function OpsModal({
             )}
           </div>
 
-          {/* Modal Footer Actions (Single Line Text, Boxy Buttons & Clean Alignment) */}
+          {/* Modal Footer Actions (Uniform Height, Balanced Alignment) */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3.5 border-t border-border/60">
             <div className="w-full sm:w-auto">
               {sessionToEdit ? (
                 <button
                   type="button"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-400 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto h-8 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/35 text-rose-400 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap active:scale-95"
                 >
-                  <Trash2 size={14} className="shrink-0" />
+                  <Trash2 size={13} className="shrink-0" />
                   <span className="whitespace-nowrap">Delete Batch Session</span>
                 </button>
               ) : (
@@ -968,7 +968,7 @@ export default function OpsModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border border-border hover:bg-surface-2 transition-all cursor-pointer whitespace-nowrap text-center"
+                className="flex-1 sm:flex-none h-8 px-3.5 rounded-xl text-xs font-bold border border-border hover:bg-surface-2 transition-all cursor-pointer whitespace-nowrap text-center inline-flex items-center justify-center active:scale-95"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Cancel
@@ -977,9 +977,9 @@ export default function OpsModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-extrabold bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 active:scale-95"
+                className="flex-1 sm:flex-none h-8 inline-flex items-center justify-center gap-1.5 px-4 rounded-xl text-xs font-extrabold bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 active:scale-95"
               >
-                <CheckCircle size={15} className="shrink-0" />
+                <CheckCircle size={14} className="shrink-0" />
                 <span className="whitespace-nowrap">{loading ? 'Saving...' : 'Save Session'}</span>
               </button>
             </div>

@@ -537,63 +537,65 @@ export default function JobSupportModal({
             <button
               type="button"
               onClick={() => setIsTableExpanded(!isTableExpanded)}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-900/80 flex items-center justify-between text-xs font-bold text-amber-300 border-b border-slate-800"
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-900/80 flex items-center justify-between text-xs font-bold text-amber-300 border-b border-slate-800"
             >
-              <div className="flex items-center gap-2">
-                <span>PAYMENT TRACKING FOR CLIENTS ({participantRows.length})</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] sm:text-xs">PAYMENT TRACKING FOR CLIENTS ({participantRows.length})</span>
+                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
                   Paid: {participantRows.filter(r => (typeof r.amountPaid === 'number' && r.amountPaid >= (r.amountDue || 0))).length}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px]">
+                <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] font-bold">
                   Pending: {participantRows.filter(r => (!r.amountPaid || (typeof r.amountPaid === 'number' && r.amountPaid < (r.amountDue || 0)))).length}
                 </span>
               </div>
-              {isTableExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {isTableExpanded ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
             </button>
 
             {isTableExpanded && (
-              <div className="p-3 space-y-2">
+              <div className="divide-y divide-slate-800/70">
                 {participantRows.length === 0 ? (
                   <p className="text-xs text-slate-500 text-center py-4">No clients added yet. Add a client above.</p>
                 ) : (
                   participantRows.map((row, idx) => (
-                    <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+                    <div key={idx} className="p-2.5 sm:p-3 grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-3 items-center hover:bg-slate-900/40 transition-colors">
                       <div>
-                        <span className="text-[10px] text-slate-500 uppercase block font-semibold">Client Name</span>
+                        <span className="text-[10px] text-slate-400 uppercase block font-semibold mb-0.5">Client Name</span>
                         <input
                           type="text"
                           value={row.participantName}
                           onChange={(e) => handleParticipantChange(idx, 'participantName', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold"
+                          className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-amber-500/60"
                         />
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-slate-500 uppercase block font-semibold">Amount Due (₹)</span>
-                        <input
-                          type="text"
-                          value={row.amountDue}
-                          onChange={(e) => handleParticipantChange(idx, 'amountDue', parseInputNumber(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-rose-400 font-mono font-bold"
-                        />
+                      <div className="grid grid-cols-2 gap-2 md:contents">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block font-semibold mb-0.5">Amount Due (₹)</span>
+                          <input
+                            type="text"
+                            value={row.amountDue}
+                            onChange={(e) => handleParticipantChange(idx, 'amountDue', parseInputNumber(e.target.value))}
+                            className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-rose-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
+                          />
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase block font-semibold mb-0.5">Amount Paid (₹)</span>
+                          <input
+                            type="text"
+                            value={row.amountPaid}
+                            onChange={(e) => handleParticipantChange(idx, 'amountPaid', parseInputNumber(e.target.value))}
+                            className="w-full bg-slate-900 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-amber-500/60"
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-slate-500 uppercase block font-semibold">Amount Paid (₹)</span>
-                        <input
-                          type="text"
-                          value={row.amountPaid}
-                          onChange={(e) => handleParticipantChange(idx, 'amountPaid', parseInputNumber(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-700/60 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-mono font-bold"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-3 md:pt-0">
+                      <div className="flex items-center gap-2 pt-1 md:pt-4">
                         <button
                           type="button"
                           onClick={() => handleGenerateInvoice(row, idx)}
                           disabled={generatingInvoiceIndex === idx}
-                          className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 rounded-xl text-[11px] font-bold cursor-pointer transition-all shadow-sm active:scale-95"
+                          className="flex-1 inline-flex items-center justify-center gap-1 h-7 px-2.5 bg-white/[0.04] text-slate-200 border border-white/15 hover:bg-white/[0.08] hover:border-white/25 rounded-lg text-[11px] font-bold cursor-pointer transition-all shadow-sm active:scale-95"
                         >
                           <FileText className="w-3.5 h-3.5" />
                           <span>Invoice</span>
@@ -601,7 +603,8 @@ export default function JobSupportModal({
                         <button
                           type="button"
                           onClick={() => handleRemoveParticipant(idx)}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg bg-slate-950"
+                          className="h-7 w-7 inline-flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500/30 transition-colors"
+                          title="Remove client"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -614,23 +617,23 @@ export default function JobSupportModal({
           </div>
 
           {/* Action Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
             {sessionToEdit?.id ? (
               <button
                 type="button"
                 onClick={() => setIsDeleteConfirmOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 text-xs font-bold transition-all cursor-pointer active:scale-95"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Session</span>
               </button>
             ) : <div />}
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold"
+                className="inline-flex items-center justify-center h-8 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/15 text-xs font-bold transition-all cursor-pointer active:scale-95"
               >
                 Cancel
               </button>
@@ -638,9 +641,9 @@ export default function JobSupportModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white text-xs font-extrabold shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl cursor-pointer disabled:opacity-60 active:scale-95"
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-4 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] hover:from-white/[0.28] hover:to-white/[0.12] text-white text-xs font-extrabold shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] border border-white/30 backdrop-blur-xl cursor-pointer disabled:opacity-60 active:scale-95"
               >
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-3.5 h-3.5" />
                 <span>{loading ? 'Saving…' : 'Save Session'}</span>
               </button>
             </div>
