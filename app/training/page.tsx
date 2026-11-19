@@ -153,88 +153,88 @@ export default function TrainingOpsPage() {
       <div className="w-full max-w-full px-2.5 sm:px-6 md:px-8 py-3 sm:py-6 space-y-3 sm:space-y-4 flex-1 flex flex-col">
 
         {/* Top Header Bar */}
-        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 rounded-xl shadow-2xl space-y-2.5 xl:space-y-0 xl:flex xl:items-center xl:justify-between">
+        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 sm:border-cyan-500/20 rounded-xl shadow-2xl space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
           {/* Top Row: Back button, Title, Mobile Drawer Toggle */}
-          <div className="flex items-center justify-between w-full xl:w-auto gap-2.5">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2.5">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <Link
                 href="/"
-                className="group flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shrink-0"
+                className="group flex items-center justify-center w-7 h-7 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 hover:text-white transition-all shrink-0"
                 title="Return to Dashboard"
               >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-xs font-semibold hidden md:inline ml-1.5">Dashboard</span>
               </Link>
-              <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-white truncate">
+              <h1 className="text-sm sm:text-xl md:text-2xl font-bold sm:font-black tracking-tight text-white truncate">
                 GapAnchor Training Operations
               </h1>
             </div>
-            <div className="xl:hidden shrink-0">
-              <NavDrawerButton className="!w-8 !h-8 sm:!w-9 sm:!h-9" />
+            <div className="sm:hidden shrink-0">
+              <NavDrawerButton className="!w-7 !h-7" />
             </div>
           </div>
 
-          {/* Action Buttons: Add Session & Sync (Cleanly balanced on mobile) */}
-          <div className="flex items-center gap-2 w-full xl:w-auto">
+          {/* Action Buttons: Add Session & Sync (Compact on mobile, full on desktop) */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleOpenAddModal}
-              className="flex-1 xl:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+              className="flex-1 sm:flex-initial h-7 sm:h-auto flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-1 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold sm:font-bold bg-slate-800/80 sm:bg-gradient-to-b sm:from-white/[0.18] sm:to-white/[0.06] hover:bg-slate-700/80 sm:hover:from-white/[0.24] sm:hover:to-white/[0.10] text-slate-200 sm:text-white shadow-sm sm:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-slate-700/80 sm:border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95 whitespace-nowrap"
             >
-              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>+ Add Session</span>
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 sm:text-white" />
+              <span>Add Session</span>
             </button>
 
             <button
               onClick={handleSyncOutlook}
               disabled={syncing}
-              className="flex-1 xl:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95 whitespace-nowrap"
+              className="flex-1 sm:flex-initial h-7 sm:h-auto flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-1 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold sm:font-bold bg-slate-800/80 sm:bg-white/[0.04] hover:bg-slate-700/80 sm:hover:bg-white/[0.08] text-slate-200 border border-slate-700/80 sm:border-white/15 hover:border-slate-600 sm:hover:border-white/25 backdrop-blur-xl transition-all disabled:opacity-60 cursor-pointer active:scale-95 whitespace-nowrap"
             >
-              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 text-cyan-400 sm:text-slate-200 ${syncing ? 'animate-spin' : ''}`} />
               <span>{syncing ? 'Syncing…' : 'Sync'}</span>
             </button>
 
-            <div className="hidden xl:block shrink-0">
+            <div className="hidden sm:block shrink-0">
               <NavDrawerButton />
             </div>
           </div>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-cyan-500/20 shadow-lg flex flex-col justify-between">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 sm:border-cyan-500/20 shadow-sm sm:shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Training Batches</span>
-            <span className="text-xl sm:text-2xl font-black mt-1 text-cyan-400">{totalSessions}</span>
+            <span className="text-xl sm:text-2xl font-bold sm:font-black mt-1 text-white sm:text-cyan-400">{totalSessions}</span>
             <span className="text-[10px] text-slate-500 mt-1">SCM Cohorts Pipeline</span>
           </div>
 
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-indigo-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 sm:border-indigo-500/20 shadow-sm sm:shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Active Enrollees</span>
-            <span className="text-xl sm:text-2xl font-black mt-1 text-indigo-400">{totalActive} / {totalEnrolled}</span>
+            <span className="text-xl sm:text-2xl font-bold sm:font-black mt-1 text-white sm:text-indigo-400">{totalActive} / {totalEnrolled}</span>
             <span className="text-[10px] text-slate-500 mt-1">Active vs Enrolled</span>
           </div>
 
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-emerald-500/20 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 sm:border-emerald-500/20 shadow-sm sm:shadow-lg flex flex-col justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Paid Enrollees</span>
-            <span className="text-xl sm:text-2xl font-black mt-1 text-emerald-400">{totalPaidCount}</span>
+            <span className="text-xl sm:text-2xl font-bold sm:font-black mt-1 text-white sm:text-emerald-400">{totalPaidCount}</span>
             <span className="text-[10px] text-slate-500 mt-1">Full Fee Completed</span>
           </div>
 
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-amber-500/25 shadow-lg flex flex-col justify-between">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 sm:border-amber-500/25 shadow-sm sm:shadow-lg flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Partial / Pending Fee</span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/25 uppercase tracking-wider">
+              <span className="hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/25 uppercase tracking-wider">
                 Status
               </span>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4 mt-1.5 sm:mt-2">
+            <div className="flex items-center gap-3 sm:gap-4 mt-1.5 sm:mt-2">
               <div className="flex items-baseline gap-1">
-                <span className="text-xl sm:text-2xl font-black text-amber-400">{totalPartialCount}</span>
-                <span className="text-[10px] sm:text-xs font-semibold text-amber-300/80">partial</span>
+                <span className="text-xl sm:text-2xl font-bold sm:font-black text-amber-400">{totalPartialCount}</span>
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-400">partial</span>
               </div>
               <div className="h-4 sm:h-5 w-px bg-slate-800" />
               <div className="flex items-baseline gap-1">
-                <span className="text-xl sm:text-2xl font-black text-rose-400">{totalPendingCount}</span>
-                <span className="text-[10px] sm:text-xs font-semibold text-rose-300/80">pending</span>
+                <span className="text-xl sm:text-2xl font-bold sm:font-black text-rose-400">{totalPendingCount}</span>
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-400">pending</span>
               </div>
             </div>
             <span className="text-[10px] text-slate-500 mt-1">Fee Tracking Status</span>
@@ -242,16 +242,16 @@ export default function TrainingOpsPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-700/40 rounded-xl space-y-2.5 sm:space-y-3">
+        <div className="p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md border border-slate-800/80 sm:border-slate-700/40 rounded-xl space-y-2.5 sm:space-y-3">
           <div className="flex flex-col lg:flex-row gap-2.5 sm:gap-3 items-center justify-between">
             <div className="relative w-full lg:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search batch, trainer, platform, participant…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+                className="w-full pl-9 pr-3 py-1.5 sm:py-2 bg-slate-950/80 border border-slate-800 sm:border-slate-700/50 rounded-lg sm:rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
               />
             </div>
 
@@ -259,7 +259,7 @@ export default function TrainingOpsPage() {
               <select
                 value={platformFilter}
                 onChange={e => setPlatformFilter(e.target.value)}
-                className="w-full lg:w-auto bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="w-full lg:w-auto bg-slate-950/80 border border-slate-800 sm:border-slate-700/50 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Platforms</option>
                 <option value="Manhattan">Manhattan WMS</option>
@@ -271,12 +271,13 @@ export default function TrainingOpsPage() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="bg-slate-950/80 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+                className="w-full lg:w-auto bg-slate-950/80 border border-slate-800 sm:border-slate-700/50 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="In Progress">⚡ In Progress</option>
-                <option value="Scheduled">📅 Scheduled</option>
-                <option value="Completed">✅ Completed</option>
+                <option value="Upcoming">Upcoming</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
               </select>
             </div>
           </div>
@@ -294,98 +295,123 @@ export default function TrainingOpsPage() {
             </div>
           ) : (
             <>
-              {/* Mobile View (< md) */}
-              <div className="md:hidden space-y-2.5 p-2 sm:p-3 flex-1">
+              {/* Mobile View (< md) - Sleek 2-Line Cards matching Leads CRM styling */}
+              <div className="md:hidden space-y-2 p-1.5 sm:p-2 flex-1">
                 {filteredSessions.map((session) => {
                   const isExpanded = expandedSessionId === session.id;
                   const pSummary = session.paymentSummary || { paidCount: 0, partialCount: 0, pendingCount: 0 };
+                  const initial = session.platform ? session.platform.trim().charAt(0).toUpperCase() : 'T';
 
                   return (
                     <div
                       key={session.id}
-                      className="p-3 sm:p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl flex flex-col gap-2.5 transition-all shadow-md"
+                      className={`rounded-xl border transition-all ${
+                        isExpanded
+                          ? 'bg-slate-900/95 border-slate-700/80 shadow-lg'
+                          : 'bg-slate-900/70 hover:bg-slate-800/60 border-slate-800/80'
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                            <Calendar className="w-4 h-4" />
+                      {/* 2-Line Header matching Leads CRM format */}
+                      <div
+                        className="p-3 cursor-pointer select-none"
+                        onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setExpandedSessionId(isExpanded ? null : session.id);
+                          }
+                        }}
+                      >
+                        {/* Line 1: Avatar + Title + Trainer (Left) & Status Badge + Chevron (Right) */}
+                        <div className="flex items-center justify-between gap-2 w-full">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                              {initial}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-white text-xs truncate">
+                                  {session.title}
+                                </span>
+                                <span className="px-1.5 py-0.5 text-[8.5px] font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0">
+                                  {session.trainer}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <h3 className="font-bold text-xs text-white leading-tight">
-                              {session.title}
-                            </h3>
-                            <p className="text-[10.5px] text-cyan-400 font-medium mt-0.5 truncate">
-                              👨‍🏫 Trainer: {session.trainer}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-bold text-[10px]">
-                                {session.platform}
-                              </span>
-                              <span className={`px-2 py-0.5 text-[9.5px] font-bold rounded-md uppercase border ${
-                                session.status === 'Completed'
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                              }`}>
-                                {session.status}
-                              </span>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                              session.status === 'Completed'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : session.status === 'In Progress'
+                                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            }`}>
+                              {session.status}
+                            </span>
+                            <div className="w-6 h-6 rounded-lg text-slate-400 hover:text-cyan-400 flex items-center justify-center shrink-0 transition-colors">
+                              {isExpanded ? <ChevronUp size={16} className="text-cyan-400" /> : <ChevronDown size={16} />}
                             </div>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
-                          className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-colors shrink-0 cursor-pointer"
-                        >
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
+                        {/* Line 2: Enrollment (Left) & Platform Name (Right) */}
+                        <div className="flex items-center justify-between gap-2 mt-2 pl-10.5 text-xs">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 font-medium text-[10px] shrink-0">
+                            <Users size={10} className="text-cyan-400" />
+                            <span>{session.currentlyParticipating || session.participantsCount} / {session.participantsCount} Enrolled</span>
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 font-medium text-[10px] truncate max-w-[170px]">
+                            {session.platform}
+                          </span>
+                        </div>
                       </div>
 
+                      {/* Clean Expandable Details */}
                       {isExpanded && (
-                        <div className="pt-2.5 mt-1 border-t border-slate-800/80 space-y-2 animate-fade-in text-xs">
-                          {/* Enrollment */}
-                          <div className="flex items-center justify-between py-1">
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              Enrollment
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
-                              <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                              <span>{session.currentlyParticipating || session.participantsCount} / {session.participantsCount} Active</span>
-                            </span>
-                          </div>
+                        <div className="px-3 pb-3 pt-0 border-t border-slate-800/80 mt-1 space-y-2 text-xs">
+                          <div className="grid grid-cols-1 gap-1.5 pt-2">
+                            {/* Fee Status Summary */}
+                            <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70">
+                              <span className="text-[11px] text-slate-400 font-medium">Fee Breakdown</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  Paid: {pSummary.paidCount}
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  Partial: {pSummary.partialCount}
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                  Pending: {pSummary.pendingCount}
+                                </span>
+                              </div>
+                            </div>
 
-                          {/* Fee Status Summary */}
-                          <div className="flex items-center justify-between py-1 gap-2 flex-wrap">
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              Fee Status
-                            </span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Paid: <strong className="font-bold">{pSummary.paidCount}</strong>
-                              </span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                Partial: <strong className="font-bold">{pSummary.partialCount}</strong>
-                              </span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-400">
-                                Pending: <strong className="font-bold">{pSummary.pendingCount}</strong>
+                            {/* Schedule & Location */}
+                            <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70">
+                              <span className="text-[11px] text-slate-400 font-medium">Schedule & Mode</span>
+                              <span className="text-slate-300 text-[11px] font-medium truncate max-w-[200px]">
+                                {session.date || 'TBD'} • {session.location || 'Online'}
                               </span>
                             </div>
-                          </div>
 
-                          {/* Location */}
-                          {session.location && (
-                            <div className="flex items-center justify-between py-1">
-                              <span className="text-[11px] text-slate-400 font-medium">Location</span>
-                              <span className="text-slate-300 text-xs font-medium">{session.location}</span>
+                            {/* Trainer info */}
+                            <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70">
+                              <span className="text-[11px] text-slate-400 font-medium">Trainer</span>
+                              <span className="text-slate-300 text-[11px] font-medium">{session.trainer}</span>
                             </div>
-                          )}
+                          </div>
 
                           {/* Action Button */}
-                          <div className="pt-1.5">
+                          <div className="pt-1">
                             <button
                               onClick={() => handleOpenEditModal(session)}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
+                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700/80 transition-all cursor-pointer active:scale-95"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
                               <span>Edit Training Session</span>
                             </button>
                           </div>
