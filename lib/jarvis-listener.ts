@@ -71,8 +71,8 @@ function isMobileOrSafariBrowser(): boolean {
 }
 
 // Stricter wake-word pattern: requires intentional invocation
-const STRICT_WAKE_WORD_REGEX = /^\s*(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jar\s*vis|travis)\b/i;
-const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|ok|okay)\s+(?:jarvis|javis)\b/i;
+const STRICT_WAKE_WORD_REGEX = /^\s*(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|jar\s*vis|travis|service|davis)\b/i;
+const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|hello|ok|okay)[\s,.]+(?:jarvis|javis|jervis|travis|service|davis)\b/i;
 
 // Common Jarvis self-echoes or speaker bleeds to ignore
 const ECHO_PHRASES = [
@@ -87,8 +87,6 @@ const ECHO_PHRASES = [
   /^ready\s*sir$/i,
   /^right\s*away\s*(?:sir)?$/i,
   /^yes\s*sir$/i,
-  /^jarvis$/i,
-  /^hey jarvis$/i,
   /what can i do for you/i,
   /checking the details/i,
   /good morning/i,
@@ -123,7 +121,7 @@ export function isActionablePrompt(text: string): boolean {
 
   let cleaned = text.trim().replace(/[.,!?;:'"]/g, '').toLowerCase();
   // Strip wake word prefix
-  cleaned = cleaned.replace(/^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)\s*/i, '').trim();
+  cleaned = cleaned.replace(/^(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|jar\s*vis)\s*/i, '').trim();
   // Strip greeting phrases if user speech echoed Jarvis greeting
   cleaned = cleaned
     .replace(/^(?:online\s*,?\s*sir\.?\s*,?\s*ready\.?|online\s*,?\s*sir\.?|online\s*,?\s*ready\.?|right\s+away\s*,?\s*sir\.?|ready\s*,?\s*sir\.?|online\.?)\s*/i, '')
@@ -654,16 +652,16 @@ function spawnWakeWordRecognition(): any {
         const isInlineMatch = INLINE_WAKE_WORD_REGEX.test(rawText);
 
         if (isStrictMatch || isInlineMatch) {
-          const match = rawText.match(/(?:hey\s+|hi\s+|ok\s+|okay\s+)?jarvis\b/i);
+          const match = rawText.match(/(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|jar\s*vis)\b/i);
           let trailing = '';
           if (match && typeof match.index === 'number') {
-            trailing = rawText.slice(match.index + match[0].length).trim();
+            trailing = rawText.slice(match.index + match[0].length).replace(/^[\s,.]+/, '').trim();
           }
 
           stopWakeWordMonitor();
 
           if (wakeWordCallback) {
-            if (isActionablePrompt(trailing)) {
+            if (trailing && isActionablePrompt(trailing) && !isCallingJarvis(trailing)) {
               wakeWordCallback(trailing);
             } else {
               wakeWordCallback(undefined);
@@ -715,10 +713,20 @@ function spawnWakeWordRecognition(): any {
     recognition.start();
     wakeWordRecognition = recognition;
     return recognition;
-  } catch (err) {
+  } catch (err: any) {
     console.debug('Wake word init notice:', err);
-    isWakeWordActive = false;
-    if (wakeWordErrorCallback) wakeWordErrorCallback(err);
+    if (err?.name === 'NotAllowedError' || err?.error === 'not-allowed') {
+      isWakeWordActive = false;
+      if (wakeWordErrorCallback) wakeWordErrorCallback(err);
+    } else {
+      // Transient error (InvalidStateError, AudioCaptureError, etc.) - retry after delay!
+      clearTimeout(wakeWordRestartTimer);
+      wakeWordRestartTimer = setTimeout(() => {
+        if (isWakeWordActive && !activePromptRecognition && !activeMediaRecorder && !isListeningSessionOpen) {
+          spawnWakeWordRecognition();
+        }
+      }, 1200);
+    }
     return null;
   }
 }

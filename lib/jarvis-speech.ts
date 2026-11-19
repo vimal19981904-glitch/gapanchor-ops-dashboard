@@ -157,6 +157,21 @@ export function unlockJarvisAudio(): void {
   }
 }
 
+// Global user-interaction listener to unlock Web Audio as soon as user touches or clicks anywhere on the page
+if (typeof window !== 'undefined') {
+  const handleFirstInteraction = () => {
+    try {
+      unlockJarvisAudio();
+    } catch {}
+    window.removeEventListener('pointerdown', handleFirstInteraction);
+    window.removeEventListener('touchstart', handleFirstInteraction);
+    window.removeEventListener('keydown', handleFirstInteraction);
+  };
+  window.addEventListener('pointerdown', handleFirstInteraction, { passive: true });
+  window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+  window.addEventListener('keydown', handleFirstInteraction, { passive: true });
+}
+
 /**
  * Returns real-time word/chunk playback progress for 60fps canvas word-dust synchronization
  */
@@ -1043,12 +1058,12 @@ export function isCallingJarvis(text: string): boolean {
 
   if (!clean) return false;
 
-  // Exact or greeting calls to Jarvis
-  const jarvisCallRegex = /^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis)\s*$/i;
+  // Exact or greeting calls to Jarvis (robust to variations, accents & speech-to-text aliases)
+  const jarvisCallRegex = /^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jervis|travis|service|davis|jar\s*vis)\s*$/i;
   if (jarvisCallRegex.test(clean)) return true;
 
   // Calling out presence or waking up
-  const presenceRegex = /^(?:are\s+you\s+there(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+are\s+you\s+there|wake\s+up(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+wake\s+up|you\s+there(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+you\s+there|can\s+you\s+hear\s+me(?:\s+(?:jarvis|javis))?|(?:jarvis|javis)\s+can\s+you\s+hear\s+me)$/i;
+  const presenceRegex = /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jervis|travis|service|davis)?\s*(?:are\s+you\s+there|you\s+there|wake\s+up|can\s+you\s+hear\s+me|listen\s+up|stand\s+by)|(?:are\s+you\s+there|you\s+there|wake\s+up|can\s+you\s+hear\s+me)\s*(?:hey|hi|hello)?\s*(?:jarvis|javis|jervis|travis|service|davis)?)$/i;
   if (presenceRegex.test(clean)) return true;
 
   // Simple pure greetings

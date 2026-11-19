@@ -121,7 +121,10 @@ export function FollowUpAssistantBar({
   // JARVIS Voice State
   const [isSpeakingJarvis, setIsSpeakingJarvis] = useState(false);
   const [autoSpeakJarvis, setAutoSpeakJarvis] = useState(false);
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('jarvis_wake_word_enabled') !== 'false';
+  });
   const [listeningMode, setListeningMode] = useState<JarvisListeningMode>('speech_api');
   const [liveAudioLevel, setLiveAudioLevel] = useState(0);
 
@@ -149,8 +152,7 @@ export function FollowUpAssistantBar({
     return unsub;
   }, []);
 
-  // Only enable background wake-word on mount when mic permission is ALREADY granted,
-  // preventing unprompted HTTPS load failures or mic lock collisions on fresh visits.
+  // Enable background wake-word on mount (active by default unless explicitly disabled by user)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedPref = localStorage.getItem('jarvis_wake_word_enabled');
@@ -158,21 +160,7 @@ export function FollowUpAssistantBar({
       setWakeWordEnabled(false);
       return;
     }
-
-    let cancelled = false;
-    if (navigator.permissions?.query) {
-      navigator.permissions
-        .query({ name: 'microphone' as PermissionName })
-        .then((perm) => {
-          if (!cancelled && perm.state === 'granted') {
-            setWakeWordEnabled(true);
-          }
-        })
-        .catch(() => {});
-    }
-    return () => {
-      cancelled = true;
-    };
+    setWakeWordEnabled(true);
   }, []);
 
   // Stop voice and all listeners on component unmount
@@ -554,6 +542,7 @@ export function FollowUpAssistantBar({
       startWakeWordMonitor(
         (trailingPrompt?: string) => {
           pauseWakeWordMonitor();
+          try { jarvisAudioFx.playWakeTone(); } catch {}
           setIsVoiceModeActive(true);
           if (trailingPrompt && trailingPrompt.trim().length > 0 && !isCallingJarvis(trailingPrompt)) {
             latestVoiceHandlersRef.current.executeVoicePrompt(trailingPrompt.trim());
@@ -563,7 +552,8 @@ export function FollowUpAssistantBar({
         },
         (err: any) => {
           const code = err?.error;
-          if (code === 'not-allowed' || code === 'service-not-allowed' || code === 'service-unavailable') {
+          // Only permanently disable if user explicitly denies microphone access in browser dialog
+          if (code === 'not-allowed') {
             setWakeWordEnabled(false);
             if (typeof window !== 'undefined') {
               localStorage.setItem('jarvis_wake_word_enabled', 'false');
