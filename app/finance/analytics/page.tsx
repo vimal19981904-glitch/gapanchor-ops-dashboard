@@ -383,34 +383,35 @@ export default function FinanceAnalyticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070c18] text-white p-2.5 sm:p-6 md:p-8 space-y-3.5 sm:space-y-6">
+    <div className="min-h-screen bg-[#070c18] text-white p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
+      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
       {/* Top Header & Navigation */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 glass-card !p-3 sm:!p-6 rounded-2xl sm:rounded-3xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 glass-card !p-2.5 sm:!p-4 rounded-xl sm:rounded-2xl border border-white/10">
         <div className="flex items-center justify-between w-full lg:w-auto gap-2">
-          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <a
               href="/"
-              className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-surface-2 border border-border hover:bg-surface-3 transition-colors text-slate-300 hover:text-white shrink-0"
+              className="h-8 w-8 rounded-xl bg-white/[0.04] border border-white/15 hover:bg-white/[0.08] transition-colors text-slate-300 hover:text-white flex items-center justify-center shrink-0"
               title="Return to Main Dashboard"
             >
-              <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <ArrowLeft size={15} />
             </a>
 
-            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 shrink-0">
-              <DollarSign size={18} className="sm:w-6 sm:h-6" />
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-slate-200 shadow-sm shrink-0">
+              <DollarSign size={16} />
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-sm sm:text-2xl font-black tracking-tight text-white truncate">
+                <h1 className="text-sm sm:text-xl font-bold tracking-tight text-white truncate">
                   <span className="sm:hidden">Finance Intel</span>
                   <span className="hidden sm:inline">Finance & Revenue Intelligence</span>
                 </h1>
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                <span className="bg-white/10 text-slate-300 border border-white/15 text-[8px] sm:text-[9px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                   Full Statement
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-400 font-medium hidden sm:block truncate">
+              <p className="text-[10px] text-slate-400 font-medium hidden sm:block truncate">
                 Bank Statement Sync (`Account_Statement.xlsx`) • Dual Credit/Debit Classification
               </p>
             </div>
@@ -418,12 +419,12 @@ export default function FinanceAnalyticsPage() {
 
           {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
           <div className="lg:hidden shrink-0">
-            <NavDrawerButton className="!w-8 !h-8 sm:!w-10 sm:!h-10" />
+            <NavDrawerButton className="!w-8 !h-8" />
           </div>
         </div>
 
         {/* Sync & Action Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <input
             type="file"
             ref={fileInputRef}
@@ -435,7 +436,7 @@ export default function FinanceAnalyticsPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="btn-secondary !py-1.5 !px-3 !text-xs cursor-pointer flex items-center gap-1.5"
+            className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
           >
             <Upload size={13} />
             <span>{uploading ? 'Uploading...' : 'Upload Excel'}</span>
@@ -444,124 +445,132 @@ export default function FinanceAnalyticsPage() {
           <button
             onClick={handleQuickSyncStatement}
             disabled={syncing}
-            className="btn-secondary !py-1.5 !px-3 !text-xs !text-white !bg-white/[0.08] hover:!bg-white/[0.14] !border-white/25 flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+            className="h-8 px-2.5 rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.14] text-xs font-bold text-white flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50 transition-all"
             title="Auto-sync Account_Statement.xlsx"
           >
             <FileSpreadsheet size={13} />
             <span>{syncing ? 'Syncing...' : 'Sync Statement'}</span>
           </button>
 
-          <button onClick={handleExportCSV} className="btn-secondary !py-1.5 !px-2.5 !text-xs">
+          <button
+            onClick={handleExportCSV}
+            className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
+          >
             <Download size={13} />
             <span>CSV</span>
           </button>
 
-          <button onClick={fetchFinanceData} disabled={loading} className="btn-secondary !p-1.5 !rounded-xl" title="Refresh data">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          <button
+            onClick={fetchFinanceData}
+            disabled={loading}
+            className="h-8 w-8 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition-all"
+            title="Refresh data"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin text-white' : ''} />
           </button>
 
           {/* Desktop Navigation Drawer Button */}
           <div className="hidden lg:block shrink-0">
-            <NavDrawerButton />
+            <NavDrawerButton className="!w-8 !h-8" />
           </div>
         </div>
       </div>
 
       {/* Active Sync & Loading Banner */}
       {loading && (
-        <div className="glass-card p-3 sm:p-4 rounded-2xl flex items-center justify-between border-emerald-500/30 bg-emerald-950/30 text-emerald-300 font-bold text-xs sm:text-sm animate-pulse">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <Loader2 size={18} className="animate-spin text-emerald-400" />
-            <span className="text-xs sm:text-sm">Synchronizing Financial Analytics & Statement Records...</span>
+        <div className="glass-card p-2.5 sm:p-3 rounded-xl flex items-center justify-between border border-white/10 bg-slate-900/60 text-slate-200 font-bold text-xs animate-pulse">
+          <div className="flex items-center gap-2">
+            <Loader2 size={15} className="animate-spin text-slate-400" />
+            <span className="text-xs">Synchronizing Financial Analytics & Statement Records...</span>
           </div>
-          <span className="text-[10px] text-emerald-400/80 font-mono hidden sm:inline">Refreshing Data</span>
+          <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Refreshing Data</span>
         </div>
       )}
 
       {/* KPI Summary Scorecards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
-        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-emerald-500/20 bg-emerald-950/20">
-          <div className="flex items-center justify-between text-emerald-400">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Income</span>
-            <TrendingUp size={16} className="shrink-0" />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
+        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Income</span>
+            <TrendingUp size={14} className="shrink-0 text-emerald-400" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 w-28 rounded-lg bg-emerald-500/20 animate-pulse" />
-              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-sm sm:text-2xl font-black font-mono text-emerald-300 truncate">
+              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
                 {formatCurrency(totalIncome)}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
                 {transactions.filter(t => t.type === 'income').length} credit entries
               </p>
             </>
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-rose-500/20 bg-rose-950/20">
-          <div className="flex items-center justify-between text-rose-400">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Expense</span>
-            <TrendingDown size={16} className="shrink-0" />
+        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Expense</span>
+            <TrendingDown size={14} className="shrink-0 text-rose-400" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 w-28 rounded-lg bg-rose-500/20 animate-pulse" />
-              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-sm sm:text-2xl font-black font-mono text-rose-300 truncate">
+              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
                 {formatCurrency(totalExpense)}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
                 {transactions.filter(t => t.type === 'expense').length} debit entries
               </p>
             </>
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-indigo-500/20 bg-indigo-950/20">
-          <div className="flex items-center justify-between text-indigo-400">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Net Profit</span>
-            <DollarSign size={16} className="shrink-0" />
+        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Net Profit</span>
+            <DollarSign size={14} className="shrink-0 text-slate-400" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 w-28 rounded-lg bg-indigo-500/20 animate-pulse" />
-              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className={`text-sm sm:text-2xl font-black font-mono truncate ${netProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
+              <p className={`text-sm sm:text-xl font-bold font-mono truncate ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
                 {formatCurrency(netProfit)}
               </p>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
                 Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%
               </p>
             </>
           )}
         </div>
 
-        <div className="glass-card !p-3 sm:!p-4 rounded-2xl space-y-1 border-cyan-500/20 bg-cyan-950/20">
-          <div className="flex items-center justify-between text-cyan-400">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Transactions</span>
-            <Layers size={16} className="shrink-0" />
+        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
+          <div className="flex items-center justify-between text-slate-300">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Transactions</span>
+            <Layers size={14} className="shrink-0 text-slate-400" />
           </div>
           {loading ? (
             <div className="space-y-1 my-1">
-              <div className="h-6 w-28 rounded-lg bg-cyan-500/20 animate-pulse" />
-              <div className="h-3 w-20 rounded bg-slate-800 animate-pulse" />
+              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
             </div>
           ) : (
             <>
-              <p className="text-sm sm:text-2xl font-black font-mono text-cyan-300 truncate">
+              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
                 {transactions.length} Records
               </p>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
                 Filtered: {filteredTx.length} active
               </p>
             </>
@@ -576,12 +585,12 @@ export default function FinanceAnalyticsPage() {
       <IncomeBreakdownDashboard />
 
       {/* Multi-Chart Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {/* Chart 1: Revenue & Expense Timeline Flow (Full Width Top Row) */}
-        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 lg:col-span-2 border border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2 text-white">
-              <LineChartIcon size={18} className="text-emerald-400" />
+              <LineChartIcon size={16} className="text-slate-300" />
               <div>
                 <h3 className="text-base font-extrabold">Credit & Debit Timeline Flow</h3>
                 <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
@@ -591,8 +600,8 @@ export default function FinanceAnalyticsPage() {
             </div>
 
             {/* Timeframe Granularity Toggle & Calendar Popover Button */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center p-1 bg-slate-900/80 border border-white/10 rounded-xl gap-1 shrink-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center p-0.5 bg-slate-900/80 border border-white/10 rounded-xl gap-0.5 shrink-0">
                 {[
                   { id: 'hourly', label: 'Hourly' },
                   { id: 'day', label: 'Day' },
@@ -601,9 +610,9 @@ export default function FinanceAnalyticsPage() {
                   <button
                     key={gran.id}
                     onClick={() => setTimelineGranularity(gran.id as any)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       timelineGranularity === gran.id
-                        ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                        ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
                         : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
@@ -616,7 +625,7 @@ export default function FinanceAnalyticsPage() {
               <div className="relative">
                 <button
                   onClick={() => setIsDatePopoverOpen(!isDatePopoverOpen)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`h-8 px-2.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                     timelinePreset !== 'all' || timelineStartDate || timelineEndDate
                       ? 'bg-white/[0.12] border-white/25 text-white shadow-sm'
                       : 'bg-white/[0.04] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -744,47 +753,47 @@ export default function FinanceAnalyticsPage() {
             </div>
           </div>
 
-          <div className="h-64 sm:h-72">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={timelineData}>
+              <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                 <defs>
                   <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
                     <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `₹${v / 1000}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                 <Tooltip
                   formatter={(v: number) => [formatCurrency(v), '']}
-                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
+                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                <Area type="monotone" dataKey="income" name="Income (Credit)" stroke="#10b981" strokeWidth={3} fill="url(#incGrad)" />
-                <Area type="monotone" dataKey="expense" name="Expense (Debit)" stroke="#f43f5e" strokeWidth={3} fill="url(#expGrad)" />
+                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                <Area type="monotone" dataKey="income" name="Income (Credit)" stroke="#10b981" strokeWidth={2} fill="url(#incGrad)" />
+                <Area type="monotone" dataKey="expense" name="Expense (Debit)" stroke="#f43f5e" strokeWidth={2} fill="url(#expGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Chart 2: Unified Income & Expense Category Breakdown (Single Pie) */}
-        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4 bg-gradient-to-br from-black via-zinc-950 to-slate-900 border border-zinc-800/90 shadow-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 bg-gradient-to-br from-black via-zinc-950 to-slate-900 border border-white/10 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2 text-white">
-              <PieChartIcon size={18} className="text-emerald-400" />
+              <PieChartIcon size={16} className="text-slate-300" />
               <div>
-                <h3 className="text-base font-extrabold">Income & Expense Breakdown</h3>
+                <h3 className="text-sm sm:text-base font-bold">Income & Expense Breakdown</h3>
                 <p className="text-[10px] text-slate-400 font-medium">Single Pie Chart Distribution</p>
               </div>
             </div>
 
             {/* View Selector Pills */}
-            <div className="flex rounded-xl p-1 border border-white/10 bg-slate-900/80 text-xs font-semibold shrink-0">
+            <div className="flex rounded-xl p-0.5 border border-white/10 bg-slate-900/80 text-xs font-semibold shrink-0">
               {[
                 { id: 'combined', label: 'Single Pie' },
                 { id: 'income', label: 'Income' },
@@ -793,9 +802,9 @@ export default function FinanceAnalyticsPage() {
                 <button
                   key={v.id}
                   onClick={() => setBreakdownView(v.id as any)}
-                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs font-semibold ${
+                  className={`h-7 px-2.5 rounded-lg transition-all cursor-pointer text-xs font-semibold ${
                     breakdownView === v.id
-                      ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                      ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
@@ -805,8 +814,8 @@ export default function FinanceAnalyticsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-            <div className="h-60 relative flex items-center justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+            <div className="h-48 sm:h-52 relative flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -1032,29 +1041,29 @@ export default function FinanceAnalyticsPage() {
         </div>
 
         {/* Chart 3: Quarterly Revenue & Net Profit Bar Graph */}
-        <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
+        <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 border border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-white">
-              <BarChart3 size={18} className="text-indigo-400" />
-              <h3 className="text-base font-extrabold">Quarterly Comparison (Q1 - Q4)</h3>
+              <BarChart3 size={16} className="text-slate-300" />
+              <h3 className="text-sm sm:text-base font-bold">Quarterly Comparison (Q1 - Q4)</h3>
             </div>
-            <span className="text-xs text-slate-400 font-semibold">Running Quarterly Trends</span>
+            <span className="text-[10px] text-slate-400 font-medium">Running Quarterly Trends</span>
           </div>
 
-          <div className="h-64 sm:h-72">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={quarterlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <BarChart data={quarterlyTrends} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={10} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                 <Tooltip
                   formatter={(v: number) => [formatCurrency(v), '']}
-                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
+                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
                 />
-                <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                <Bar dataKey="income" name="Income" fill="#10b981" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="net" name="Net Margin" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="net" name="Net Margin" fill="#818cf8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1062,18 +1071,18 @@ export default function FinanceAnalyticsPage() {
       </div>
 
       {/* Interactive Statement Categorization & Transaction Table */}
-      <div className="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
+      <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 border border-white/10">
         {/* Table Filter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex rounded-xl border border-white/10 p-1 bg-slate-900/80">
+            <div className="flex rounded-xl border border-white/10 p-0.5 bg-slate-900/80">
               {(['all', 'income', 'expense'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  className={`h-7 px-2.5 sm:px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     filterType === type
-                      ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
+                      ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
@@ -1087,7 +1096,7 @@ export default function FinanceAnalyticsPage() {
             <select
               value={selectedQuarter}
               onChange={(e) => setSelectedQuarter(e.target.value)}
-              className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold bg-surface-2 text-white outline-none cursor-pointer"
+              className="h-8 rounded-xl border border-border px-2.5 text-xs font-semibold bg-surface-2 text-white outline-none cursor-pointer"
             >
               <option value="all">All Quarters</option>
               <option value="Q1">Q1 (Jan - Mar)</option>
@@ -1099,30 +1108,30 @@ export default function FinanceAnalyticsPage() {
 
           {/* Search Input */}
           <div className="relative min-w-[200px] sm:min-w-[240px] flex-1 sm:flex-initial">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search particulars, ref no, amount..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-border pl-9 pr-3 py-1.5 text-xs bg-surface-2 text-white outline-none focus:border-brand-500"
+              className="h-8 w-full rounded-xl border border-border pl-8 pr-3 text-xs bg-surface-2 text-white outline-none focus:border-white/30"
             />
           </div>
         </div>
 
         {/* ── Desktop Transactions Table (>= md) ── */}
-        <div className="hidden md:block overflow-x-auto rounded-2xl border border-border">
+        <div className="hidden md:block overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="bg-surface-2 border-b border-border text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                <th className="px-4 py-3">Date</th>
-                <th className="px-3 py-3">Type</th>
-                <th className="px-4 py-3">Category (Inline Select)</th>
-                <th className="px-4 py-3">Particulars & Reference</th>
-                <th className="px-3 py-3">Payment Method</th>
-                <th className="px-3 py-3">Platform</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-3 py-3 text-center">Actions</th>
+                <th className="px-3 py-2">Date</th>
+                <th className="px-2.5 py-2">Type</th>
+                <th className="px-3 py-2">Category (Inline Select)</th>
+                <th className="px-3 py-2">Particulars & Reference</th>
+                <th className="px-2.5 py-2">Payment Method</th>
+                <th className="px-2.5 py-2">Platform</th>
+                <th className="px-3 py-2 text-right">Amount</th>
+                <th className="px-2.5 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -1135,22 +1144,22 @@ export default function FinanceAnalyticsPage() {
               ) : (
                 paginatedTx.map((tx) => (
                   <tr key={tx.id} className="hover:bg-surface-2/60 transition-colors">
-                    <td className="px-4 py-3 font-mono text-slate-300 whitespace-nowrap">
+                    <td className="px-3 py-2 font-mono text-slate-300 whitespace-nowrap">
                       {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
                     </td>
 
-                    <td className="px-3 py-3">
+                    <td className="px-2.5 py-2">
                       <span className={tx.type === 'income' ? 'badge-income badge' : 'badge-expense badge'}>
                         {tx.type.toUpperCase()}
                       </span>
                     </td>
 
                     {/* Inline Category Select - Fixed Width & Aligned */}
-                    <td className="px-4 py-3 shrink-0">
+                    <td className="px-3 py-2 shrink-0">
                       <select
                         value={tx.sourceOrCategory}
                         onChange={(e) => handleUpdateCategory(tx.id, e.target.value)}
-                        className="w-48 h-8.5 rounded-lg border border-border/80 px-2.5 py-1 text-[11px] font-bold bg-slate-900 text-cyan-300 outline-none cursor-pointer hover:border-cyan-500 truncate"
+                        className="w-44 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-200 outline-none cursor-pointer hover:border-white/30 truncate"
                       >
                         {(tx.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
                           <option key={cat} value={cat}>
@@ -1161,7 +1170,7 @@ export default function FinanceAnalyticsPage() {
                     </td>
 
                     {/* Human Readable Particulars & Reference */}
-                    <td className="px-4 py-3 max-w-sm">
+                    <td className="px-3 py-2 max-w-sm">
                       {(() => {
                         const formatted = formatParticularsAndRef(tx.notes);
                         return (
@@ -1185,11 +1194,11 @@ export default function FinanceAnalyticsPage() {
                     </td>
 
                     {/* Inline Payment Method Select - Fixed Width & Aligned */}
-                    <td className="px-3 py-3 shrink-0">
+                    <td className="px-2.5 py-2 shrink-0">
                       <select
                         value={tx.paymentMethod || 'Bank Transfer'}
                         onChange={(e) => handleUpdatePaymentMethod(tx.id, e.target.value)}
-                        className="w-32 h-8.5 rounded-lg border border-border/80 px-2.5 py-1 text-[11px] font-bold bg-slate-900 text-indigo-300 outline-none cursor-pointer hover:border-indigo-500 truncate"
+                        className="w-28 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-300 outline-none cursor-pointer hover:border-white/30 truncate"
                       >
                         {PAYMENT_METHODS.map((pm) => (
                           <option key={pm} value={pm}>
@@ -1199,19 +1208,19 @@ export default function FinanceAnalyticsPage() {
                       </select>
                     </td>
 
-                    <td className="px-3 py-3 text-cyan-400 font-medium">
+                    <td className="px-2.5 py-2 text-slate-300 font-medium">
                       {tx.platform || 'General'}
                     </td>
 
-                    <td className={`px-4 py-3 text-right font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <td className={`px-3 py-2 text-right font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </td>
 
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-2.5 py-2 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => { setSelectedTx(tx); setIsDetailOpen(true); }}
-                          className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/30 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg bg-white/[0.05] text-slate-300 hover:text-white hover:bg-white/[0.1] border border-white/10 transition-colors cursor-pointer"
                           title="View Details"
                         >
                           <Eye size={13} />
@@ -1545,6 +1554,7 @@ export default function FinanceAnalyticsPage() {
         onClose={() => setIsAddCollectionModalOpen(false)}
         onSuccess={fetchFinanceData}
       />
+      </div>
     </div>
   );
 }
