@@ -190,20 +190,17 @@ export default function NavigationDrawer({
           
           {/* Drawer Header - Solid Opaque Dark Slate */}
           <div className="p-3.5 sm:p-4 border-b border-white/15 bg-slate-950 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500/40 via-indigo-500/30 to-white/10 border border-white/20 flex items-center justify-center text-white shadow-md shrink-0">
-                <NavMenuIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
-              </div>
-              <div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500/40 via-indigo-500/30 to-white/10 border border-white/20 flex items-center justify-center text-white shadow-md shrink-0">
+                  <NavMenuIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                </div>
                 <h2 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
                   Ops Navigation
                   <span className="hidden sm:inline-block text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.2 rounded-full bg-brand-500/30 text-brand-200 border border-brand-500/50">
                     Drawer
                   </span>
                 </h2>
-                <p className="hidden sm:block text-[10.5px] text-slate-300 font-medium">Quick jump & full views</p>
               </div>
-            </div>
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
