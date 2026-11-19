@@ -20,6 +20,11 @@ The following core modules have been fully implemented, authenticated via Micros
 
 4. **System Architecture Documentation** ([`docs/AZURE_GRAPH_CLOUD_ARCHITECTURE.md`](file:///c:/Users/ARUL%20XAVIER/OneDrive%20-%20gapanchor/dashboard/docs/AZURE_GRAPH_CLOUD_ARCHITECTURE.md))
 
+5. **J.A.R.V.I.S. Voice Engine & Wake-Up System** ([`docs/JARVIS_VOICE_ARCHITECTURE.md`](file:///c:/Users/ARUL%20XAVIER/OneDrive%20-%20gapanchor/dashboard/docs/JARVIS_VOICE_ARCHITECTURE.md))
+   - Continuous background wake-word monitor ("Hey Jarvis", "Wake up", "Wake up Jarvis").
+   - Instant zero-pause neural voice streaming (`speakJarvis`) and parallel answer rendering.
+   - Core files: `lib/jarvis-listener.ts`, `lib/jarvis-speech.ts`, `components/call-intelligence/FollowUpAssistantBar.tsx`.
+
 ---
 
 ## Directives for Future Agent Tasks

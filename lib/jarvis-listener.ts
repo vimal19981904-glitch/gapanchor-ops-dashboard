@@ -70,10 +70,11 @@ function isMobileOrSafariBrowser(): boolean {
   return isMobile || isSafari;
 }
 
-// Stricter wake-word pattern: requires intentional invocation
+// Broad, ultra-robust wake patterns: handles "Hey Jarvis", "Wake up", "Wake up Jarvis", "Jarvis wake up", etc.
 const STRICT_WAKE_WORD_REGEX = /^\s*(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|jar\s*vis|travis|service|davis|harvest|starburst)\b/i;
 const INLINE_WAKE_WORD_REGEX = /\b(?:hey|hi|hello|ok|okay)[\s,.]+(?:jarvis|javis|jervis|travis|service|davis|harvest|starburst)\b/i;
 const PURE_JARVIS_REGEX = /\b(?:jarvis|javis|jervis|jar\s*vis)\b/i;
+const WAKE_UP_COMMAND_REGEX = /\b(?:wake\s*up|wake(?:\s*-\s*up)?|wake\s+up\s+jarvis|wake\s+jarvis|jarvis\s+wake\s*up|are\s+you\s+there|you\s+there|can\s+you\s+hear\s+me|listen\s*up|stand\s*by)\b/i;
 
 // Common Jarvis self-echoes or speaker bleeds to ignore
 const ECHO_PHRASES = [
@@ -655,16 +656,18 @@ function spawnWakeWordRecognition(): any {
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const rawText = (event.results[i][0]?.transcript || '').trim();
+        if (!rawText) continue;
 
         const isStrictMatch = STRICT_WAKE_WORD_REGEX.test(rawText);
         const isInlineMatch = INLINE_WAKE_WORD_REGEX.test(rawText);
         const isPureMatch = PURE_JARVIS_REGEX.test(rawText);
+        const isWakeUpMatch = WAKE_UP_COMMAND_REGEX.test(rawText);
 
-        if (isStrictMatch || isInlineMatch || isPureMatch) {
+        if (isStrictMatch || isInlineMatch || isPureMatch || isWakeUpMatch) {
           clearTimeout(watchdogTimer);
           clearTimeout(wakeWordRestartTimer);
 
-          const match = rawText.match(/(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|harvest|starburst|jar\s*vis)\b/i);
+          const match = rawText.match(/(?:hey|hi|hello|ok|okay)?[\s,.]*(?:jarvis|javis|jervis|travis|service|davis|harvest|starburst|jar\s*vis|wake\s*up(?:\s+jarvis)?|wake(?:\s*-\s*up)?(?:\s+jarvis)?)\b/i);
           let trailing = '';
           if (match && typeof match.index === 'number') {
             trailing = rawText.slice(match.index + match[0].length).replace(/^[\s,.]+/, '').trim();

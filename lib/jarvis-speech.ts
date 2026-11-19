@@ -1068,20 +1068,24 @@ export function isCallingJarvis(text: string): boolean {
   const clean = text
     .toLowerCase()
     .trim()
-    .replace(/[.,!?;:'"’]/g, '')
+    .replace(/[.,!?;:'"’\-]/g, ' ')
     .replace(/\s+/g, ' ');
 
   if (!clean) return false;
 
-  // Exact or greeting calls to Jarvis (robust to variations, accents & speech-to-text aliases)
+  // 1. Dedicated Wake-Up commands (wake up, wake up jarvis, wake up buddy, wake up boss, wake jarvis, jarvis wake up, etc.)
+  const wakeUpRegex = /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jervis|travis|service|davis|buddy|boss)?\s*(?:wake\s*up|wake)(?:\s+(?:jarvis|javis|jervis|travis|service|davis|buddy|boss|now|please|up))?|(?:wake\s*up|wake)\s*(?:hey|hi|hello)?\s*(?:jarvis|javis|jervis|travis|service|davis|buddy|boss|now|please)?)$/i;
+  if (wakeUpRegex.test(clean)) return true;
+
+  // 2. Exact or greeting calls to Jarvis ("hey jarvis", "hi jarvis", "hello jarvis", "jarvis")
   const jarvisCallRegex = /^(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jervis|travis|service|davis|jar\s*vis)\s*$/i;
   if (jarvisCallRegex.test(clean)) return true;
 
-  // Calling out presence or waking up
+  // 3. Calling out presence or waking up ("are you there", "you there", "can you hear me", "listen up", "stand by")
   const presenceRegex = /^(?:(?:hey|hi|hello|ok|okay)?\s*(?:jarvis|javis|jervis|travis|service|davis)?\s*(?:are\s+you\s+there|you\s+there|wake\s+up|can\s+you\s+hear\s+me|listen\s+up|stand\s+by)|(?:are\s+you\s+there|you\s+there|wake\s+up|can\s+you\s+hear\s+me)\s*(?:hey|hi|hello)?\s*(?:jarvis|javis|jervis|travis|service|davis)?)$/i;
   if (presenceRegex.test(clean)) return true;
 
-  // Simple pure greetings
+  // 4. Simple pure greetings
   const pureGreetingRegex = /^(?:hello|hey|hi|good\s+morning|good\s+afternoon|good\s+evening)\s*$/i;
   if (pureGreetingRegex.test(clean)) return true;
 

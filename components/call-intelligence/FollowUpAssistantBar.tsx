@@ -456,6 +456,19 @@ export function FollowUpAssistantBar({
         );
       }
 
+      // Display AI insight immediately on screen (zero delay for user)
+      setAiResponse({
+        answer: data.answer,
+        actionAdvice: '',
+        matchedIds: data.matchedIds || [],
+        recommendedFilter: data.recommendedFilter,
+        isRealAi: Boolean(data.isRealGemini),
+        missingApiKey: Boolean(data.missingApiKey),
+        apiError: data.apiError,
+        model: data.model,
+        prompt: cleanPrompt,
+      });
+
       // 2. Stream neural voice without reading Tactical Directive
       const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, null);
       const followUpPhrase = getJarvisFollowUpPhrase();
@@ -466,17 +479,6 @@ export function FollowUpAssistantBar({
         onStart: () => {
           setIsSpeakingJarvis(true);
           setVoiceStage('speaking_output');
-          setAiResponse({
-            answer: data.answer,
-            actionAdvice: '',
-            matchedIds: data.matchedIds || [],
-            recommendedFilter: data.recommendedFilter,
-            isRealAi: Boolean(data.isRealGemini),
-            missingApiKey: Boolean(data.missingApiKey),
-            apiError: data.apiError,
-            model: data.model,
-            prompt: cleanPrompt,
-          });
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);
