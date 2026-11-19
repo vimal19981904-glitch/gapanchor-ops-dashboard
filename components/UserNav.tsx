@@ -92,12 +92,8 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
                 <span className="text-xs font-bold text-slate-100 truncate">
                   {user.name && user.name.toLowerCase().includes('arul') ? 'Master Admin' : (user.name || 'Master Admin')}
                 </span>
-                <span className={`px-1.5 py-0.2 text-[8px] font-black rounded-full uppercase tracking-widest font-mono border ${
-                  isDemo
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                }`}>
-                  {isDemo ? 'DEMO' : (user.role?.toUpperCase() || 'ADMIN')}
+                <span className="text-[10px] font-medium text-slate-400 lowercase">
+                  {isDemo ? 'demo' : (user.role?.toLowerCase() || 'admin')}
                 </span>
               </div>
               <div className="text-[10px] text-slate-400 truncate">
@@ -110,9 +106,9 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
             onClick={handleLogout}
             disabled={loggingOut}
             title={`Sign out (${user.email})`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/70 hover:border-slate-600 transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-sm"
           >
-            <LogOut size={13} className={loggingOut ? 'animate-spin' : ''} />
+            <LogOut size={13} className={`text-slate-400 ${loggingOut ? 'animate-spin' : ''}`} />
             <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
           </button>
         </div>
