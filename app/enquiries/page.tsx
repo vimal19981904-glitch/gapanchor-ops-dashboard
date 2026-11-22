@@ -19,6 +19,7 @@ import { RedFlagBadge } from '@/components/call-intelligence/RedFlagBadge';
 import { LeadDetailsDrawer } from '@/components/call-intelligence/LeadDetailsDrawer';
 import { TeamsSyncControls } from '@/components/call-intelligence/TeamsSyncControls';
 import { FollowUpAssistantBar } from '@/components/call-intelligence/FollowUpAssistantBar';
+import { LeadTeamsIndicators } from '@/components/call-intelligence/LeadTeamsIndicators';
 import { analyzeEnquiryFollowUp } from '@/lib/followup-intelligence';
 import { DailyPipelineBoard } from '@/components/pipeline/DailyPipelineBoard';
 
@@ -1127,22 +1128,33 @@ export default function EnquiriesPage() {
 
                         {/* Notes */}
                         <td className="py-4 px-3 min-w-0">
-                          {enquiry.callFollowUpDate && (
-                            <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold mb-1 truncate">
-                              <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
-                              <span>Due: {new Date(enquiry.callFollowUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <LeadTeamsIndicators
+                              enquiryId={enquiry.id}
+                              onOpenDrawer={() => {
+                                setSelectedDetailEnquiry(enquiry);
+                                setNoteText(enquiry.processedNotes || '');
+                              }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              {enquiry.callFollowUpDate && (
+                                <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold mb-1 truncate">
+                                  <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
+                                  <span>Due: {new Date(enquiry.callFollowUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                              )}
+                              {enquiry.processedNotes ? (
+                                <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="block w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
+                                  💬 {enquiry.processedNotes}
+                                </button>
+                              ) : (
+                                <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note whitespace-nowrap">
+                                  <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors shrink-0" />
+                                  Add notes
+                                </button>
+                              )}
                             </div>
-                          )}
-                          {enquiry.processedNotes ? (
-                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(enquiry.processedNotes || ''); }} className="block w-full text-left text-[11px] text-slate-400 italic truncate bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-700/40 hover:border-cyan-500/40 cursor-pointer transition-colors" title={enquiry.processedNotes}>
-                              💬 {enquiry.processedNotes}
-                            </button>
-                          ) : (
-                            <button onClick={() => { setEditingEnquiry(enquiry); setNoteText(''); }} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-cyan-400 transition-colors cursor-pointer group/note whitespace-nowrap">
-                              <Sparkles className="w-3 h-3 group-hover/note:text-amber-400 transition-colors shrink-0" />
-                              Add notes
-                            </button>
-                          )}
+                          </div>
                         </td>
 
                         {/* Actions */}

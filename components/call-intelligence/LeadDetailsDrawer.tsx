@@ -40,6 +40,7 @@ import { TranscriptUploadModal } from './TranscriptUploadModal';
 import DeleteRecordAction from '@/components/DeleteRecordAction';
 import { analyzeEnquiryFollowUp, getCurriculumForTopic } from '@/lib/followup-intelligence';
 import { CustomerExperienceTab } from './CustomerExperienceTab';
+import { LeadTeamsIndicators } from './LeadTeamsIndicators';
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
   'Pending': { label: 'Pending', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
@@ -421,6 +422,7 @@ export function LeadDetailsDrawer({
                   redFlagReason={enquiry.redFlagReason}
                   redFlagDismissed={Boolean(enquiry.redFlagDismissed)}
                 />
+                <LeadTeamsIndicators enquiryId={enquiry.id} />
               </div>
               {/* Row 2: Subtitle line (platform • country) */}
               <p className="text-[11px] text-slate-400 truncate mt-0.5">
@@ -457,6 +459,7 @@ export function LeadDetailsDrawer({
                   redFlagReason={enquiry.redFlagReason}
                   redFlagDismissed={Boolean(enquiry.redFlagDismissed)}
                 />
+                <LeadTeamsIndicators enquiryId={enquiry.id} />
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5 truncate">
                 <span>{enquiry.trainingType || enquiry.topic || 'Enterprise Training'}</span>
