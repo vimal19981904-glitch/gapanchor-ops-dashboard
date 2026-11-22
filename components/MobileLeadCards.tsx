@@ -162,23 +162,26 @@ export default function MobileLeadCards({
                   </div>
                 </div>
 
-                {/* Right group: Call button + Boxy Status Badge + Chevron */}
+                {/* Right group: Call icon only + Uniform-sized Status Badge + Chevron */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {lead.phone && (
+                  {lead.phone ? (
                     <a
                       href={`tel:${cleanPhone(lead.phone)}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="h-6 px-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 no-underline shadow-sm"
+                      className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-cyan-400 active:scale-90 transition-colors shrink-0"
                       title={`Call ${lead.participantName}`}
                     >
-                      <Phone size={11} className="shrink-0" />
-                      <span className="hidden min-[360px]:inline">Call</span>
+                      <Phone size={13} className="shrink-0" />
                     </a>
+                  ) : (
+                    <span className="w-6 h-6 flex items-center justify-center text-slate-700 shrink-0 select-none">
+                      <Phone size={13} className="shrink-0 opacity-20" />
+                    </span>
                   )}
 
-                  {/* Boxy Status Badge (matches Manhattan WMS boxy style) */}
+                  {/* Boxy Status Badge - Uniform Same Size Across All Statuses */}
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 text-center min-w-[56px] ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}
+                    className={`text-[10px] font-semibold w-[68px] h-6 flex items-center justify-center rounded-md border shrink-0 text-center leading-none ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}
                   >
                     {statusConfig.label}
                   </span>
