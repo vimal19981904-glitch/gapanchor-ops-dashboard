@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import DeleteRecordAction from './DeleteRecordAction';
+import { LeadTeamsIndicators } from './call-intelligence/LeadTeamsIndicators';
 
 export interface MobileLeadItem {
   id: string;
@@ -113,9 +114,9 @@ export default function MobileLeadCards({
                 : 'bg-slate-900/70 hover:bg-slate-800/60 border-slate-800/80'
             }`}
           >
-            {/* ── Sleek 2-Line Header (Perfect Alignment & Spacing) ── */}
+            {/* ── Sleek Uniform 2-Line Header (Clean, Compact & Consistent) ── */}
             <div
-              className="p-3 cursor-pointer select-none"
+              className="px-3 py-2.5 cursor-pointer select-none"
               onClick={() => onToggleExpand(lead.id)}
               role="button"
               tabIndex={0}
@@ -127,45 +128,58 @@ export default function MobileLeadCards({
               }}
               aria-expanded={isExpanded}
             >
-              {/* Line 1: Avatar + Participant Name + Assignment (Left) & Status Badge + Chevron (Right) */}
+              {/* Line 1: Avatar + Participant Name + Teams & To-Do Indicators (Left) & Status Badge + Chevron (Right) */}
               <div className="flex items-center justify-between gap-2 w-full">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {/* Compact Avatar */}
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                     {initials}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-white text-xs sm:text-sm truncate">
-                        {lead.participantName}
-                      </span>
-                      <span className={`px-1.5 py-0.5 text-[8px] font-bold rounded max-w-[100px] truncate shrink-0 ${
-                        lead.assignedToName
-                          ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/25'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700/60'
-                      }`}>
-                        {lead.assignedToName ? lead.assignedToName.replace(/\s*\(.*?\)/, '') : 'Unassigned'}
-                      </span>
+
+                  {/* Name + Teams & Action Items Indicators (Replacing old unassigned badge) */}
+                  <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                    <span className="font-bold text-white text-xs truncate max-w-[125px] xs:max-w-[155px]" title={lead.participantName}>
+                      {lead.participantName}
+                    </span>
+                    <div className="shrink-0 flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <LeadTeamsIndicators
+                        enquiryId={lead.id}
+                        size="sm"
+                        onOpenDrawer={() => {
+                          if (onViewDetail) onViewDetail(lead);
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
 
+                {/* Right: Contact Status Badge + Chevron */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 text-center min-w-[58px] ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
                     {statusConfig.label}
                   </span>
-                  <div className="w-6 h-6 rounded-lg text-slate-400 hover:text-cyan-400 flex items-center justify-center shrink-0 transition-colors">
-                    {isExpanded ? <ChevronUp size={16} className="text-cyan-400" /> : <ChevronDown size={16} />}
+                  <div className="w-5 h-5 rounded text-slate-400 hover:text-cyan-400 flex items-center justify-center shrink-0 transition-colors">
+                    {isExpanded ? <ChevronUp size={15} className="text-cyan-400" /> : <ChevronDown size={15} />}
                   </div>
                 </div>
               </div>
 
-              {/* Line 2: Country (Left) & Program / Tech Stack Name (Right) */}
-              <div className="flex items-center justify-between gap-2 mt-2 pl-10 text-xs">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300 font-medium text-[10px] shrink-0">
-                  <Globe size={10} className="text-cyan-400" />
-                  {countryText}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-200 font-semibold text-[10px] truncate max-w-[180px]">
+              {/* Line 2: Country + Service Type (Left) & Course / Tech Stack (Right) */}
+              <div className="flex items-center justify-between gap-2 mt-2 pl-[36px] text-xs">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70 text-slate-300 font-medium text-[9.5px] shrink-0">
+                    <Globe size={9.5} className="text-cyan-400 shrink-0" />
+                    <span className="truncate max-w-[70px]">{countryText}</span>
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold border shrink-0 ${
+                    (lead.serviceType || '').toLowerCase() === 'job support'
+                      ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                      : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
+                  }`}>
+                    {(lead.serviceType || '').toLowerCase() === 'job support' ? 'Job Support' : 'Training'}
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-200 font-medium text-[9.5px] truncate max-w-[140px] xs:max-w-[170px] text-right" title={courseText}>
                   {courseText}
                 </span>
               </div>
@@ -216,18 +230,24 @@ export default function MobileLeadCards({
                   </div>
                 </div>
 
-                {/* Grid 1: ID + Date Submitted */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Grid 1: ID + Date Submitted + Assigned */}
+                <div className="grid grid-cols-3 gap-2">
                   <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/50">
                     <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">Lead ID</span>
                     <span className="text-xs font-mono text-slate-200 truncate block mt-0.5" title={lead.id}>
-                      #{lead.id.length > 12 ? lead.id.substring(0, 10) + '…' : lead.id}
+                      #{lead.id.length > 8 ? lead.id.substring(0, 6) + '…' : lead.id}
                     </span>
                   </div>
                   <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/50">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">Date Submitted</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">Date</span>
                     <span className="text-xs text-slate-200 truncate block mt-0.5">
                       {formattedDate}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/50">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">Assigned</span>
+                    <span className="text-xs text-slate-300 font-semibold truncate block mt-0.5" title={lead.assignedToName || 'Unassigned'}>
+                      {lead.assignedToName ? lead.assignedToName.replace(/\s*\(.*?\)/, '') : 'Unassigned'}
                     </span>
                   </div>
                 </div>
@@ -309,6 +329,18 @@ export default function MobileLeadCards({
                     <Eye size={13} className="text-slate-400" />
                     <span>View Detail</span>
                   </button>
+
+                  {/* Direct Mobile Call */}
+                  {lead.phone && (
+                    <a
+                      href={`tel:${cleanPhone(lead.phone)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center transition-colors no-underline shrink-0"
+                      title={`Call ${lead.participantName}`}
+                    >
+                      <Phone size={13} />
+                    </a>
+                  )}
 
                   {/* WhatsApp / Contact */}
                   {lead.phone ? (

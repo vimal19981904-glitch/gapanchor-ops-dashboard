@@ -7,6 +7,7 @@ import { useTeamsIndicators } from './useTeamsIndicators';
 export interface LeadTeamsIndicatorsProps {
   enquiryId: string;
   className?: string;
+  size?: 'sm' | 'md';
   onOpenDrawer?: () => void;
   onUploadTranscript?: () => void;
 }
@@ -15,11 +16,12 @@ export interface LeadTeamsIndicatorsProps {
  * Microsoft Teams official icon without the "T" text box.
  * Renders the dual-silhouette avatars with crisp vector geometry and clean bulb-on lighting.
  */
-function TeamsBrandIcon({ active }: { active: boolean }) {
+function TeamsBrandIcon({ active, size = 'md' }: { active: boolean; size?: 'sm' | 'md' }) {
+  const sizeClass = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`w-5 h-5 transition-all duration-200 ${
+      className={`${sizeClass} transition-all duration-200 ${
         active
           ? 'drop-shadow-[0_1px_2px_rgba(99,102,241,0.5)]'
           : 'opacity-25 grayscale'
@@ -46,6 +48,7 @@ function TeamsBrandIcon({ active }: { active: boolean }) {
 export function LeadTeamsIndicators({
   enquiryId,
   className = '',
+  size = 'md',
   onOpenDrawer,
   onUploadTranscript,
 }: LeadTeamsIndicatorsProps) {
@@ -94,7 +97,7 @@ export function LeadTeamsIndicators({
   return (
     <>
       {/* ── Plain Background, No Outer Box, Generous Spacing ── */}
-      <div className={`flex items-center gap-3 shrink-0 mr-3.5 ${className}`}>
+      <div className={`flex items-center shrink-0 ${size === 'sm' ? 'gap-2' : 'gap-3 mr-3.5'} ${className}`}>
         {/* ── 1. Teams Transcript Indicator ── */}
         <button
           type="button"
@@ -113,7 +116,7 @@ export function LeadTeamsIndicators({
           aria-label={hasTranscript ? 'Teams Transcript Available' : 'No Teams Transcript - Click to upload'}
           title={hasTranscript ? 'Teams Transcript Available (Click to view)' : 'No Teams Transcript (Click to upload)'}
         >
-          <TeamsBrandIcon active={hasTranscript} />
+          <TeamsBrandIcon active={hasTranscript} size={size} />
         </button>
 
         {/* ── 2. Action Items Indicator ── */}
@@ -122,24 +125,26 @@ export function LeadTeamsIndicators({
           ref={taskRef}
           onMouseEnter={handleTaskMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onClick={onOpenDrawer}
-          className={`p-0 border-0 bg-transparent flex items-center justify-center cursor-pointer transition-transform hover:scale-115 active:scale-95 outline-none select-none ${
-            taskStatus === 'completed'
-              ? 'text-emerald-400 drop-shadow-[0_1px_2px_rgba(16,185,129,0.5)]'
-              : taskStatus === 'pending'
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenDrawer) onOpenDrawer();
+          }}
+          className={`p-0 border-0 bg-transparent flex items-center justify-center cursor-pointer transition-transform hover:scale-115 active:scale-95 outline-none select-none ${taskStatus === 'completed'
+            ? 'text-emerald-400 drop-shadow-[0_1px_2px_rgba(16,185,129,0.5)]'
+            : taskStatus === 'pending'
               ? 'text-rose-400 drop-shadow-[0_1px_2px_rgba(244,63,94,0.5)]'
               : 'text-slate-600 opacity-25 hover:opacity-50'
-          }`}
+            }`}
           aria-label={`Action Items: ${taskStatus}`}
           title={
             taskStatus === 'completed'
               ? 'All Action Items Completed'
               : taskStatus === 'pending'
-              ? `${pendingItems.length} Pending Action Items`
-              : 'No Action Items'
+                ? `${pendingItems.length} Pending Action Items`
+                : 'No Action Items'
           }
         >
-          <ListTodo className="w-5 h-5 stroke-[2.2]" />
+          <ListTodo className={`${size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'} stroke-[2.2]`} />
         </button>
       </div>
 
