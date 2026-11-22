@@ -64,3 +64,5 @@ cookies.txt
 ezgif-*/
 Account_Statement*.xlsx
 fiance/
+
+.env*

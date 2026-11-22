@@ -474,16 +474,17 @@ export function FollowUpAssistantBar({
       const followUpPhrase = getJarvisFollowUpPhrase();
       const fullSpeech = `${humanizedBriefing} ${followUpPhrase}`;
 
-      // Transition voice stage out of thinking state immediately as text is on-screen
-      setVoiceStage('speaking_output');
+      // Keep voiceStage as 'thinking' while Edge-TTS audio buffer is pre-fetched/decoded,
+      // and transition to 'speaking_output' strictly inside onStart when the first audio packet plays!
       setIsAskingAi(false);
-      setVoiceStatusMessage('Briefing executive summary...');
+      setVoiceStatusMessage('Synthesizing neural voice...');
 
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {
           setIsSpeakingJarvis(true);
           setVoiceStage('speaking_output');
+          setVoiceStatusMessage('Briefing executive summary...');
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);
@@ -1057,6 +1058,9 @@ export function FollowUpAssistantBar({
                     ? 'Online, sir. Ready.'
                     : voiceStage === 'speaking_output' &&
                       voiceStatusMessage &&
+                      !voiceStatusMessage.toLowerCase().includes('briefing') &&
+                      !voiceStatusMessage.toLowerCase().includes('executive') &&
+                      !voiceStatusMessage.toLowerCase().includes('synthesizing') &&
                       voiceStatusMessage !== 'Briefing executive team...'
                     ? voiceStatusMessage
                     : [aiResponse?.answer, aiResponse?.actionAdvice].filter(Boolean).join(' ')

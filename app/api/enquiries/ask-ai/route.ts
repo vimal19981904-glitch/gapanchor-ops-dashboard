@@ -21,6 +21,41 @@ import { isCallingJarvis, getJarvisCallResponse } from '@/lib/jarvis-speech';
 
 export const dynamic = 'force-dynamic';
 
+// ── In-Memory Cache for Operations & Transcript Snapshots (30s TTL) ──
+let cachedOpsContext: { data: OperationsIntelligenceSnapshot; timestamp: number } | null = null;
+let cachedTranscriptSnapshot: { data: TranscriptSnapshot; timestamp: number } | null = null;
+const CACHE_TTL_MS = 30_000;
+
+async function getCachedOperationsSnapshot(prismaClient: any): Promise<OperationsIntelligenceSnapshot> {
+  const now = Date.now();
+  if (cachedOpsContext && (now - cachedOpsContext.timestamp) < CACHE_TTL_MS) {
+    return cachedOpsContext.data;
+  }
+  const data = await getComprehensiveOperationsSnapshot(prismaClient);
+  cachedOpsContext = { data, timestamp: now };
+  return data;
+}
+
+async function getCachedTranscriptSnapshot(): Promise<TranscriptSnapshot> {
+  const now = Date.now();
+  if (cachedTranscriptSnapshot && (now - cachedTranscriptSnapshot.timestamp) < CACHE_TTL_MS) {
+    return cachedTranscriptSnapshot.data;
+  }
+  const data = await getTranscriptKnowledgeSnapshot().catch(() => ({
+    records: [],
+    highInterestCandidates: [],
+    compactPromptContext: '',
+    totalTranscripts: 0,
+  }));
+  cachedTranscriptSnapshot = { data, timestamp: now };
+  return data;
+}
+
+function invalidateJarvisOperationsCache() {
+  cachedOpsContext = null;
+  cachedTranscriptSnapshot = null;
+}
+
 /**
  * Strips technical CRM primary key codes [GAMA-0224], [GABY-0002], [GAGN-0001],
  * bare codes, and database IDs from spoken/display text so JARVIS speaks only real names.
@@ -326,12 +361,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const pLower = prompt.toLowerCase();
+    const isSystemStatusQuery =
+      /\b(how\s+is\s+the\s+system|how\s+is\s+gap\s*anchor\s+doing|how\s+are\s+we\s+doing|system\s+status|what's\s+going\s+on\s+with\s+the\s+system|what\s+is\s+going\s+on\s+with\s+the\s+system|daily\s+briefing|morning\s+briefing|executive\s+briefing|overall\s+status|update\s+on\s+the\s+system)\b/i.test(pLower) ||
+      (/\bwhat('s|\s+is)\s+going\s+on\b/i.test(pLower) && !/\blead|candidate|prospect|enquir|detail|next\s+step/i.test(pLower));
+
+    const needsCalendar = isSystemStatusQuery || /\b(calendar|schedule|meeting|event|session|demo|today|tomorrow|week|batch)\b/i.test(pLower);
+
     // ─── STAGE 2: Load Full Multi-Entity Operations Snapshot ──────
-    // Covers: Leads (503+), Batches & Participants, Finances, Trainers, Transcripts, Calendar Events
+    // Uses 30s in-memory cache and conditional external calendar fetch
     const [opsContext, transcriptSnapshot, calendarData] = await Promise.all([
-      getComprehensiveOperationsSnapshot(prisma),
-      getTranscriptKnowledgeSnapshot().catch(() => ({ records: [], highInterestCandidates: [], compactPromptContext: '', totalTranscripts: 0 })),
-      listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] })),
+      getCachedOperationsSnapshot(prisma),
+      getCachedTranscriptSnapshot(),
+      needsCalendar
+        ? listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] }))
+        : Promise.resolve({ events: [] }),
     ]);
 
     // Full 503+ database filter intent evaluation (never truncated)
@@ -339,7 +383,6 @@ export async function POST(req: NextRequest) {
 
     // ─── STAGE 3: If Gemini API Key Available: Real Neural Reasoning ───
     if (effectiveApiKey) {
-      const pLower = prompt.toLowerCase();
       const queryWords = pLower
         .replace(/[^a-z0-9\s]/g, ' ')
         .split(/\s+/)
@@ -350,10 +393,6 @@ export async function POST(req: NextRequest) {
         );
 
       // Query Intent Classification
-      const isSystemStatusQuery =
-        /\b(how\s+is\s+the\s+system|how\s+is\s+gap\s*anchor\s+doing|how\s+are\s+we\s+doing|system\s+status|what's\s+going\s+on\s+with\s+the\s+system|what\s+is\s+going\s+on\s+with\s+the\s+system|daily\s+briefing|morning\s+briefing|executive\s+briefing|overall\s+status|update\s+on\s+the\s+system)\b/i.test(pLower) ||
-        (/\bwhat('s|\s+is)\s+going\s+on\b/i.test(pLower) && !/\blead|candidate|prospect|enquir|detail|next\s+step/i.test(pLower));
-
       const isFinanceOnlyQuery =
         /\b(how\s+are\s+the\s+finances|finance\s+status|how's\s+finance\s+doing|financial\s+update|revenue|expenses|net\s+profit)\b/i.test(pLower) &&
         !/\blead|candidate|prospect|system\s+status|going\s+on/i.test(pLower);
@@ -416,7 +455,7 @@ export async function POST(req: NextRequest) {
         })
         .filter((item) => item.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 30)
+        .slice(0, 15)
         .map((item) => item.lead);
 
       // All leads with active Call Notes & Follow-up Due Dates
@@ -429,7 +468,7 @@ export async function POST(req: NextRequest) {
           if (bMatch !== aMatch) return bMatch - aMatch;
           return (b.dateOfEntry || '').localeCompare(a.dateOfEntry || '');
         })
-        .slice(0, 35)
+        .slice(0, 18)
         .map((l) => ({
           leadCode: l.leadCode,
           name: l.name,
@@ -445,7 +484,7 @@ export async function POST(req: NextRequest) {
       // Evaluated candidates with scores, call transcripts, callback reminders
       const evaluatedCandidates = opsContext.allLeads
         .filter((l) => l.score || l.transcriptSummary || l.notes || l.followUpDate || l.hasRedFlag)
-        .slice(0, 25)
+        .slice(0, 15)
         .map((l) => ({
           id: l.id,
           primaryKey: l.leadCode,

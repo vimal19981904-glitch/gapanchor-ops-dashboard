@@ -71,6 +71,9 @@ export interface JarvisSpeechProgress {
   totalChunks: number;
   progress: number;
   spokenWordIndex: number;
+  fullText?: string;
+  cumulativeWordIndex?: number;
+  totalWords?: number;
 }
 
 // In-memory audio caches for instant zero-latency playback of common phrases
@@ -95,6 +98,9 @@ const liveSpeechState = {
   chunkStartMs: 0,
   estimatedDurationMs: 1200,
   fallbackCharIndex: -1,
+  fullText: '',
+  cumulativeWordOffsets: [] as number[],
+  totalWords: 0,
 };
 
 let audioCtx: AudioContext | null = null;
@@ -185,6 +191,9 @@ export function getLiveSpeechProgress(): JarvisSpeechProgress {
       totalChunks: 0,
       progress: 0,
       spokenWordIndex: -1,
+      fullText: '',
+      cumulativeWordIndex: 0,
+      totalWords: 0,
     };
   }
 
@@ -209,6 +218,9 @@ export function getLiveSpeechProgress(): JarvisSpeechProgress {
   const spokenWordIndex =
     words.length > 0 ? Math.min(words.length - 1, Math.floor(progress * words.length)) : -1;
 
+  const chunkOffset = liveSpeechState.cumulativeWordOffsets[liveSpeechState.chunkIndex] || 0;
+  const cumulativeWordIndex = chunkOffset + Math.max(0, spokenWordIndex);
+
   return {
     isPlaying: true,
     sessionId: activePlaybackSessionId,
@@ -217,6 +229,9 @@ export function getLiveSpeechProgress(): JarvisSpeechProgress {
     totalChunks: liveSpeechState.totalChunks,
     progress,
     spokenWordIndex,
+    fullText: liveSpeechState.fullText,
+    cumulativeWordIndex,
+    totalWords: liveSpeechState.totalWords,
   };
 }
 
@@ -760,6 +775,19 @@ export function speakJarvis(
       const fullSpokenText = needsIntro ? `Right away, boss. ${cleanBody}` : cleanBody;
       const playlist = chunkTextForPipelinedSpeech(fullSpokenText);
 
+      const allWords = fullSpokenText.trim().split(/\s+/).filter(Boolean);
+      let wordAcc = 0;
+      const offsets = playlist.map((chunk) => {
+        const cWords = chunk.trim().split(/\s+/).filter(Boolean);
+        const start = wordAcc;
+        wordAcc += cWords.length;
+        return start;
+      });
+
+      liveSpeechState.fullText = fullSpokenText;
+      liveSpeechState.totalWords = allWords.length;
+      liveSpeechState.cumulativeWordOffsets = offsets;
+
       if (playlist.length > 0) {
         liveSpeechState.chunkText = playlist[0];
         liveSpeechState.chunkIndex = 0;
@@ -817,6 +845,9 @@ export function speakJarvis(
         currentAudio = null;
         currentBufferSource = null;
         liveSpeechState.chunkText = '';
+        liveSpeechState.fullText = '';
+        liveSpeechState.cumulativeWordOffsets = [];
+        liveSpeechState.totalWords = 0;
         if (options.onEnd) options.onEnd();
       }
       resolve();
@@ -828,6 +859,9 @@ export function speakJarvis(
           currentAudio = null;
           currentBufferSource = null;
           liveSpeechState.chunkText = '';
+          liveSpeechState.fullText = '';
+          liveSpeechState.cumulativeWordOffsets = [];
+          liveSpeechState.totalWords = 0;
           if (options.onEnd) options.onEnd();
         }
         resolve();
@@ -1017,6 +1051,9 @@ export function stopJarvis(): void {
   activePlaybackSessionId++;
   isAudioPlaying = false;
   liveSpeechState.chunkText = '';
+  liveSpeechState.fullText = '';
+  liveSpeechState.cumulativeWordOffsets = [];
+  liveSpeechState.totalWords = 0;
   liveSpeechState.fallbackCharIndex = -1;
   activeBufferDuration = 0;
   if (currentBufferSource) {

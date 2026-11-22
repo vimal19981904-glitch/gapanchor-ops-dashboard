@@ -39,12 +39,13 @@ async function runGeminiGenerateContent(
     throw new Error('GEMINI_API_KEY is not configured in environment or provided in request.');
   }
 
-  // Prioritize verified active models on Google AI Studio Free Tier
+  // Prioritize verified active models on Google AI Studio
   const modelCandidates = [
-    'gemini-3.1-flash-lite',
-    'gemini-flash-lite-latest',
-    'gemini-3.5-flash-lite',
     requestedModel,
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-flash-lite-latest',
     cachedWorkingModel,
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 

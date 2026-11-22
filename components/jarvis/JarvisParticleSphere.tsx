@@ -847,10 +847,11 @@ export function JarvisParticleSphere({
       }
 
       // Handle SPEAKING: Word-by-Word Dust Pouring from Orb -> Swirling -> Locking into Words
-      // In live production mode, only bind speech text once audio is actively streaming/playing to prevent phantom premature word reveals
+      // In live production mode, bind speech text to the full spoken response so captions remain contiguous across all playlist chunks
+      const candidateFullText = (liveSpeech.fullText && liveSpeech.fullText.trim()) || replyRef.current.trim();
       const activeSpeechText = isDevOpen
-        ? (liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : replyRef.current.trim())
-        : (liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : '');
+        ? (liveSpeech.isPlaying && candidateFullText ? candidateFullText : replyRef.current.trim())
+        : (liveSpeech.isPlaying && candidateFullText ? candidateFullText : '');
 
       let targetAimX = 0;
 
@@ -894,7 +895,11 @@ export function JarvisParticleSphere({
 
         if (totalWords > 0) {
           if (liveSpeech.isPlaying) {
-            if (liveSpeech.spokenWordIndex >= 0) {
+            if (typeof liveSpeech.cumulativeWordIndex === 'number' && liveSpeech.cumulativeWordIndex >= 0) {
+              // Seamless cumulative multi-chunk word index with smooth fractional progress across the active word
+              const subProg = Math.min(0.96, Math.max(0, liveSpeech.progress));
+              floatWordPos = Math.min(totalWords, liveSpeech.cumulativeWordIndex + subProg);
+            } else if (liveSpeech.spokenWordIndex >= 0) {
               // Web Speech API word-boundary mode: smooth 240ms ramp across the active word
               if (liveSpeech.spokenWordIndex !== lastBoundaryIdx) {
                 lastBoundaryIdx = liveSpeech.spokenWordIndex;
