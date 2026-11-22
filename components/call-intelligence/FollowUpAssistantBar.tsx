@@ -477,14 +477,14 @@ export function FollowUpAssistantBar({
       // Keep voiceStage as 'thinking' while Edge-TTS audio buffer is pre-fetched/decoded,
       // and transition to 'speaking_output' strictly inside onStart when the first audio packet plays!
       setIsAskingAi(false);
-      setVoiceStatusMessage('Synthesizing neural voice...');
+      setVoiceStatusMessage('');
 
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {
           setIsSpeakingJarvis(true);
           setVoiceStage('speaking_output');
-          setVoiceStatusMessage('Briefing executive summary...');
+          setVoiceStatusMessage('');
         },
         onEnd: () => {
           setIsSpeakingJarvis(false);

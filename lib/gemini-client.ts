@@ -15,11 +15,11 @@ export function getGeminiConfig(): { apiKey: string | null; model: string } {
     process.env.GOOGLE_AI_KEY ||
     process.env.GOOGLE_API_KEY ||
     null;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
   return { apiKey, model };
 }
 
-let cachedWorkingModel = 'gemini-3.5-flash-lite';
+let cachedWorkingModel = 'gemini-3.1-flash-lite';
 
 async function runGeminiGenerateContent(
   contents: any[],
@@ -42,10 +42,8 @@ async function runGeminiGenerateContent(
   // Prioritize verified active models on Google AI Studio
   const modelCandidates = [
     requestedModel,
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-flash-lite-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-3-flash-preview',
     cachedWorkingModel,
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 

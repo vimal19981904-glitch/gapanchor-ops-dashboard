@@ -369,13 +369,18 @@ export async function POST(req: NextRequest) {
     const needsCalendar = isSystemStatusQuery || /\b(calendar|schedule|meeting|event|session|demo|today|tomorrow|week|batch)\b/i.test(pLower);
 
     // ─── STAGE 2: Load Full Multi-Entity Operations Snapshot ──────
-    // Uses 30s in-memory cache and conditional external calendar fetch
+    // Uses 30s in-memory cache and conditional external calendar fetch with 1.5s safety timeout
+    const calendarPromise = needsCalendar
+      ? Promise.race([
+          listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] })),
+          new Promise<{ events: any[] }>((resolve) => setTimeout(() => resolve({ events: [] }), 1500)),
+        ])
+      : Promise.resolve({ events: [] });
+
     const [opsContext, transcriptSnapshot, calendarData] = await Promise.all([
       getCachedOperationsSnapshot(prisma),
       getCachedTranscriptSnapshot(),
-      needsCalendar
-        ? listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] }))
-        : Promise.resolve({ events: [] }),
+      calendarPromise,
     ]);
 
     // Full 503+ database filter intent evaluation (never truncated)
@@ -629,7 +634,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
           model,
           jsonMode: true,
           temperature: 0.1,
-          maxOutputTokens: 2500,
+          maxOutputTokens: 750,
         });
 
         const parsed = JSON.parse(geminiRes.text);

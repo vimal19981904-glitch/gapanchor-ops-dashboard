@@ -847,11 +847,8 @@ export function JarvisParticleSphere({
       }
 
       // Handle SPEAKING: Word-by-Word Dust Pouring from Orb -> Swirling -> Locking into Words
-      // In live production mode, bind speech text to the full spoken response so captions remain contiguous across all playlist chunks
-      const candidateFullText = (liveSpeech.fullText && liveSpeech.fullText.trim()) || replyRef.current.trim();
-      const activeSpeechText = isDevOpen
-        ? (liveSpeech.isPlaying && candidateFullText ? candidateFullText : replyRef.current.trim())
-        : (liveSpeech.isPlaying && candidateFullText ? candidateFullText : '');
+      const activeSpeechText =
+        liveSpeech.isPlaying && liveSpeech.chunkText.trim() ? liveSpeech.chunkText.trim() : replyRef.current.trim();
 
       let targetAimX = 0;
 
@@ -895,11 +892,7 @@ export function JarvisParticleSphere({
 
         if (totalWords > 0) {
           if (liveSpeech.isPlaying) {
-            if (typeof liveSpeech.cumulativeWordIndex === 'number' && liveSpeech.cumulativeWordIndex >= 0) {
-              // Seamless cumulative multi-chunk word index with smooth fractional progress across the active word
-              const subProg = Math.min(0.96, Math.max(0, liveSpeech.progress));
-              floatWordPos = Math.min(totalWords, liveSpeech.cumulativeWordIndex + subProg);
-            } else if (liveSpeech.spokenWordIndex >= 0) {
+            if (liveSpeech.spokenWordIndex >= 0) {
               // Web Speech API word-boundary mode: smooth 240ms ramp across the active word
               if (liveSpeech.spokenWordIndex !== lastBoundaryIdx) {
                 lastBoundaryIdx = liveSpeech.spokenWordIndex;
@@ -922,8 +915,8 @@ export function JarvisParticleSphere({
               }
               floatWordPos = mapped;
             }
-          } else if (isDevOpen) {
-            // Deterministic conversational cadence timer (Simulator / dev silent preview ONLY)
+          } else {
+            // Deterministic conversational cadence timer (Simulator / silent speaking preview)
             let accT = 0;
             let mapped = totalWords;
             for (let wi = 0; wi < totalWords; wi++) {
@@ -935,9 +928,6 @@ export function JarvisParticleSphere({
               accT += wordDur;
             }
             floatWordPos = mapped;
-          } else {
-            // In live mode, wait strictly at word 0 until audio packets actively play
-            floatWordPos = 0;
           }
         }
 
@@ -1116,44 +1106,6 @@ export function JarvisParticleSphere({
 
   return (
     <div className={`w-full max-w-[520px] mx-auto flex flex-col items-center select-none relative ${className}`}>
-      {/* Clean Borderless State Telemetry (Listening · Thinking · Speaking) */}
-      <div className="flex items-center gap-6 z-20 mb-1.5">
-        {(['listening', 'thinking', 'speaking'] as const).map((pill) => {
-          const { style, isActive, cfg } = indicatorMeta(pill);
-          const label = pill.charAt(0).toUpperCase() + pill.slice(1);
-          return (
-            <button
-              key={pill}
-              type="button"
-              onClick={() => {
-                if (isDevOpen) {
-                  setDevState(pill);
-                  if (pill === 'speaking') setSimRunId((c) => c + 1);
-                } else if (onStateChange) {
-                  onStateChange(pill);
-                }
-              }}
-              style={{
-                ...style,
-                fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", "Inter", system-ui, sans-serif',
-              }}
-              className="group relative flex flex-col items-center bg-transparent border-0 shadow-none px-1 py-0.5 text-[11px] font-medium tracking-[0.04em] transition-all duration-300 hover:text-slate-200 cursor-pointer"
-            >
-              <span>{label}</span>
-              <span
-                className={`mt-1 h-[1.5px] rounded-full transition-all duration-300 ${
-                  isActive ? 'w-5 opacity-90' : 'w-0 opacity-0 group-hover:w-3 group-hover:opacity-35'
-                }`}
-                style={{
-                  backgroundColor: isActive ? cfg.pillTextHex : 'currentColor',
-                  boxShadow: isActive ? `0 0 8px ${cfg.glowHex}` : 'none',
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
-
       {/* Synchronized Dual-Canvas Visual Stage: WebGL 3D Orb + HiDPI Word-by-Word Particle Overlay */}
       <div
         ref={stageContainerRef}
