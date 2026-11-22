@@ -54,9 +54,18 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (typeof customerExperience === 'string') {
-      if (leadCallId) {
+      let targetCallId = leadCallId;
+      if (!targetCallId) {
+        const latestExistingCall = await prisma.leadCall.findFirst({
+          where: { enquiryId },
+          orderBy: { callDate: 'desc' },
+        });
+        targetCallId = latestExistingCall?.id;
+      }
+
+      if (targetCallId) {
         await prisma.leadCall.update({
-          where: { id: leadCallId },
+          where: { id: targetCallId },
           data: { customerExperience },
         });
       } else if (customerExperience.trim().length > 0) {

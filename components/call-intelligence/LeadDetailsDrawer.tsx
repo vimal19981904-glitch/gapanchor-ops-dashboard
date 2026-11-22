@@ -388,7 +388,20 @@ export function LeadDetailsDrawer({
     if (!res.ok) {
       throw new Error('Failed to update Customer Experience summary');
     }
+
+    // Optimistically update local call history so closing and opening keeps state immediately
+    setCallHistory((prev) => {
+      if (prev.length === 0) return prev;
+      return prev.map((c, idx) => (idx === 0 ? { ...c, customerExperience: updatedCX } : c));
+    });
+
     fetchCallTimeline();
+
+    // Broadcast update events so the table indicators update INSTANTLY in real time
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gapanchor:indicators-updated'));
+      window.dispatchEvent(new CustomEvent('gapanchor:lead-updated', { detail: { enquiryId: enquiry.id } }));
+    }
   };
 
   const followUpInfo = analyzeEnquiryFollowUp(enquiry);

@@ -12,31 +12,31 @@ export interface LeadTeamsIndicatorsProps {
 
 /**
  * Microsoft Teams official icon without the "T" text box.
- * Renders the dual-silhouette avatars with high-precision SVG paths.
+ * Renders the dual-silhouette avatars with crisp vector geometry and clean bulb-on lighting.
  */
-function TeamsBrandIcon({ glowing }: { glowing: boolean }) {
+function TeamsBrandIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`w-3.5 h-3.5 transition-all duration-300 ${
-        glowing
-          ? 'drop-shadow-[0_0_8px_rgba(123,131,235,0.95)] filter drop-shadow(0 0 4px #7B83EB)'
-          : 'opacity-30 grayscale'
+      className={`w-5 h-5 transition-all duration-200 ${
+        active
+          ? 'drop-shadow-[0_1px_2px_rgba(99,102,241,0.5)]'
+          : 'opacity-25 grayscale'
       }`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
       {/* Background Silhouette */}
-      <circle cx="16.5" cy="7" r="2.2" fill={glowing ? '#505AC9' : '#64748b'} />
+      <circle cx="16.5" cy="7" r="2.2" fill={active ? '#505AC9' : '#64748b'} />
       <path
         d="M13.5 11C13.5 10.17 14.17 9.5 15 9.5H18C18.83 9.5 19.5 10.17 19.5 11V16C19.5 16.55 19.05 17 18.5 17H14.5C13.95 17 13.5 16.55 13.5 16V11Z"
-        fill={glowing ? '#505AC9' : '#64748b'}
+        fill={active ? '#505AC9' : '#64748b'}
       />
       {/* Foreground Silhouette */}
-      <circle cx="9" cy="5.5" r="3" fill={glowing ? '#7B83EB' : '#94a3b8'} />
+      <circle cx="9" cy="5.5" r="3" fill={active ? '#7B83EB' : '#94a3b8'} />
       <path
         d="M4.5 10.5C4.5 9.67 5.17 9 6 9H12C12.83 9 13.5 9.67 13.5 10.5V17.5C13.5 18.33 12.83 19 12 19H6C5.17 19 4.5 18.33 4.5 17.5V10.5Z"
-        fill={glowing ? '#7B83EB' : '#94a3b8'}
+        fill={active ? '#7B83EB' : '#94a3b8'}
       />
     </svg>
   );
@@ -52,8 +52,8 @@ export function LeadTeamsIndicators({
 
   const [hoveredIcon, setHoveredIcon] = useState<'teams' | 'tasks' | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
-  const taskRef = useRef<HTMLDivElement>(null);
-  const teamsRef = useRef<HTMLDivElement>(null);
+  const taskRef = useRef<HTMLButtonElement>(null);
+  const teamsRef = useRef<HTMLButtonElement>(null);
 
   const hasTranscript = Boolean(data?.hasTranscript);
   const actionItemsData = data?.actionItems;
@@ -91,40 +91,47 @@ export function LeadTeamsIndicators({
 
   return (
     <>
-      <div className={`flex items-center gap-1.5 shrink-0 ${className}`}>
+      {/* ── Plain Background, No Outer Box, Generous Spacing ── */}
+      <div className={`flex items-center gap-3 shrink-0 mr-3.5 ${className}`}>
         {/* ── 1. Teams Transcript Indicator ── */}
-        <div
+        <button
+          type="button"
           ref={teamsRef}
           onMouseEnter={handleTeamsMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={onOpenDrawer}
-          className={`relative flex items-center justify-center w-6 h-6 rounded-md transition-all select-none cursor-pointer ${
-            hasTranscript
-              ? 'bg-indigo-950/40 border border-indigo-500/40 shadow-[0_0_10px_rgba(123,131,235,0.3)] hover:scale-110 hover:border-indigo-400'
-              : 'bg-transparent border border-transparent opacity-40 hover:opacity-70'
-          }`}
+          className="p-0 border-0 bg-transparent flex items-center justify-center cursor-pointer transition-transform hover:scale-115 active:scale-95 outline-none select-none"
           aria-label={hasTranscript ? 'Teams Transcript Available' : 'No Teams Transcript'}
+          title={hasTranscript ? 'Teams Transcript Available (Click to view)' : 'No Teams Transcript'}
         >
-          <TeamsBrandIcon glowing={hasTranscript} />
-        </div>
+          <TeamsBrandIcon active={hasTranscript} />
+        </button>
 
         {/* ── 2. Action Items Indicator ── */}
-        <div
+        <button
+          type="button"
           ref={taskRef}
           onMouseEnter={handleTaskMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={onOpenDrawer}
-          className={`relative flex items-center justify-center w-6 h-6 rounded-md transition-all select-none cursor-pointer ${
+          className={`p-0 border-0 bg-transparent flex items-center justify-center cursor-pointer transition-transform hover:scale-115 active:scale-95 outline-none select-none ${
             taskStatus === 'completed'
-              ? 'bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.35)] hover:scale-110 hover:border-emerald-400 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.85)]'
+              ? 'text-emerald-400 drop-shadow-[0_1px_2px_rgba(16,185,129,0.5)]'
               : taskStatus === 'pending'
-              ? 'bg-rose-950/40 border border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.35)] hover:scale-110 hover:border-rose-400 text-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.85)]'
-              : 'bg-transparent border border-transparent text-slate-600 opacity-40 hover:opacity-70'
+              ? 'text-rose-400 drop-shadow-[0_1px_2px_rgba(244,63,94,0.5)]'
+              : 'text-slate-600 opacity-25 hover:opacity-50'
           }`}
           aria-label={`Action Items: ${taskStatus}`}
+          title={
+            taskStatus === 'completed'
+              ? 'All Action Items Completed'
+              : taskStatus === 'pending'
+              ? `${pendingItems.length} Pending Action Items`
+              : 'No Action Items'
+          }
         >
-          <ListTodo className="w-3.5 h-3.5" />
-        </div>
+          <ListTodo className="w-5 h-5 stroke-[2.2]" />
+        </button>
       </div>
 
       {/* ── Fixed Position Compact Floating Tooltip ── */}
@@ -143,7 +150,7 @@ export function LeadTeamsIndicators({
               <div className="flex items-center justify-between pb-1 border-b border-slate-800 text-emerald-400 font-bold">
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  All Action Items Done
+                  All Action Items Completed
                 </span>
                 <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.2 rounded-full border border-emerald-500/30">
                   {completedItems.length}/{completedItems.length}
@@ -191,7 +198,7 @@ export function LeadTeamsIndicators({
               {completedItems.length > 0 && (
                 <div className="space-y-0.5 pt-1 border-t border-slate-800/80">
                   <p className="text-[9.5px] uppercase tracking-wider font-extrabold text-emerald-400/80">
-                    Done ({completedItems.length})
+                    Completed ({completedItems.length})
                   </p>
                   <ul className="space-y-0.5 max-h-16 overflow-y-auto pr-1">
                     {completedItems.map((item, idx) => (
@@ -218,7 +225,7 @@ export function LeadTeamsIndicators({
         >
           {hasTranscript ? (
             <div className="flex items-center gap-1.5 text-indigo-300 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
               <span>Teams Transcript Synced</span>
             </div>
           ) : (

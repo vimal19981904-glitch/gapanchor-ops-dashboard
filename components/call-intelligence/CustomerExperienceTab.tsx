@@ -146,6 +146,10 @@ export function CustomerExperienceTab({
       if (onSaveCX) {
         await onSaveCX(updatedText);
       }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('gapanchor:indicators-updated'));
+        window.dispatchEvent(new CustomEvent('gapanchor:lead-updated', { detail: { enquiryId: enquiry?.id } }));
+      }
     } catch (err: any) {
       toast.error('Failed to update action status');
     }
