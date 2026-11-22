@@ -128,58 +128,82 @@ export default function MobileLeadCards({
               }}
               aria-expanded={isExpanded}
             >
-              {/* Line 1: Avatar + Participant Name + Teams & To-Do Indicators (Left) & Status Badge + Chevron (Right) */}
-              <div className="flex items-center justify-between gap-2 w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+              {/* Line 1: Avatar + Fixed-Width Name (Straight Column Alignment) + Teams & To-Do | Call Button + Boxy Status + Chevron */}
+              <div className="flex items-center justify-between gap-1.5 w-full">
+                {/* Left group: Avatar + Name + Indicators */}
+                <div className="flex items-center gap-2 min-w-0">
                   {/* Compact Avatar */}
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-600/20 to-indigo-600/20 border border-cyan-500/20 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                     {initials}
                   </div>
 
-                  {/* Name + Teams & Action Items Indicators (Replacing old unassigned badge) */}
-                  <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                    <span className="font-bold text-white text-xs truncate max-w-[125px] xs:max-w-[155px]" title={lead.participantName}>
+                  {/* Fixed-Width Name Column (Guarantees Teams & To-Do icons stay in a 100% straight vertical line across all cards) */}
+                  <div className="w-[100px] xs:w-[122px] shrink-0 overflow-hidden">
+                    <span
+                      className="font-bold text-white text-xs truncate block"
+                      title={lead.participantName}
+                    >
                       {lead.participantName}
                     </span>
-                    <div className="shrink-0 flex items-center" onClick={(e) => e.stopPropagation()}>
-                      <LeadTeamsIndicators
-                        enquiryId={lead.id}
-                        size="sm"
-                        onOpenDrawer={() => {
-                          if (onViewDetail) onViewDetail(lead);
-                        }}
-                      />
-                    </div>
+                  </div>
+
+                  {/* Teams & To-Do Indicators in fixed vertical alignment */}
+                  <div
+                    className="shrink-0 flex items-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <LeadTeamsIndicators
+                      enquiryId={lead.id}
+                      size="sm"
+                      onOpenDrawer={() => {
+                        if (onViewDetail) onViewDetail(lead);
+                      }}
+                    />
                   </div>
                 </div>
 
-                {/* Right: Contact Status Badge + Chevron */}
+                {/* Right group: Call button + Boxy Status Badge + Chevron */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 text-center min-w-[58px] ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                  {lead.phone && (
+                    <a
+                      href={`tel:${cleanPhone(lead.phone)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-6 px-2 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 no-underline shadow-sm"
+                      title={`Call ${lead.participantName}`}
+                    >
+                      <Phone size={11} className="shrink-0" />
+                      <span className="hidden min-[360px]:inline">Call</span>
+                    </a>
+                  )}
+
+                  {/* Boxy Status Badge (matches Manhattan WMS boxy style) */}
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 text-center min-w-[56px] ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}
+                  >
                     {statusConfig.label}
                   </span>
+
+                  {/* Chevron Toggle */}
                   <div className="w-5 h-5 rounded text-slate-400 hover:text-cyan-400 flex items-center justify-center shrink-0 transition-colors">
-                    {isExpanded ? <ChevronUp size={15} className="text-cyan-400" /> : <ChevronDown size={15} />}
+                    {isExpanded ? <ChevronUp size={14} className="text-cyan-400" /> : <ChevronDown size={14} />}
                   </div>
                 </div>
               </div>
 
-              {/* Line 2: Country + Service Type (Left) & Course / Tech Stack (Right) */}
-              <div className="flex items-center justify-between gap-2 mt-2 pl-[36px] text-xs">
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/70 text-slate-300 font-medium text-[9.5px] shrink-0">
-                    <Globe size={9.5} className="text-cyan-400 shrink-0" />
-                    <span className="truncate max-w-[70px]">{countryText}</span>
-                  </span>
-                  <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold border shrink-0 ${
-                    (lead.serviceType || '').toLowerCase() === 'job support'
-                      ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
-                      : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20'
-                  }`}>
-                    {(lead.serviceType || '').toLowerCase() === 'job support' ? 'Job Support' : 'Training'}
-                  </span>
-                </div>
-                <span className="px-2 py-0.5 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-200 font-medium text-[9.5px] truncate max-w-[140px] xs:max-w-[170px] text-right" title={courseText}>
+              {/* Line 2: Clean Typography without outline boxes (Matches Reference Image 1) */}
+              <div className="flex items-center gap-2 mt-1 pl-[36px] text-[11px] text-slate-400">
+                <span className="inline-flex items-center gap-1 text-slate-300 font-medium">
+                  <Globe size={11} className="text-cyan-400 shrink-0" />
+                  <span>{countryText}</span>
+                </span>
+                <span className="text-slate-600 font-light select-none">|</span>
+                {(lead.serviceType || '').toLowerCase() === 'job support' && (
+                  <>
+                    <span className="text-purple-300 font-medium text-[10px]">Job Support</span>
+                    <span className="text-slate-600 font-light select-none">|</span>
+                  </>
+                )}
+                <span className="text-slate-400 font-medium truncate max-w-[190px]" title={courseText}>
                   {courseText}
                 </span>
               </div>
@@ -302,83 +326,86 @@ export default function MobileLeadCards({
                   </div>
                 )}
 
-                {/* Action Buttons (Matches desktop button styling) */}
-                <div className="flex items-center gap-2 pt-1">
-                  {/* Notes Button */}
+                {/* Action Buttons: Left: Notes | Center: Call, WhatsApp, Assign | Right Corner: View Detail */}
+                <div className="flex items-center justify-between gap-1.5 pt-1">
+                  {/* Left: Notes Button */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onAddNotes) onAddNotes(lead);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <FileText size={13} className="text-slate-400" />
                     <span>Notes</span>
                   </button>
 
-                  {/* View Detail Button (Sleek slate/grey merged with background) */}
+                  {/* Center: Call, WhatsApp / Message, Assign Lead */}
+                  <div className="flex items-center gap-1.5 shrink-0 justify-center">
+                    {/* Direct Mobile Call */}
+                    {lead.phone && (
+                      <a
+                        href={`tel:${cleanPhone(lead.phone)}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 transition-colors no-underline flex items-center justify-center shadow-sm"
+                        title={`Call ${lead.participantName}`}
+                      >
+                        <Phone size={14} />
+                      </a>
+                    )}
+
+                    {/* WhatsApp / Message */}
+                    {lead.phone ? (
+                      <a
+                        href={`https://wa.me/${cleanPhone(lead.phone)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 transition-colors no-underline flex items-center justify-center shadow-sm"
+                        title="WhatsApp Message"
+                      >
+                        <MessageSquare size={14} />
+                      </a>
+                    ) : lead.email ? (
+                      <a
+                        href={`mailto:${lead.email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 transition-colors no-underline flex items-center justify-center shadow-sm"
+                        title="Email Contact"
+                      >
+                        <Mail size={14} />
+                      </a>
+                    ) : null}
+
+                    {/* Assign Button */}
+                    {onAssign && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAssign(lead);
+                        }}
+                        className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 transition-colors cursor-pointer flex items-center justify-center shadow-sm"
+                        title={lead.assignedToName ? `Currently assigned to ${lead.assignedToName}. Click to reassign.` : "Assign Lead"}
+                      >
+                        <UserCheck size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Right corner: View Detail Button */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onViewDetail) onViewDetail(lead);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <Eye size={13} className="text-slate-400" />
                     <span>View Detail</span>
                   </button>
-
-                  {/* Direct Mobile Call */}
-                  {lead.phone && (
-                    <a
-                      href={`tel:${cleanPhone(lead.phone)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center transition-colors no-underline shrink-0"
-                      title={`Call ${lead.participantName}`}
-                    >
-                      <Phone size={13} />
-                    </a>
-                  )}
-
-                  {/* WhatsApp / Contact */}
-                  {lead.phone ? (
-                    <a
-                      href={`https://wa.me/${cleanPhone(lead.phone)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors no-underline"
-                    >
-                      <MessageSquare size={13} />
-                      <span className="hidden xs:inline">WhatsApp</span>
-                    </a>
-                  ) : lead.email ? (
-                    <a
-                      href={`mailto:${lead.email}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors no-underline"
-                    >
-                      <Mail size={13} />
-                      <span className="hidden xs:inline">Email</span>
-                    </a>
-                  ) : null}
-
-                  {/* Assign Button */}
-                  {onAssign && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAssign(lead);
-                      }}
-                      className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 transition-colors cursor-pointer"
-                      title={lead.assignedToName ? `Currently assigned to ${lead.assignedToName}. Click to reassign.` : "Assign Lead"}
-                    >
-                      <UserCheck size={14} />
-                    </button>
-                  )}
                 </div>
               </div>
             )}
