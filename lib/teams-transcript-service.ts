@@ -33,11 +33,8 @@ export interface GraphSubscriptionRecord {
  * Prefers NEXTAUTH_URL, VERCEL_URL, or defaults to the verified production domain.
  */
 export function getAppBaseUrl(): string {
-  if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('localhost')) {
-    return process.env.NEXTAUTH_URL.replace(/\/$/, '');
-  }
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/$/, '')}`;
+  if (process.env.APP_BASE_URL) {
+    return process.env.APP_BASE_URL.replace(/\/$/, '');
   }
   return 'https://dashboard-green-psi-12.vercel.app';
 }
