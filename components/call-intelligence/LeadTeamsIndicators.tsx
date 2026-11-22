@@ -8,6 +8,7 @@ export interface LeadTeamsIndicatorsProps {
   enquiryId: string;
   className?: string;
   onOpenDrawer?: () => void;
+  onUploadTranscript?: () => void;
 }
 
 /**
@@ -46,6 +47,7 @@ export function LeadTeamsIndicators({
   enquiryId,
   className = '',
   onOpenDrawer,
+  onUploadTranscript,
 }: LeadTeamsIndicatorsProps) {
   const { getIndicator } = useTeamsIndicators();
   const data = getIndicator(enquiryId);
@@ -99,10 +101,17 @@ export function LeadTeamsIndicators({
           ref={teamsRef}
           onMouseEnter={handleTeamsMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onClick={onOpenDrawer}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!hasTranscript && onUploadTranscript) {
+              onUploadTranscript();
+            } else if (onOpenDrawer) {
+              onOpenDrawer();
+            }
+          }}
           className="p-0 border-0 bg-transparent flex items-center justify-center cursor-pointer transition-transform hover:scale-115 active:scale-95 outline-none select-none"
-          aria-label={hasTranscript ? 'Teams Transcript Available' : 'No Teams Transcript'}
-          title={hasTranscript ? 'Teams Transcript Available (Click to view)' : 'No Teams Transcript'}
+          aria-label={hasTranscript ? 'Teams Transcript Available' : 'No Teams Transcript - Click to upload'}
+          title={hasTranscript ? 'Teams Transcript Available (Click to view)' : 'No Teams Transcript (Click to upload)'}
         >
           <TeamsBrandIcon active={hasTranscript} />
         </button>

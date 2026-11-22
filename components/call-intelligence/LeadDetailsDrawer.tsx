@@ -435,7 +435,10 @@ export function LeadDetailsDrawer({
                   redFlagReason={enquiry.redFlagReason}
                   redFlagDismissed={Boolean(enquiry.redFlagDismissed)}
                 />
-                <LeadTeamsIndicators enquiryId={enquiry.id} />
+                <LeadTeamsIndicators
+                  enquiryId={enquiry.id}
+                  onUploadTranscript={() => setUploadModalOpen(true)}
+                />
               </div>
               {/* Row 2: Subtitle line (platform • country) */}
               <p className="text-[11px] text-slate-400 truncate mt-0.5">
@@ -472,7 +475,10 @@ export function LeadDetailsDrawer({
                   redFlagReason={enquiry.redFlagReason}
                   redFlagDismissed={Boolean(enquiry.redFlagDismissed)}
                 />
-                <LeadTeamsIndicators enquiryId={enquiry.id} />
+                <LeadTeamsIndicators
+                  enquiryId={enquiry.id}
+                  onUploadTranscript={() => setUploadModalOpen(true)}
+                />
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5 truncate">
                 <span>{enquiry.trainingType || enquiry.topic || 'Enterprise Training'}</span>
@@ -588,6 +594,21 @@ export function LeadDetailsDrawer({
         <div className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 bg-slate-900/60 border-b border-slate-800/80 overflow-x-auto scrollbar-none h-[42px]">
           {enquiry.phone && (() => {
             const cleanPhone = enquiry.phone.replace(/\D/g, '');
+            return (
+              <a
+                href={`tel:${cleanPhone}`}
+                onClick={(e) => e.stopPropagation()}
+                className="h-[32px] px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1 shrink-0 transition-all shadow-sm active:scale-95 no-underline"
+                title={`Call ${enquiry.participantName} (${enquiry.phone})`}
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Call</span>
+              </a>
+            );
+          })()}
+
+          {enquiry.phone && (() => {
+            const cleanPhone = enquiry.phone.replace(/\D/g, '');
             const formattedPhone = cleanPhone.startsWith('91') || cleanPhone.length > 10 ? cleanPhone : `91${cleanPhone}`;
             const curriculum = getCurriculumForTopic(enquiry.trainingType || enquiry.topic);
             const message = latestCall?.whatsappDraft ||
@@ -647,6 +668,19 @@ export function LeadDetailsDrawer({
         {/* ─── DESKTOP ONLY: Action Toolbar (>= sm) - 100% UNTOUCHED ─── */}
         <div className="hidden sm:flex px-5 py-2.5 bg-slate-900/60 border-b border-slate-800/80 items-center justify-between gap-2.5 flex-wrap shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {enquiry.phone && (() => {
+              const cleanPhone = enquiry.phone.replace(/\D/g, '');
+              return (
+                <a
+                  href={`tel:${cleanPhone}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold transition-all shadow-sm cursor-pointer hover:scale-105 active:scale-95"
+                  title={`Call ${enquiry.participantName} (${enquiry.phone})`}
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Call</span>
+                </a>
+              );
+            })()}
             {enquiry.phone && (
               <WhatsAppFollowupButton
                 phone={enquiry.phone}
@@ -775,9 +809,20 @@ export function LeadDetailsDrawer({
                           {info.label}
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-slate-200 truncate block" title={info.value}>
-                        {info.value}
-                      </span>
+                      {info.label === 'Phone' && enquiry.phone ? (
+                        <a
+                          href={`tel:${enquiry.phone.replace(/\D/g, '')}`}
+                          className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:underline truncate flex items-center gap-1 transition-colors"
+                          title={`Click to call ${enquiry.phone}`}
+                        >
+                          <span>{info.value}</span>
+                          <Phone className="w-2.5 h-2.5 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-200 truncate block" title={info.value}>
+                          {info.value}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -910,9 +955,20 @@ export function LeadDetailsDrawer({
                           {info.label}
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-slate-200 truncate block" title={info.value}>
-                        {info.value}
-                      </span>
+                      {info.label === 'Phone' && enquiry.phone ? (
+                        <a
+                          href={`tel:${enquiry.phone.replace(/\D/g, '')}`}
+                          className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:underline truncate flex items-center gap-1 transition-colors"
+                          title={`Click to call ${enquiry.phone}`}
+                        >
+                          <span>{info.value}</span>
+                          <Phone className="w-2.5 h-2.5 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-200 truncate block" title={info.value}>
+                          {info.value}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

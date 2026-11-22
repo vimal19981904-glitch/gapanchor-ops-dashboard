@@ -73,6 +73,7 @@ export function TranscriptUploadModal({
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any | null>(null);
   const [copiedDraft, setCopiedDraft] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -168,8 +169,17 @@ export function TranscriptUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden z-[101]"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/70">
@@ -249,26 +259,37 @@ export function TranscriptUploadModal({
               className="w-full p-4 rounded-xl bg-slate-950/80 border border-slate-800 focus:border-cyan-500/50 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none resize-none leading-relaxed"
             />
           ) : (
-            <div className="border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-950/40">
-              <UploadCloud className="w-10 h-10 text-slate-500 mb-2" />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-slate-950/40 cursor-pointer transition-colors group"
+            >
+              <UploadCloud className="w-10 h-10 text-slate-500 group-hover:text-cyan-400 mb-2 transition-colors" />
               <p className="text-xs font-semibold text-slate-300 mb-1">
                 Select Microsoft Teams Transcript file
               </p>
               <p className="text-[11px] text-slate-500 mb-4">
-                Supports .vtt, .txt, or plain text export
+                Supports Word (.docx), WebVTT (.vtt), or plain text (.txt)
               </p>
-              <label className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white cursor-pointer border border-slate-700 transition-colors shadow-sm">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white cursor-pointer border border-slate-700 transition-colors shadow-sm"
+              >
                 Browse File
-                <input
-                  type="file"
-                  accept=".vtt,.txt,.docx,.text"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-              {transcriptText && (
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".vtt,.txt,.docx,.text"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              {uploadedFileName && (
                 <p className="text-xs text-emerald-400 mt-3 font-semibold">
-                  ✓ File loaded ({transcriptText.length} characters)
+                  ✓ File loaded: {uploadedFileName}
                 </p>
               )}
             </div>
