@@ -234,7 +234,7 @@ function MiniDonutChart({
       className="sm:relative group/donut cursor-pointer shrink-0 select-none"
     >
       {/* Pure Donut Chart Container */}
-      <div className="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-300 ease-out transform group-hover/donut:scale-[1.18] sm:group-hover/donut:scale-[1.8] group-hover/donut:z-40 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
+      <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center transition-all duration-300 ease-out transform group-hover/donut:scale-[1.18] sm:group-hover/donut:scale-[1.65] group-hover/donut:z-40 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
         <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
           {total === 0 ? (
             <circle
@@ -800,18 +800,15 @@ export default function EnquiriesPage() {
                 }`}
               >
 
-                {/* Mobile-only Top Row: Full-width Label + Compact Icon */}
+                {/* Mobile-only Top Row: Full-width Label */}
                 <div className="flex sm:hidden items-center justify-between w-full mb-1">
-                  <p className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider truncate max-w-[125px]">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">
                     {card.label}
                   </p>
-                  <div className={`p-1 rounded-lg ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
-                    <card.icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
-                  </div>
                 </div>
 
-                {/* Main row: Desktop has Label + Value + Donut + Icon | Mobile has Value + Donut */}
-                <div className="flex items-center justify-between relative gap-2 sm:gap-3">
+                {/* Main row: Desktop has Label + Value + Donut | Mobile has Value + Donut */}
+                <div className="flex items-center justify-between relative gap-2 sm:gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="hidden sm:block text-[10px] font-semibold text-slate-500 uppercase tracking-widest truncate">{card.label}</p>
                     <p className="text-xl sm:text-3xl font-black text-white sm:mt-1 tracking-tight">
@@ -819,7 +816,7 @@ export default function EnquiriesPage() {
                     </p>
                     {card.sub && <p className="text-[9px] sm:text-[11px] text-slate-500 mt-0.5">{card.sub}</p>}
                   </div>
-                  <div className="flex items-center justify-center shrink-0 px-0.5">
+                  <div className="flex items-center justify-center shrink-0">
                     <MiniDonutChart
                       data={card.donutData}
                       total={card.donutTotal}
@@ -827,9 +824,6 @@ export default function EnquiriesPage() {
                       isOpenControlled={isCardActive}
                       onToggle={() => setActiveDonut(prev => prev === card.label ? null : card.label)}
                     />
-                  </div>
-                  <div className={`hidden sm:flex p-2.5 sm:p-3.5 rounded-2xl ${card.iconBg} border ${card.border} shadow-inner shrink-0`}>
-                    <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${card.iconColor}`} />
                   </div>
                 </div>
               </div>
