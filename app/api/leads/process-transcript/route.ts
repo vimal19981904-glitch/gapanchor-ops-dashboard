@@ -4,23 +4,35 @@ import { createGraphClient } from '@/lib/graph-client';
 import { getValidAccessToken } from '@/lib/outlook-graph-sync';
 import { analyzeTranscript } from '@/lib/transcript-ai-analyzer';
 import { extractTranscriptMetadata, resolveTargetEnquiry } from '@/lib/bookings-transcript-matcher';
+import { extractTextFromDocx } from '@/lib/docx-extractor';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
+    let {
       transcriptText,
+      docxBase64,
       enquiryId,
       candidateEmail,
       candidatePhone,
       candidateName: providedName,
     } = body;
 
+    if (!transcriptText && docxBase64) {
+      try {
+        const cleanBase64 = docxBase64.replace(/^data:.*?;base64,/, '');
+        const buf = Buffer.from(cleanBase64, 'base64');
+        transcriptText = extractTextFromDocx(buf);
+      } catch (err: any) {
+        console.warn('Docx extraction error in process-transcript:', err.message);
+      }
+    }
+
     if (!transcriptText || typeof transcriptText !== 'string' || transcriptText.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: 'transcriptText is required and cannot be empty.' },
+        { success: false, error: 'Valid transcriptText or docxBase64 is required and cannot be empty.' },
         { status: 400 }
       );
     }

@@ -65,6 +65,8 @@ export function TranscriptUploadModal({
 }: TranscriptUploadModalProps) {
   const [tab, setTab] = useState<'paste' | 'upload'>('paste');
   const [transcriptText, setTranscriptText] = useState('');
+  const [docxBase64, setDocxBase64] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [candidateName, setCandidateName] = useState(defaultCandidateName);
   const [candidateEmail, setCandidateEmail] = useState(defaultCandidateEmail);
   const [candidatePhone, setCandidatePhone] = useState(defaultCandidatePhone);
@@ -76,6 +78,8 @@ export function TranscriptUploadModal({
 
   const handleUseSample = () => {
     setTranscriptText(SAMPLE_TRANSCRIPT);
+    setDocxBase64(null);
+    setUploadedFileName(null);
     if (!candidateName) setCandidateName('Shorya Garg');
     if (!candidateEmail) setCandidateEmail('shorya.garg@gmail.com');
     if (!candidatePhone) setCandidatePhone('+91 98765 43210');
@@ -86,22 +90,39 @@ export function TranscriptUploadModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadedFileName(file.name);
+    const isDocx = file.name.toLowerCase().endsWith('.docx');
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        setTranscriptText(text);
-        toast.success(`Loaded file: ${file.name}`);
-      }
-    };
+    if (isDocx) {
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          setDocxBase64(result);
+          // Set friendly placeholder text for the UI
+          setTranscriptText(`[Loaded Word Document: ${file.name}] - Ready for AI extraction.`);
+          toast.success(`Word document loaded: ${file.name}`);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) {
+          setDocxBase64(null);
+          setTranscriptText(text);
+          toast.success(`Loaded file: ${file.name}`);
+        }
+      };
+      reader.readAsText(file);
+    }
     reader.onerror = () => {
       toast.error('Failed to read file.');
     };
-    reader.readAsText(file);
   };
 
   const handleProcess = async () => {
-    if (!transcriptText.trim()) {
+    if (!transcriptText.trim() && !docxBase64) {
       toast.error('Please paste or upload a transcript first.');
       return;
     }
@@ -114,7 +135,8 @@ export function TranscriptUploadModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transcriptText,
+          transcriptText: docxBase64 ? undefined : transcriptText,
+          docxBase64: docxBase64 || undefined,
           enquiryId,
           candidateName: candidateName.trim() || undefined,
           candidateEmail: candidateEmail.trim() || undefined,
