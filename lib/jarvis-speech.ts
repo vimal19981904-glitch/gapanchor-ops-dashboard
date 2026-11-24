@@ -372,12 +372,12 @@ async function fetchAudioBuffer(
   const promise = (async () => {
     let lastErr: any = null;
 
-    // Retry up to 2 attempts with a robust 14s timeout so Edge-TTS never gets cut off
+    // Retry up to 2 attempts with a robust 28s timeout so Edge-TTS never gets cut off
     for (let attempt = 0; attempt < 2; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(
         () => controller.abort(new DOMException('Speech synthesis timed out', 'TimeoutError')),
-        14000
+        28000
       );
 
       try {
@@ -479,12 +479,20 @@ export function chunkTextForPipelinedSpeech(
   }
 
   const chunks: string[] = [];
-  // Chunk 0: Always the first sentence to unlock instant playback in ~1.1s
-  chunks.push(rawSentences[0]);
+  let startIndex = 1;
+  let chunk0 = rawSentences[0];
+
+  // If first sentence is very short (< 75 chars), merge with second sentence for 3.5s+ audio playback runway
+  // This guarantees Chunk 1 is 100% pre-buffered in memory before Chunk 0 finishes playing
+  if (chunk0.length < 75 && rawSentences.length > 1 && (chunk0.length + rawSentences[1].length + 1) <= 150) {
+    chunk0 += ' ' + rawSentences[1];
+    startIndex = 2;
+  }
+  chunks.push(chunk0);
 
   // Subsequent chunks: Group remaining sentences into balanced ~350 char segments
   let current = '';
-  for (let i = 1; i < rawSentences.length; i++) {
+  for (let i = startIndex; i < rawSentences.length; i++) {
     const s = rawSentences[i];
     if (!current) {
       current = s;
@@ -609,7 +617,23 @@ function sanitizeForSpeech(text: string): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [link](url) -> link
     .replace(/https?:\/\/\S+/g, '') // remove urls
     .replace(/\{[^{}]*\}/g, '') // remove accidental JSON remnants
-    .replace(/[•●▪■◆★\-\—_]/g, ', ')
+    .replace(/[•●▪■◆★_]/g, ', ')
+    // 4. Remove hyphenated expressions (Section 4 voice requirement)
+    .replace(/\bfollow[\s-]?ups\b/gi, 'follow up activities')
+    .replace(/\bfollow[\s-]?up\b/gi, 'follow up')
+    .replace(/\bhigh[\s-]?priority\b/gi, 'high priority')
+    .replace(/\bone[\s-]+on[\s-]+one\b/gi, 'one on one')
+    .replace(/\b1[\s-]*(?:on|to)[\s-]*1\b/gi, 'one on one')
+    .replace(/\b1:1\b/g, 'one on one')
+    .replace(/\bup[\s-]?to[\s-]?date\b/gi, 'current information')
+    .replace(/\baction[\s-]?items\b/gi, 'action items')
+    .replace(/\baction[\s-]?item\b/gi, 'action item')
+    .replace(/\bclient[\s-]?specific\b/gi, 'specific client')
+    .replace(/\bend[\s-]?to[\s-]?end\b/gi, 'complete process')
+    .replace(/\bnext[\s-]?steps\b/gi, 'next steps')
+    .replace(/\bnext[\s-]?step\b/gi, 'next step')
+    .replace(/[\—\–]/g, ', ')
+    .replace(/([a-zA-Z]{2,})-([a-zA-Z]{2,})/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -745,7 +769,8 @@ export function speakJarvis(
       return;
     }
 
-    const activeVoice = options.voiceId || getActiveVoice().id;
+    // Strict Single Male Voice Lock: permanently locked to Brian (en-US-BrianMultilingualNeural)
+    const activeVoice = DEFAULT_VOICE_ID;
     const rate = options.rate || '+0%';
     const pitch = options.pitch || '+0%';
     const includeIntro = options.includeIntro !== false;
@@ -805,28 +830,40 @@ export function speakJarvis(
         return chunkPromises[idx]!;
       };
 
-      // Concurrently warm ALL playlist chunks so upcoming sentences are 100% pre-buffered in memory (zero 2s gaps)
-      playlist.forEach((_, idx) => getChunkBuffer(idx));
+      // Staggered pre-buffering pipeline:
+      // Start fetching Chunk 0 immediately for instant speech start.
+      // If multiple chunks exist, also start Chunk 1 in parallel so it is ready before Chunk 0 finishes.
+      getChunkBuffer(0);
+      if (playlist.length > 1) {
+        getChunkBuffer(1);
+      }
 
       for (let i = 0; i < playlist.length; i++) {
         if (sessionId !== activePlaybackSessionId) break;
+
+        // While Chunk i is preparing / playing, trigger prefetch for chunk i+1 and i+2
+        if (i + 1 < playlist.length) getChunkBuffer(i + 1);
+        if (i + 2 < playlist.length) getChunkBuffer(i + 2);
 
         let buffer: ArrayBuffer;
         try {
           buffer = await getChunkBuffer(i);
         } catch (chunkErr) {
-          if (hasFiredStart) {
-            console.warn(`Skipping chunk ${i} on active neural voice (${activeVoice}) to avoid voice switch:`, chunkErr);
-            continue;
+          // Retry Chunk once on the locked Brian voice before giving up
+          console.warn(`Retry fetching chunk ${i} on neural voice (${activeVoice}):`, chunkErr);
+          chunkPromises[i] = null;
+          try {
+            buffer = await getChunkBuffer(i);
+          } catch (retryErr) {
+            if (hasFiredStart) {
+              console.warn(`Skipping chunk ${i} after failed retry on neural voice (${activeVoice}):`, retryErr);
+              continue;
+            }
+            throw retryErr;
           }
-          throw chunkErr;
         }
 
         if (sessionId !== activePlaybackSessionId) break;
-
-        if (i + 1 < playlist.length) {
-          getChunkBuffer(i + 1);
-        }
 
         const cacheKey = `${activeVoice}__${playlist[i]}`;
         await playAudioBufferChunk(
@@ -868,39 +905,16 @@ export function speakJarvis(
         return;
       }
 
-      console.warn('Neural speech unavailable before start, attempting single local fallback:', err);
+      console.warn('Neural speech unavailable before start, resolving cleanly without voice switch:', err);
       if (sessionId === activePlaybackSessionId) {
-        await speakJarvisLocalFallback(cleanBody, sessionId, {
-          ...options,
-          onStart: () => {
-            if (sessionId !== activePlaybackSessionId) return;
-            isAudioPlaying = true;
-            if (options.onStart) options.onStart();
-          },
-          onEnd: () => {
-            if (sessionId === activePlaybackSessionId) {
-              isAudioPlaying = false;
-              currentAudio = null;
-              currentBufferSource = null;
-              liveSpeechState.chunkText = '';
-              if (options.onEnd) options.onEnd();
-            }
-            resolve();
-          },
-          onError: (fallbackErr) => {
-            if (sessionId === activePlaybackSessionId) {
-              isAudioPlaying = false;
-              currentAudio = null;
-              currentBufferSource = null;
-              liveSpeechState.chunkText = '';
-              if (options.onError) options.onError(fallbackErr);
-            }
-            resolve();
-          },
-        });
-      } else {
-        resolve();
+        isAudioPlaying = false;
+        currentAudio = null;
+        currentBufferSource = null;
+        liveSpeechState.chunkText = '';
+        liveSpeechState.fullText = '';
+        if (options.onEnd) options.onEnd();
       }
+      resolve();
     }
   });
 }
@@ -924,127 +938,17 @@ async function resolveSpeechSynthesisVoices(): Promise<SpeechSynthesisVoice[]> {
 }
 
 /**
- * Fallback to browser SpeechSynthesis in the event of Edge-TTS block/timeout or offline network.
- * Includes voice list hydration and a completion watchdog so UI never hangs if onend fails to fire.
+ * Local fallback disabled per strict system rule:
+ * ZERO fallback to Windows desktop voices (Microsoft David/Zira).
+ * All speech must remain exclusively on Brian (en-US-BrianMultilingualNeural).
  */
 async function speakJarvisLocalFallback(
-  text: string,
-  sessionId: number,
+  _text: string,
+  _sessionId: number,
   options: JarvisSpeechOptions
 ): Promise<void> {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    if (options.onError) options.onError('Audio playback unsupported');
-    return;
-  }
-
-  const voices = await resolveSpeechSynthesisVoices();
-  if (sessionId !== activePlaybackSessionId) {
-    return;
-  }
-
-  const utterance = new SpeechSynthesisUtterance(text);
-
-  const activeVoiceId = options.voiceId || getActiveVoice().id;
-  const isUk = activeVoiceId.toLowerCase().includes('gb') || activeVoiceId.toLowerCase().includes('uk') || activeVoiceId.toLowerCase().includes('ryan') || activeVoiceId.toLowerCase().includes('thomas');
-  const targetLang = isUk ? 'en-gb' : 'en-us';
-
-  const naturalVoice =
-    voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLang) && (v.name.includes('Natural') || v.name.includes('Online'))) ||
-    voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLang)) ||
-    voices.find((v) => v.lang.toLowerCase().startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online'))) ||
-    voices.find((v) => v.lang.toLowerCase().startsWith('en')) ||
-    voices[0];
-
-  if (naturalVoice) utterance.voice = naturalVoice;
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
-
-  const wordsCount = Math.max(1, text.trim().split(/\s+/).length);
-  const estimatedDurationMs = Math.max(850, (wordsCount / 2.65) * 1000);
-  liveSpeechState.chunkText = text;
-  liveSpeechState.chunkIndex = 0;
-  liveSpeechState.totalChunks = 1;
-  liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
-  liveSpeechState.estimatedDurationMs = estimatedDurationMs;
-  liveSpeechState.fallbackCharIndex = 0;
-
-  let finished = false;
-  let startFired = false;
-
-  const cleanup = () => {
-    clearTimeout(startTimeout);
-    clearTimeout(finishWatchdog);
-  };
-
-  const finishSuccess = () => {
-    if (finished) return;
-    finished = true;
-    cleanup();
-    isAudioPlaying = false;
-    liveSpeechState.chunkText = '';
-    if (options.onEnd) options.onEnd();
-  };
-
-  const finishError = (err: any) => {
-    if (finished) return;
-    finished = true;
-    cleanup();
-    isAudioPlaying = false;
-    liveSpeechState.chunkText = '';
-    if (options.onError) options.onError(err);
-  };
-
-  // If Chrome/Safari delays speechSynthesis start on production HTTPS, give a generous 1800ms window before failing cleanly
-  const startTimeout = setTimeout(() => {
-    if (!startFired && !finished) {
-      try { window.speechSynthesis.cancel(); } catch {}
-      finishError(new Error('Browser speech synthesis did not start'));
-    }
-  }, 1800);
-
-  const finishWatchdog = setTimeout(() => {
-    if (!finished) {
-      finishSuccess();
-    }
-  }, estimatedDurationMs + 3500);
-
-  utterance.onboundary = (event) => {
-    if (event.name === 'word') {
-      liveSpeechState.fallbackCharIndex = event.charIndex;
-    }
-  };
-
-  utterance.onstart = () => {
-    if (finished || sessionId !== activePlaybackSessionId) return;
-    startFired = true;
-    clearTimeout(startTimeout);
-    isAudioPlaying = true;
-    liveSpeechState.chunkStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    if (options.onStart) options.onStart();
-  };
-
-  utterance.onend = finishSuccess;
-  utterance.onerror = finishError;
-
-  try {
-    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-      window.speechSynthesis.cancel();
-    }
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
-    window.speechSynthesis.speak(utterance);
-    // Chrome bug workaround: force resume immediately after queuing utterance
-    setTimeout(() => {
-      try {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-      } catch {}
-    }, 40);
-  } catch (err) {
-    finishError(err);
-  }
+  console.warn('Local desktop speech fallback blocked: Single Neural Voice Lock (Brian) strictly enforced.');
+  if (options.onEnd) options.onEnd();
 }
 
 export function stopJarvis(): void {

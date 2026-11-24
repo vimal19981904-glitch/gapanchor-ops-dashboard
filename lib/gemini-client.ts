@@ -9,12 +9,20 @@ export interface GeminiStatus {
   model: string;
 }
 
+export const HARDCODED_GEMINI_KEY = 'AIzaSyAldjFJ1NwNGe_sgl8n2dfKumv4lX6Nx0A';
+
+let circuitBreakerUntil = 0;
+
+export function isGeminiCircuitOpen(): boolean {
+  return Date.now() < circuitBreakerUntil;
+}
+
 export function getGeminiConfig(): { apiKey: string | null; model: string } {
   const apiKey =
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_AI_KEY ||
     process.env.GOOGLE_API_KEY ||
-    null;
+    HARDCODED_GEMINI_KEY;
   const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
   return { apiKey, model };
 }
@@ -31,19 +39,26 @@ async function runGeminiGenerateContent(
     maxOutputTokens?: number;
   }
 ): Promise<{ text: string; model: string }> {
+  // Fast 5-minute circuit breaker check to eliminate 8s waiting delays when quota is tripped
+  if (isGeminiCircuitOpen()) {
+    const remainingSec = Math.ceil((circuitBreakerUntil - Date.now()) / 1000);
+    throw new Error(`Gemini API 429 Circuit Breaker active (${remainingSec}s remaining). Instant local heuristics engaged.`);
+  }
+
   const { apiKey: envKey, model: defaultModel } = getGeminiConfig();
-  const apiKey = options?.apiKey || envKey;
+  const apiKey = options?.apiKey || envKey || HARDCODED_GEMINI_KEY;
   const requestedModel = options?.model || defaultModel;
 
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not configured in environment or provided in request.');
   }
 
-  // Prioritize verified active models on Google AI Studio
+  // Prioritize verified active high-speed production models on Google AI Studio
   const modelCandidates = [
-    requestedModel,
     'gemini-3.1-flash-lite',
-    'gemini-3-flash-preview',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    requestedModel,
     cachedWorkingModel,
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
@@ -74,6 +89,10 @@ async function runGeminiGenerateContent(
 
       if (!response.ok) {
         lastErrorText = await response.text();
+        // If 429 quota exhaustion is detected, trip circuit breaker for 5 minutes
+        if (response.status === 429 || lastErrorText.includes('RESOURCE_EXHAUSTED')) {
+          circuitBreakerUntil = Date.now() + 5 * 60 * 1000;
+        }
         continue;
       }
 

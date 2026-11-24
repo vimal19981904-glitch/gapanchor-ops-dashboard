@@ -12,6 +12,62 @@ const serverAudioCache = new Map<string, Buffer>();
 const MAX_CACHE_ENTRIES = 250;
 
 /**
+ * Phonetic digit converter for natural human phone number pronunciation.
+ * E.g., '22' -> 'double two', '984' -> 'nine eight four'.
+ */
+function digitToWord(d: string): string {
+  const map: Record<string, string> = {
+    '0': 'zero',
+    '1': 'one',
+    '2': 'two',
+    '3': 'three',
+    '4': 'four',
+    '5': 'five',
+    '6': 'six',
+    '7': 'seven',
+    '8': 'eight',
+    '9': 'nine',
+  };
+  return map[d] || d;
+}
+
+function speakChunk(chunk: string): string {
+  const words: string[] = [];
+  let i = 0;
+  while (i < chunk.length) {
+    if (i + 1 < chunk.length && chunk[i] === chunk[i + 1]) {
+      words.push(`double ${digitToWord(chunk[i])}`);
+      i += 2;
+    } else {
+      words.push(digitToWord(chunk[i]));
+      i++;
+    }
+  }
+  return words.join(' ');
+}
+
+/**
+ * Converts a 10-digit mobile number into rhythmic, human conversational cadence.
+ * Breaks into 3-2-3-2 chunks with double-digit detection:
+ * E.g. '9842231585' -> 'nine eight four, double two, three one five, eight five'.
+ */
+function formatPhoneNumberForSpeech(digitsOnly: string): string {
+  if (digitsOnly.length === 10) {
+    const c1 = digitsOnly.slice(0, 3);
+    const c2 = digitsOnly.slice(3, 5);
+    const c3 = digitsOnly.slice(5, 8);
+    const c4 = digitsOnly.slice(8, 10);
+    return `${speakChunk(c1)}, ${speakChunk(c2)}, ${speakChunk(c3)}, ${speakChunk(c4)}`;
+  }
+  // Generic grouping for other lengths
+  const chunks: string[] = [];
+  for (let i = 0; i < digitsOnly.length; i += 3) {
+    chunks.push(speakChunk(digitsOnly.slice(i, Math.min(i + 3, digitsOnly.length))));
+  }
+  return chunks.join(', ');
+}
+
+/**
  * Phonetic pronunciation dictionary and text-to-speech sanitizer.
  * Converts corporate acronyms, symbols, numbers, and tech jargon into natural,
  * human-sounding spoken English with authentic breath pauses (ChatGPT/Claude style).
@@ -32,18 +88,42 @@ function humanizeTextForSpeech(input: string): string {
     .replace(/https?:\/\/\S+/g, '') // remove urls
     .replace(/\{[^{}]*\}/g, '') // json objects
     .replace(/<[^>]*>/g, '') // raw html tags
-    .replace(/[•●▪■◆★\-\—_]/g, ', '); // bullet points to natural brief pause
+    .replace(/[•●▪■◆★]/g, ', ') // bullet points to natural brief pause
+    .replace(/\s+[\-\—]\s+/g, ', '); // standalone em-dashes and spaced hyphens to comma pause (preserves word hyphens)
 
   // 2. Strip emojis cleanly so TTS doesn't attempt to narrate them
   text = text.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '').replace(/[\u2600-\u27BF]/g, '');
 
-  // 3. Brand Names & Enterprise Terminology (Casual, natural speech without halting acronym pauses)
+  // 3. Conversational Fluency & Tech Terminology (Zero hyphens, human conversational expressions)
   text = text
+    // Replace hyphenated expressions with natural spoken alternatives
+    .replace(/\bfollow[\s-]?ups\b/gi, 'follow up activities')
+    .replace(/\bfollow[\s-]?up\b/gi, 'follow up')
+    .replace(/\bhigh[\s-]?priority\b/gi, 'high priority')
+    .replace(/\bone[\s-]+on[\s-]+one\b/gi, 'one on one')
+    .replace(/\b1[\s-]*(?:on|to)[\s-]*1\b/gi, 'one on one')
+    .replace(/\b1:1\b/g, 'one on one')
+    .replace(/\bup[\s-]?to[\s-]?date\b/gi, 'current information')
+    .replace(/\baction[\s-]?items\b/gi, 'action items')
+    .replace(/\baction[\s-]?item\b/gi, 'action item')
+    .replace(/\bclient[\s-]?specific\b/gi, 'specific client')
+    .replace(/\bend[\s-]?to[\s-]?end\b/gi, 'complete process')
+    .replace(/\bnext[\s-]?steps\b/gi, 'next steps')
+    .replace(/\bnext[\s-]?step\b/gi, 'next step')
+    .replace(/\btwo[\s-]?day\b/gi, 'two day')
+    .replace(/\bthree[\s-]?day\b/gi, 'three day')
+    // Remove em dashes and en dashes
+    .replace(/[\—\–]/g, ', ')
+    // Convert remaining word-to-word hyphens into clean spaces
+    .replace(/([a-zA-Z]{2,})-([a-zA-Z]{2,})/g, '$1 $2')
+    // Fix "proactive" fluency (never read with halting hyphen pause)
+    .replace(/\bManhattan ProActive\b/gi, 'Manhattan Proactive')
+    .replace(/\bpro-active\b/gi, 'proactive')
+    .replace(/\bProActive\b/g, 'Proactive')
     .replace(/\bGapAnchor\b/gi, 'Gap Anchor')
     .replace(/\bGapOps\b/gi, 'Gap Ops')
     .replace(/\bManhattan Active WMS\b/gi, 'Manhattan Active WMS')
     .replace(/\bActive WMS\b/gi, 'Active WMS')
-    .replace(/\bManhattan ProActive\b/gi, 'Manhattan Pro-Active')
     .replace(/\bBlue Yonder\b/gi, 'Blue Yonder')
     .replace(/\bSAP S\/4HANA\b/gi, 'SAP S-4 HANA')
     .replace(/\bSaaS\b/gi, 'Sass')
@@ -59,7 +139,11 @@ function humanizeTextForSpeech(input: string): string {
   text = text
     .replace(/\bUSA\b/g, 'the United States')
     .replace(/\bUS\b/g, 'the U S')
-    .replace(/\bUK\b/g, 'the UK');
+    .replace(/\bUK\b/g, 'the UK')
+    .replace(/\bIST\b/g, 'I S T')
+    .replace(/\bUTC\b/g, 'U T C')
+    .replace(/\bPST\b/g, 'P S T')
+    .replace(/\bEST\b/g, 'E S T');
 
   // 5. Units, Currency, and Quantities
   text = text
@@ -78,11 +162,29 @@ function humanizeTextForSpeech(input: string): string {
     .replace(/\b4th\b/gi, 'fourth')
     .replace(/\b5th\b/gi, 'fifth');
 
-  // 6. Natural Human Cadence & Breath Pauses:
-  // Add conversational pauses at major clause boundaries if missing
+  // 6. Conversational Time Pronunciation (e.g., '6:00 PM' -> '6 PM', '6:48 PM' -> '6:48 PM')
+  // Strip ':00' from round hours so Edge-TTS says '6 PM' instead of 'six oh zero PM'
+  text = text
+    .replace(/\b(\d{1,2}):00\s*(am|pm)\b/gi, '$1 $2')
+    .replace(/\b0([1-9])\s*(am|pm)\b/gi, '$1 $2') // '05 AM' -> '5 AM'
+    .replace(/\b(\d{1,2}):(\d{2})\s*(am|pm)\b/gi, '$1:$2 $3'); // Ensure clean spacing for non-zero minutes like '6:48 PM'
+
+  // 7. Humanized Phone Number Recitation with Cadence and 'double' Digits
+  // Matches e.g. '+91 9701767807', '+91-9842231585', '9842231585', '98422 31585'
+  text = text.replace(/(?:\+91[\s-]*)?([6-9](?:[\s-]?\d){9})\b/g, (match, tenDigitsRaw) => {
+    const cleanDigits = tenDigitsRaw.replace(/\D/g, '');
+    if (cleanDigits.length !== 10) return match;
+    const spokenDigits = formatPhoneNumberForSpeech(cleanDigits);
+    const hasPlus91 = match.trim().startsWith('+91') || match.trim().startsWith('91 ');
+    return hasPlus91 ? `plus nine one, ${spokenDigits}` : spokenDigits;
+  });
+
+  // 8. Natural Human Cadence & Breath Pauses:
+  // Add conversational pauses at major clause boundaries if missing.
+  // CRITICAL: Only convert colons that are NOT between digits, preserving timestamps like '6:48'
   text = text
     .replace(/([.!?])\s*([A-Z])/g, '$1 $2') // clean spacing after sentences
-    .replace(/\s*:\s*/g, ', ') // colons to comma pauses
+    .replace(/(?<!\d):(?!\d)/g, ', ') // colons to comma pauses (excluding timestamps)
     .replace(/\s*;\s*/g, ', ') // semicolons to comma pauses
     .replace(/\s+/g, ' ')
     .trim();

@@ -2,6 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { getTranscriptKnowledgeSnapshot } from './transcript-knowledge-engine';
 import { sendNtfyPipelineDueAlert, PipelineDueAlertLead } from './lead-monitoring';
 import { sendPipelineDueAlertEmail } from './email-service';
+import {
+  bookMicrosoftCalendarMeeting,
+  cancelMicrosoftCalendarMeeting,
+  MICROSOFT_BOOKINGS_URL,
+} from './microsoft-calendar';
 
 export interface JarvisPipelineActionResult {
   isPipelineAction: boolean;
@@ -15,6 +20,8 @@ export interface JarvisPipelineActionResult {
     | 'remove_lead'
     | 'status_overview'
     | 'trigger_pipeline_due_alerts'
+    | 'book_calendar_meeting'
+    | 'cancel_calendar_meeting'
     | 'none';
   targetStage?: 'no_plan' | 'uncontacted' | 'aware' | 'evaluating' | 'negotiating' | 'committed' | 'lost';
   leadIds: string[];
@@ -149,6 +156,213 @@ export interface OperationsIntelligenceSnapshot {
       reason: string;
     } | null;
   };
+}
+
+export interface PendingBookingContext {
+  candidateId?: string;
+  candidateName: string;
+  course: string;
+  contactStatus: string;
+  email?: string;
+  phone?: string;
+  isHighPotential: boolean;
+  preferredDate?: string;
+  pronoun?: 'him' | 'her' | 'them' | string;
+  timestamp: number;
+}
+
+export interface ActiveSubjectContext {
+  id: string;
+  leadCode: string;
+  name: string;
+  course: string;
+  contactStatus: string;
+  email?: string | null;
+  phone?: string;
+  leadQuality?: string;
+  timestamp: number;
+}
+
+// In-memory session store for multi-turn booking clarifications
+const pendingBookingsBySession = new Map<string, PendingBookingContext>();
+// In-memory session store for candidate active subject memory (multi-turn pronouns)
+const activeSubjectBySession = new Map<string, ActiveSubjectContext>();
+
+export function getPendingBookingContext(sessionId: string = 'global'): PendingBookingContext | null {
+  const ctx = pendingBookingsBySession.get(sessionId) || pendingBookingsBySession.get('global');
+  if (!ctx) return null;
+  // Expire after 15 minutes
+  if (Date.now() - ctx.timestamp > 15 * 60 * 1000) {
+    pendingBookingsBySession.delete(sessionId);
+    pendingBookingsBySession.delete('global');
+    return null;
+  }
+  return ctx;
+}
+
+export function setPendingBookingContext(ctx: PendingBookingContext, sessionId: string = 'global'): void {
+  pendingBookingsBySession.set(sessionId, ctx);
+  pendingBookingsBySession.set('global', ctx);
+}
+
+export function clearPendingBookingContext(sessionId: string = 'global'): void {
+  pendingBookingsBySession.delete(sessionId);
+  pendingBookingsBySession.delete('global');
+}
+
+export function getActiveSubjectLead(sessionId: string = 'global'): ActiveSubjectContext | null {
+  const ctx = activeSubjectBySession.get(sessionId) || activeSubjectBySession.get('global');
+  if (!ctx) return null;
+  // Expire after 20 minutes
+  if (Date.now() - ctx.timestamp > 20 * 60 * 1000) {
+    activeSubjectBySession.delete(sessionId);
+    activeSubjectBySession.delete('global');
+    return null;
+  }
+  return ctx;
+}
+
+export function setActiveSubjectLead(
+  lead: {
+    id: string;
+    leadCode: string;
+    name: string;
+    course: string;
+    contactStatus?: string;
+    email?: string | null;
+    phone?: string;
+    leadQuality?: string;
+  },
+  sessionId: string = 'global'
+): void {
+  const ctx: ActiveSubjectContext = {
+    id: lead.id,
+    leadCode: lead.leadCode,
+    name: lead.name,
+    course: lead.course,
+    contactStatus: lead.contactStatus || 'Active',
+    email: lead.email,
+    phone: lead.phone,
+    leadQuality: lead.leadQuality || 'High',
+    timestamp: Date.now(),
+  };
+  activeSubjectBySession.set(sessionId, ctx);
+  activeSubjectBySession.set('global', ctx);
+}
+
+export type ActiveTopicType = 'calendar' | 'action_items' | 'leads' | 'meeting_notes' | 'general';
+
+export interface ActiveTopicContext {
+  topic: ActiveTopicType;
+  querySummary?: string;
+  clientName?: string;
+  targetDate?: string;
+  timestamp: number;
+}
+
+const activeTopicBySession = new Map<string, ActiveTopicContext>();
+
+export function getActiveTopicContext(sessionId: string = 'global'): ActiveTopicContext | null {
+  const ctx = activeTopicBySession.get(sessionId) || activeTopicBySession.get('global');
+  if (!ctx) return null;
+  // Expire after 15 minutes
+  if (Date.now() - ctx.timestamp > 15 * 60 * 1000) {
+    activeTopicBySession.delete(sessionId);
+    activeTopicBySession.delete('global');
+    return null;
+  }
+  return ctx;
+}
+
+export function setActiveTopicContext(
+  ctx: Omit<ActiveTopicContext, 'timestamp'>,
+  sessionId: string = 'global'
+): void {
+  const fullCtx: ActiveTopicContext = {
+    ...ctx,
+    timestamp: Date.now(),
+  };
+  activeTopicBySession.set(sessionId, fullCtx);
+  activeTopicBySession.set('global', fullCtx);
+}
+
+export function parseMeetingDateTimeFromPrompt(
+  prompt: string,
+  defaultDateLabel?: string
+): {
+  startIst: string;
+  endIst: string;
+  displayIst: string;
+  dateLabel: string;
+  hasExplicitTime: boolean;
+  hasExplicitDate: boolean;
+} {
+  const p = prompt.toLowerCase();
+  const targetDate = new Date();
+  let dateLabel = defaultDateLabel || 'today';
+  let hasExplicitDate = false;
+
+  if (p.includes('tomorrow') || p.includes('next day')) {
+    targetDate.setDate(targetDate.getDate() + 1);
+    dateLabel = 'tomorrow';
+    hasExplicitDate = true;
+  } else if (p.includes('day after tomorrow')) {
+    targetDate.setDate(targetDate.getDate() + 2);
+    dateLabel = 'day after tomorrow';
+    hasExplicitDate = true;
+  } else if (p.includes('today') || p.includes('tonight')) {
+    dateLabel = 'today';
+    hasExplicitDate = true;
+  } else if (defaultDateLabel === 'tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 1);
+    dateLabel = 'tomorrow';
+  } else if (defaultDateLabel === 'day after tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 2);
+    dateLabel = 'day after tomorrow';
+  }
+
+  let hours = 17; // default 5:00 PM if needed
+  let minutes = 0;
+  let hasExplicitTime = false;
+
+  const time12Match = prompt.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (time12Match) {
+    let h = parseInt(time12Match[1], 10);
+    const m = time12Match[2] ? parseInt(time12Match[2], 10) : 0;
+    const isPm = time12Match[3].toLowerCase() === 'pm';
+    if (isPm && h < 12) h += 12;
+    if (!isPm && h === 12) h = 0;
+    hours = h;
+    minutes = m;
+    hasExplicitTime = true;
+  } else {
+    const time24Match = prompt.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (time24Match) {
+      hours = parseInt(time24Match[1], 10);
+      minutes = parseInt(time24Match[2], 10);
+      hasExplicitTime = true;
+    }
+  }
+
+  const yyyy = targetDate.getFullYear();
+  const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(targetDate.getDate()).padStart(2, '0');
+  const hh = String(hours).padStart(2, '0');
+  const min = String(minutes).padStart(2, '0');
+
+  const totalEndMin = hours * 60 + minutes + 30;
+  const endH = String(Math.floor(totalEndMin / 60) % 24).padStart(2, '0');
+  const endM = String(totalEndMin % 60).padStart(2, '0');
+
+  const startIst = `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
+  const endIst = `${yyyy}-${mm}-${dd}T${endH}:${endM}:00`;
+
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayMin = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`;
+  const displayIst = `${displayHour}${displayMin} ${ampm} IST`;
+
+  return { startIst, endIst, displayIst, dateLabel, hasExplicitTime, hasExplicitDate };
 }
 
 /**
@@ -286,6 +500,33 @@ export function detectPipelineActionType(prompt: string): JarvisPipelineActionRe
     (p.includes('in pipeline') || p.includes('in the pipeline') || p.includes('pipeline status') || p.includes('pipeline overview'))
   ) {
     return 'status_overview';
+  }
+
+  // 9. Book Meeting / Calendar Call
+  if (
+    (/\b(book|schedule|set\s*up|fix)\b/i.test(p) && /\b(meeting|call|session|demo|appointment|slot)\b/i.test(p)) ||
+    /\b(book\s+a\s+meeting|book\s+a\s+call|book\s+meeting|book\s+call|schedule\s+a\s+call|schedule\s+meeting)\b/i.test(p) ||
+    /\b(?:book|schedule|set\s*up)\s+(?:him|her|them)\s+(?:a\s+)?(?:meeting|call|session|demo)\b/i.test(p)
+  ) {
+    return 'book_calendar_meeting';
+  }
+
+  // 9b. Follow-up response with time when a pending booking is awaiting time
+  if (
+    getPendingBookingContext() &&
+    (/\b(\d{1,2}(:\d{2})?\s*(am|pm)|\d{1,2}:\d{2})\b/i.test(p) ||
+      /\b(tomorrow|today|tonight|next day|at\s+\d{1,2}|morning|afternoon|evening)\b/i.test(p))
+  ) {
+    return 'book_calendar_meeting';
+  }
+
+  // 10. Cancel Meeting / Calendar Call
+  if (
+    (/\b(cancel|drop|delete|remove)\b/i.test(p) && /\b(meeting|call|session|appointment|calendar\s+slot|slot)\b/i.test(p)) ||
+    /\b(cancel\s+the\s+meeting|cancel\s+meeting|cancel\s+call|cancel\s+my\s+meeting|cancel\s+this\s+call|cancel\s+this\s+meeting)\b/i.test(p) ||
+    (/\bcancel\b/i.test(p) && /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?|today|tomorrow|this\s+time)\b/i.test(p))
+  ) {
+    return 'cancel_calendar_meeting';
   }
 
   return 'none';
@@ -771,7 +1012,12 @@ export function resolvePipelineStage(lead: ComprehensiveLeadProfile): PipelineSt
 export async function executeJarvisPipelineAction(
   actionType: JarvisPipelineActionResult['actionType'],
   prompt: string,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  options?: {
+    previousMatchedIds?: string[];
+    previousPrompt?: string;
+    sessionId?: string;
+  }
 ): Promise<JarvisPipelineActionResult> {
   const allLeads = await getComprehensiveLeadContext(prisma);
   const now = new Date();
@@ -1163,6 +1409,266 @@ export async function executeJarvisPipelineAction(
       actionAdvice: 'You can instruct me to push due enquiries, remove lost leads, or update primary keys at any time.',
       recommendedFilter: 'all',
       summary: `Pipeline status overview: ${activePipelineLeads.length} active prospects`,
+    };
+  }
+
+  // ─── 9. Book Meeting / Calendar Call ───
+  if (actionType === 'book_calendar_meeting') {
+    const p = prompt.toLowerCase();
+    const sessionId = options?.sessionId || 'global';
+
+    // Retrieve any pending booking context from previous turn
+    const pendingBooking = getPendingBookingContext(sessionId);
+    const activeSubject = getActiveSubjectLead(sessionId);
+
+    const { startIst, endIst, displayIst, dateLabel, hasExplicitTime } = parseMeetingDateTimeFromPrompt(
+      prompt,
+      pendingBooking?.preferredDate
+    );
+
+    // Check if the user is referring to a candidate via pronouns
+    const hasHim = /\b(him|his|he)\b/i.test(p);
+    const hasHer = /\b(her|she)\b/i.test(p);
+    const hasThem = /\b(them|their|they)\b/i.test(p);
+    const hasPronouns = hasHim || hasHer || hasThem || /\b(this candidate|this lead|this person|that candidate)\b/i.test(p);
+    const preferredPronoun = hasHer ? 'her' : hasThem ? 'them' : 'him';
+
+    // Stopwords list so common English conversational words never falsely match candidate names
+    const STOPWORDS = new Set([
+      'book', 'meeting', 'call', 'with', 'for', 'tomorrow', 'today', 'slot',
+      'please', 'could', 'high', 'potential', 'see', 'jarvis', 'hey', 'ist',
+      'time', 'schedule', 'can', 'you', 'him', 'her', 'them', 'his', 'he',
+      'she', 'this', 'that', 'lead', 'candidate', 'person', 'appointment',
+      'session', 'demo', 'the', 'a', 'an', 'at', 'pm', 'am', 'and', 'to',
+      'tonight', 'morning', 'afternoon', 'evening', 'set', 'up', 'fix'
+    ]);
+
+    // Find candidate mentioned in prompt (e.g. "naga", "nagesh", "arya", "suraj")
+    let candidate: ComprehensiveLeadProfile | undefined = undefined;
+
+    if (/\bnaga(?:sh|esh)?\b/i.test(p)) {
+      candidate = allLeads.find((l) => /\bnaga(?:sh|esh)?\b/i.test(l.name.toLowerCase()));
+    }
+
+    if (!candidate && !hasPronouns) {
+      const queryWords = p
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
+
+      if (queryWords.length > 0) {
+        candidate = allLeads.find((l) => {
+          const ln = l.name.toLowerCase();
+          return queryWords.some((w) => ln.includes(w));
+        });
+      }
+    }
+
+    // If candidate wasn't named in prompt or user used pronouns, resolve from active context
+    if (!candidate) {
+      if (pendingBooking?.candidateId) {
+        candidate = allLeads.find((l) => l.id === pendingBooking.candidateId);
+      } else if (pendingBooking?.candidateName) {
+        candidate = allLeads.find((l) => l.name.toLowerCase() === pendingBooking.candidateName.toLowerCase());
+      }
+
+      if (!candidate && activeSubject?.id) {
+        candidate = allLeads.find((l) => l.id === activeSubject.id);
+      } else if (!candidate && activeSubject?.name) {
+        candidate = allLeads.find((l) => l.name.toLowerCase() === activeSubject.name.toLowerCase());
+      }
+
+      if (!candidate && options?.previousMatchedIds && options.previousMatchedIds.length > 0) {
+        candidate = allLeads.find((l) => l.id === options.previousMatchedIds![0]);
+      }
+    }
+
+    const candidateName = candidate
+      ? candidate.name
+      : pendingBooking
+      ? pendingBooking.candidateName
+      : activeSubject
+      ? activeSubject.name
+      : 'Candidate';
+
+    const course = candidate
+      ? candidate.course
+      : pendingBooking
+      ? pendingBooking.course
+      : activeSubject
+      ? activeSubject.course
+      : 'Enterprise Training';
+
+    const contactStatus = candidate
+      ? candidate.contactStatus
+      : pendingBooking
+      ? pendingBooking.contactStatus
+      : activeSubject
+      ? activeSubject.contactStatus
+      : 'Active';
+
+    const email = candidate?.email || pendingBooking?.email || activeSubject?.email || undefined;
+    const phone = candidate?.phone || pendingBooking?.phone || activeSubject?.phone || undefined;
+    const isHighPotential =
+      p.includes('high potential') ||
+      candidate?.leadQuality === 'High' ||
+      activeSubject?.leadQuality === 'High' ||
+      Boolean(pendingBooking?.isHighPotential);
+    const candidateId = candidate ? candidate.id : pendingBooking?.candidateId || activeSubject?.id;
+
+    // IF USER HAS NOT YET SPECIFIED A TIME: Do NOT guess 5 PM! Ask the boss for preferred time
+    if (!hasExplicitTime) {
+      const preferredDate = p.includes('tomorrow') ? 'tomorrow' : p.includes('today') ? 'today' : (dateLabel || 'today');
+      setPendingBookingContext(
+        {
+          candidateId,
+          candidateName,
+          course,
+          contactStatus,
+          email,
+          phone,
+          isHighPotential,
+          preferredDate,
+          pronoun: preferredPronoun,
+          timestamp: Date.now(),
+        },
+        sessionId
+      );
+
+      const conversationalAsk = hasPronouns
+        ? `Sure boss, I can book ${preferredPronoun} a meeting. What time should I be booking it?`
+        : `Sure boss, I can book a meeting for ${candidateName}. What time should I be booking it?`;
+
+      return {
+        isPipelineAction: true,
+        actionType: 'book_calendar_meeting',
+        leadIds: candidateId ? [candidateId] : [],
+        leadNames: [candidateName],
+        leadCodes: candidate ? [candidate.leadCode] : [],
+        count: 1,
+        answer: conversationalAsk,
+        actionAdvice: `Awaiting preferred meeting time for ${candidateName}. Reply with time (e.g., "Tomorrow at 5 PM" or "At 5 PM").`,
+        recommendedFilter: 'all',
+        summary: `Awaiting meeting time for ${candidateName}`,
+      };
+    }
+
+    // Time is provided! Clear pending booking context and proceed to book
+    clearPendingBookingContext(sessionId);
+
+    // Map course to official Microsoft Bookings question options
+    const mapCourseToBookingsProgram = (cName?: string | null): string => {
+      const c = (cName || '').toLowerCase();
+      if (c.includes('proactive')) return 'MANHATTAN ProActive®  WMS.';
+      if (c.includes('active') || c.includes('manhattan') || c.includes('wms')) return 'MANHATTAN Active®  WMS.';
+      if (c.includes('blue yonder') || c.includes('jda') || c.includes('redprairie')) return 'Blueyonder JDA/TMS/WMS';
+      if (c.includes('kinaxis') || c.includes('mastro') || c.includes('rapid')) return 'KINAXIS Mastro Rapid Responce';
+      if (c.includes('sap') || c.includes('ewm')) return 'SAP EWM';
+      return 'MANHATTAN Active®  WMS.';
+    };
+
+    const scmProgram = mapCourseToBookingsProgram(course);
+    const serviceName = 'IT support & Training';
+    const assignedStaff = 'GapAnchor Admin, GapAnchor Ownership';
+
+    const bookingResult = await bookMicrosoftCalendarMeeting({
+      subject: `${serviceName} - ${candidateName} [${scmProgram}]`,
+      startDateTimeIst: startIst,
+      endDateTimeIst: endIst,
+      attendeeEmail: email,
+      attendeeName: candidateName,
+      attendeePhone: phone,
+      scmProgram,
+      serviceName,
+      assignedStaff,
+      description: `Training and Consultation session for ${scmProgram}.`,
+    });
+
+    const pipelineInfo = isHighPotential
+      ? `On your pipeline, ${candidateName} is tracked for ${course} with a high potential rating, and is currently marked as ${contactStatus}.`
+      : `On your pipeline, ${candidateName} is currently enrolled for ${course} with status ${contactStatus}.`;
+
+    const answer = bookingResult.success
+      ? `Sure thing boss! Right away, I'm working on booking the meeting for ${dateLabel} at ${displayIst} with ${candidateName}. ${pipelineInfo} I have confirmed the booking on your Microsoft calendar for contact@gapanchor.com with an auto-generated Teams video link, and referenced your Microsoft Bookings schedule.`
+      : `Boss, I attempted to book the meeting for ${candidateName}, but encountered an issue: ${bookingResult.error || 'Could not connect to Microsoft Calendar'}.`;
+
+    return {
+      isPipelineAction: true,
+      actionType: 'book_calendar_meeting',
+      leadIds: candidate ? [candidate.id] : [],
+      leadNames: candidate ? [candidate.name] : [],
+      leadCodes: candidate ? [candidate.leadCode] : [],
+      count: 1,
+      answer,
+      actionAdvice: `Meeting scheduled for ${dateLabel} at ${displayIst} with ${candidateName}. Microsoft Teams link generated.`,
+      recommendedFilter: 'all',
+      summary: `Booked meeting on Microsoft Calendar for ${candidateName} on ${dateLabel} at ${displayIst}`,
+    };
+  }
+
+  // ─── 10. Cancel Meeting / Calendar Call ───
+  if (actionType === 'cancel_calendar_meeting') {
+    const p = prompt.toLowerCase();
+    let targetName = '';
+
+    // Extract time (e.g. "5 PM", "11 AM", "5:00 PM", "5")
+    const timeMatch = p.match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|\d{1,2}\s*(?:am|pm))\b/i);
+    let targetTime = timeMatch ? timeMatch[1].trim() : undefined;
+
+    // Extract date
+    const isTomorrow = /\btomorrow\b/i.test(p);
+    const isToday = /\btoday\b/i.test(p);
+    const targetDate = isTomorrow ? 'tomorrow' : isToday ? 'today' : undefined;
+
+    if (/\bnaga(?:sh|esh)?\b/i.test(p)) {
+      targetName = 'Naga';
+    } else if (/\bakram\b/i.test(p)) {
+      targetName = 'Akram';
+    } else if (/\bneema\b/i.test(p)) {
+      targetName = 'Neema';
+    } else {
+      const match = allLeads.find(
+        (l) => l.name && l.name.length >= 3 && p.includes(l.name.toLowerCase())
+      );
+      if (match) {
+        targetName = match.name;
+      } else {
+        // Check active subject lead if user said "this call" or "cancel it"
+        const activeSub = getActiveSubjectLead(options?.sessionId);
+        if (activeSub?.name && (p.includes('this call') || p.includes('this meeting') || p.includes('cancel it') || p.includes('cancel call'))) {
+          targetName = activeSub.name;
+        }
+      }
+    }
+
+    const cancelResult = await cancelMicrosoftCalendarMeeting({
+      leadNameOrSubject: targetName || undefined,
+      time: targetTime,
+      date: targetDate,
+    });
+
+    const timeOrDateLabel = targetTime
+      ? ` at ${targetTime}${targetDate ? ` (${targetDate})` : ''}`
+      : targetDate
+      ? ` on ${targetDate}`
+      : '';
+
+    const answer = cancelResult.success
+      ? `Right away boss, I have cancelled the meeting for "${cancelResult.cancelledSubject}"${timeOrDateLabel} on your Microsoft calendar. The time slot is freed up and your schedule has been updated.`
+      : `Boss, I checked your upcoming Microsoft calendar schedule, but ${cancelResult.error || 'could not find a matching meeting to cancel'}.`;
+
+    return {
+      isPipelineAction: true,
+      actionType: 'cancel_calendar_meeting',
+      leadIds: [],
+      leadNames: targetName ? [targetName] : [],
+      count: cancelResult.success ? (cancelResult.cancelledCount || 1) : 0,
+      answer,
+      actionAdvice: cancelResult.success ? 'Calendar meeting successfully removed.' : 'Check calendar schedule.',
+      recommendedFilter: 'all',
+      summary: cancelResult.success
+        ? `Cancelled Microsoft calendar meeting ${cancelResult.cancelledSubject}`
+        : 'Meeting cancellation attempted',
     };
   }
 

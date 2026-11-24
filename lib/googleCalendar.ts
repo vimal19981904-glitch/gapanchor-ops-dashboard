@@ -448,56 +448,84 @@ export function formatCalendarEvent(event: any): CalendarEventItem {
 }
 
 // ─── ICAL REAL-TIME FEED PARSER ────────────────────────────────────────
+let icalFeedCache: {
+  url: string;
+  items: CalendarEventItem[];
+  timestamp: number;
+} | null = null;
+const ICAL_FEED_CACHE_TTL_MS = 60 * 1000;
+
 export async function fetchIcalEvents(
   feedUrl: string,
   options: { search?: string; maxResults?: number; timeMin?: string; timeMax?: string } = {}
 ): Promise<CalendarEventItem[]> {
   const normalizedUrl = feedUrl.replace(/^webcal:\/\//i, 'https://');
-  const parsedData = await ical.async.fromURL(normalizedUrl);
 
-  const items: CalendarEventItem[] = [];
+  let rawItems: CalendarEventItem[] = [];
+  if (
+    icalFeedCache &&
+    icalFeedCache.url === normalizedUrl &&
+    Date.now() - icalFeedCache.timestamp < ICAL_FEED_CACHE_TTL_MS &&
+    icalFeedCache.items.length > 0
+  ) {
+    rawItems = icalFeedCache.items;
+  } else {
+    const parsedData = await ical.async.fromURL(normalizedUrl);
+    const items: CalendarEventItem[] = [];
 
-  for (const k in parsedData) {
-    const ev: any = parsedData[k];
-    if (ev.type !== 'VEVENT') continue;
+    for (const k in parsedData) {
+      const ev: any = parsedData[k];
+      if (ev.type !== 'VEVENT') continue;
 
-    const start = ev.start ? new Date(ev.start).toISOString() : new Date().toISOString();
-    const end = ev.end ? new Date(ev.end).toISOString() : start;
-    const isAllDay = Boolean(ev.datetype === 'date');
-    const meetingInfo = extractMeetingInfo({
-      description: ev.description || '',
-      location: ev.location || '',
-      hangoutLink: ev.url || null,
-    });
-    const bookingInfo = parseOutlookBookingBody(ev.description || '');
+      const start = ev.start ? new Date(ev.start).toISOString() : new Date().toISOString();
+      const end = ev.end ? new Date(ev.end).toISOString() : start;
+      const isAllDay = Boolean(ev.datetype === 'date');
+      const meetingInfo = extractMeetingInfo({
+        description: ev.description || '',
+        location: ev.location || '',
+        hangoutLink: ev.url || null,
+      });
+      const bookingInfo = parseOutlookBookingBody(ev.description || '');
 
-    items.push({
-      id: ev.uid || `ical-${k}`,
-      title: ev.summary || (bookingInfo.customerName ? `${bookingInfo.serviceName || 'Session'} - ${bookingInfo.customerName}` : '(No title)'),
-      description: ev.description || '',
-      cleanDescription: bookingInfo.cleanDescription || ev.description || '',
-      location: ev.location || '',
-      start,
-      end,
-      isAllDay,
-      durationText: formatDuration(start, end, isAllDay),
-      platform: meetingInfo.platform,
-      platformName: meetingInfo.platformName,
-      joinUrl: meetingInfo.joinUrl,
-      customerName: bookingInfo.customerName,
-      customerEmail: bookingInfo.customerEmail,
-      customerPhone: bookingInfo.customerPhone,
-      scmProgram: bookingInfo.scmProgram,
-      meetingId: bookingInfo.meetingId,
-      passcode: bookingInfo.passcode,
-      attendees: Array.isArray(ev.attendee)
-        ? ev.attendee.map((a: any) => ({
-            email: typeof a === 'string' ? a.replace(/^mailto:/i, '') : a.val ? a.val.replace(/^mailto:/i, '') : '',
-            name: a.params?.CN || undefined,
-          }))
-        : [],
-    });
+      items.push({
+        id: ev.uid || `ical-${k}`,
+        title: ev.summary || (bookingInfo.customerName ? `${bookingInfo.serviceName || 'Session'} - ${bookingInfo.customerName}` : '(No title)'),
+        description: ev.description || '',
+        cleanDescription: bookingInfo.cleanDescription || ev.description || '',
+        location: ev.location || '',
+        start,
+        end,
+        isAllDay,
+        durationText: formatDuration(start, end, isAllDay),
+        platform: meetingInfo.platform,
+        platformName: meetingInfo.platformName,
+        joinUrl: meetingInfo.joinUrl,
+        customerName: bookingInfo.customerName,
+        customerEmail: bookingInfo.customerEmail,
+        customerPhone: bookingInfo.customerPhone,
+        scmProgram: bookingInfo.scmProgram,
+        meetingId: bookingInfo.meetingId,
+        passcode: bookingInfo.passcode,
+        attendees: Array.isArray(ev.attendee)
+          ? ev.attendee.map((a: any) => ({
+              email: typeof a === 'string' ? a.replace(/^mailto:/i, '') : a.val ? a.val.replace(/^mailto:/i, '') : '',
+              name: a.params?.CN || undefined,
+            }))
+          : [],
+      });
+    }
+
+    if (items.length > 0) {
+      icalFeedCache = {
+        url: normalizedUrl,
+        items,
+        timestamp: Date.now(),
+      };
+    }
+    rawItems = items;
   }
+
+  const items = [...rawItems];
 
   // 1. Optional time range filtering
   let filteredItems = items;

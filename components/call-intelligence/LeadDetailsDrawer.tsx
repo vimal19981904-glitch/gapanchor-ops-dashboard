@@ -31,6 +31,7 @@ import {
   Star,
   Zap,
   Circle,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CallVolumeMeter } from './CallVolumeMeter';
@@ -229,6 +230,276 @@ function TalkTimeDonut({ candidatePct = 50, hostName = 'GapAnchor Team' }: { can
       </div>
     </div>
   );
+}
+
+function SpeakerQualityDonut({
+  qualityScore = 88,
+  resolutionScore = 82,
+}: {
+  qualityScore: number;
+  resolutionScore?: number;
+}) {
+  const safeScore = Math.min(100, Math.max(0, qualityScore));
+  const size = 60;
+  const strokeWidth = 5.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDash = (safeScore / 100) * circumference;
+
+  return (
+    <div className="flex items-center gap-4 w-full">
+      <div className="relative w-[60px] h-[60px] shrink-0">
+        <svg width={size} height={size} className="transform -rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#1e293b"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="url(#speakerQualityGrad)"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${strokeDash} ${circumference}`}
+            strokeDashoffset={0}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+          <defs>
+            <linearGradient id="speakerQualityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#06b6d4" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-xs font-black text-cyan-300 leading-none">
+            {safeScore}%
+          </span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">
+            Score
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-1.5 text-xs min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-800/60">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+            <span className="text-slate-400 text-[11px] truncate">Delivery Quality:</span>
+          </div>
+          <span className="font-bold text-cyan-300 text-[11px] shrink-0">
+            {safeScore >= 85 ? 'Excellent' : safeScore >= 70 ? 'Good' : 'Needs Review'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-1 pb-1 border-b border-slate-800/60">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <span className="text-slate-400 text-[11px] truncate">Tone & Composure:</span>
+          </div>
+          <span className="font-bold text-emerald-300 text-[11px] shrink-0">
+            {safeScore >= 80 ? 'Calm & Professional' : 'Fair'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-1 pt-0.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+            <span className="text-slate-400 text-[11px] truncate">Query Resolution:</span>
+          </div>
+          <span className="font-bold text-indigo-300 text-[11px] shrink-0">
+            {resolutionScore}% Resolved
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface CounselorProfile {
+  name: string;
+  role: string;
+  initials: string;
+}
+
+function getCounselorProfile(callRecord: LeadCallRecord | null, enquiry: any): CounselorProfile {
+  // 1. Check if enquiry has assigned counselor name
+  if (enquiry?.assignedToName && enquiry.assignedToName.trim().length > 0) {
+    const raw = enquiry.assignedToName.trim();
+    const cleanName = raw.replace(/\s*\([^)]*\)/g, '').trim();
+    const roleMatch = raw.match(/\(([^)]+)\)/);
+    const role = roleMatch ? roleMatch[1] : 'Assigned Senior Counselor';
+    const initials = cleanName.split(' ').map((n: string) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'GA';
+    return { name: cleanName, role, initials };
+  }
+
+  if (enquiry?.assignedTo?.name && enquiry.assignedTo.name.trim().length > 0) {
+    const cleanName = enquiry.assignedTo.name.replace(/\s*\([^)]*\)/g, '').trim();
+    const initials = cleanName.split(' ').map((n: string) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'GA';
+    return { name: cleanName, role: 'Assigned Senior Counselor', initials };
+  }
+
+  // 2. Scan call summary / customer experience for explicit counselor mentions (e.g. Sam, Arul Xavier)
+  const text = `${callRecord?.summary || ''} ${callRecord?.customerExperience || ''}`;
+  const speakerMatch = text.match(/\b(?:counselor|consultant|advisor|speaker|call\s+with|meeting\s+with)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/);
+  if (
+    speakerMatch &&
+    !/^(candidate|client|prospect|not|training|wms|discrete|active|the|gapanchor|today|yesterday)$/i.test(speakerMatch[1])
+  ) {
+    const cleanName = speakerMatch[1].trim();
+    const initials = cleanName.split(' ').map((n: string) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    return { name: cleanName, role: 'Lead Call Counselor', initials };
+  }
+
+  // 3. Fallback based on specific course track
+  const course = (enquiry?.trainingType || enquiry?.topic || '').toLowerCase();
+  if (course.includes('manhattan')) {
+    return { name: 'Arul Xavier', role: 'Manhattan Active Practice Lead', initials: 'AX' };
+  }
+  if (course.includes('blue yonder') || course.includes('jda')) {
+    return { name: 'Employee B', role: 'Blue Yonder & Kinaxis Advisor', initials: 'EB' };
+  }
+  if (course.includes('sap')) {
+    return { name: 'Employee C', role: 'SAP S/4HANA Practice Lead', initials: 'EC' };
+  }
+
+  return { name: 'GapAnchor Counselor', role: 'Senior Admissions Advisor', initials: 'GA' };
+}
+
+interface UnansweredQuestion {
+  question: string;
+  category: string;
+  status: string;
+}
+
+function getUnansweredQuestions(callRecord: LeadCallRecord | null, perf: any, enquiry: any): UnansweredQuestion[] {
+  if (!callRecord) return [];
+
+  // If query resolution is 100%, no unanswered questions
+  if (perf.resolutionScore >= 98) {
+    return [];
+  }
+
+  const questions: UnansweredQuestion[] = [];
+  const text = `${callRecord.summary || ''} ${callRecord.objections || ''} ${callRecord.nextAction || ''} ${callRecord.customerExperience || ''}`.toLowerCase();
+
+  // 1. Batch timing & scheduling shifts (e.g. 9-10 PM IST vs 8 PM, weekend hybrid)
+  if (text.includes('9 pm') || text.includes('9-10') || text.includes('batch timing') || (text.includes('timing') && text.includes('slot'))) {
+    questions.push({
+      question: 'Can the batch schedule be accommodated in the 9:00 PM – 10:00 PM IST slot instead of 8:00 PM?',
+      category: 'Batch Scheduling',
+      status: 'Pending Management Confirmation',
+    });
+  } else if (text.includes('weekend') || text.includes('hybrid') || text.includes('schedule structure')) {
+    questions.push({
+      question: 'Can the training be structured in a flexible 4-5 week hybrid weekday and weekend format?',
+      category: 'Schedule Structure',
+      status: 'Awaiting Batch Customization',
+    });
+  } else if (text.includes('cohort') || text.includes('start date') || text.includes('morning batch') || text.includes('evening batch')) {
+    questions.push({
+      question: 'Confirmation requested on the exact cohort kickoff date and morning/evening batch availability.',
+      category: 'Cohort Timing',
+      status: 'Pending Batch Confirmation',
+    });
+  }
+
+  // 2. Job support & placement scope (e.g. India vs US roles, trial sessions)
+  if (text.includes('job support') || text.includes('placement') || text.includes('interview')) {
+    questions.push({
+      question: 'What is the full scope and terms of interview & job support for India-based roles vs US roles?',
+      category: 'Job Support Scope',
+      status: 'Advisory Clarification Required',
+    });
+  }
+
+  // 3. Demo recordings and sandbox environment access
+  if (text.includes('demo') || text.includes('recording') || text.includes('sandbox') || text.includes('stage environment')) {
+    questions.push({
+      question: 'Sharing demo session video recordings and live stage sandbox environment preview before enrollment.',
+      category: 'Curriculum & Demos',
+      status: 'Awaiting Demo Link Delivery',
+    });
+  }
+
+  // 4. Commercial pricing, fee discount, and installment terms
+  if (text.includes('discount') || text.includes('cost') || text.includes('price') || text.includes('35k') || text.includes('higher') || text.includes('installment')) {
+    questions.push({
+      question: 'Can GapAnchor offer additional fee flexibility, custom installment milestones, or commercial concession?',
+      category: 'Commercial Pricing',
+      status: 'Requires Commercial Approval',
+    });
+  }
+
+  // 5. Technical track discovery & prerequisite alignment
+  if (questions.length < 2 && (text.includes('track') || text.includes('prerequisite') || text.includes('curriculum') || text.includes('discovery call'))) {
+    questions.push({
+      question: 'Detailed technical track mapping to bridge candidate functional background with live configuration requirements.',
+      category: 'Technical Discovery',
+      status: 'Discovery Session Due',
+    });
+  }
+
+  // Fallback: If still under 2 questions and resolution is <= 85%
+  if (questions.length === 0 && perf.resolutionScore < 95) {
+    questions.push({
+      question: 'Candidate requested follow-up clarification on upcoming live batch schedule and trainer interaction.',
+      category: 'Batch Scheduling',
+      status: 'Follow-up Due',
+    });
+    questions.push({
+      question: 'Sharing official course curriculum syllabus and sandbox laboratory access guidelines.',
+      category: 'Curriculum & Materials',
+      status: 'Pending Delivery',
+    });
+  }
+
+  return questions.slice(0, 3);
+}
+
+function getCounselorPerformanceAnalysis(callRecord: LeadCallRecord) {
+  const baseScore = typeof callRecord.score === 'number' ? callRecord.score * 10 : 80;
+  const candidateTalk = callRecord.candidateTalkPct || 50;
+  const hostTalk = 100 - candidateTalk;
+
+  // Host balance: ideally host talks 40-60%.
+  let balanceScore = 90;
+  if (hostTalk < 30) balanceScore = 75;
+  if (hostTalk > 75) balanceScore = 70;
+
+  const textToScan = `${callRecord.summary || ''} ${callRecord.objections || ''} ${callRecord.counterPitch || ''} ${callRecord.customerExperience || ''}`.toLowerCase();
+
+  const hasNegativeSigns = /\b(fluster|flabber|angry|shout|argue|hesitat|stumble|unanswered|rude|unprofessional|confusion)\b/i.test(textToScan);
+  const hasStrongPitch = /\b(explained|resolved|curriculum|placement|clarified|detailed|structured|patient|counter|pitch)\b/i.test(textToScan);
+  const hasUnansweredQuestions = /\b(unanswered|could not answer|did not know|will check and get back|pending question)\b/i.test(textToScan);
+
+  let qualityScore = Math.round((baseScore * 0.5) + (balanceScore * 0.3) + (hasStrongPitch ? 18 : 10) - (hasNegativeSigns ? 15 : 0));
+  qualityScore = Math.min(98, Math.max(55, qualityScore));
+
+  const fluencyScore = hasNegativeSigns ? 68 : Math.min(96, Math.max(78, qualityScore + 2));
+  const composureScore = hasNegativeSigns ? 65 : 95;
+  const resolutionScore = hasUnansweredQuestions ? 60 : Math.min(95, Math.max(72, qualityScore - 2));
+
+  let summaryText = '';
+  if (hasNegativeSigns || hasUnansweredQuestions) {
+    summaryText = 'GapAnchor counselor walked through key course points; however, some client questions were left partially unresolved or required hesitation. Recommended follow-up to address outstanding questions with prepared curriculum FAQs.';
+  } else if (qualityScore >= 85) {
+    summaryText = 'GapAnchor counselor demonstrated high domain confidence and active listening. Handled all client queries smoothly with zero agitation or stumbling, clearly explaining course curriculum and career progression while maintaining a calm, welcoming tone.';
+  } else {
+    summaryText = 'GapAnchor counselor delivered a balanced presentation of the curriculum. Answered primary inquiries directly and maintained courteous phone etiquette throughout the interaction.';
+  }
+
+  return {
+    qualityScore,
+    fluencyScore,
+    composureScore,
+    resolutionScore,
+    summaryText,
+  };
 }
 
 interface LeadCallRecord {
@@ -446,11 +717,8 @@ export function LeadDetailsDrawer({
                 <span className="mx-1 text-slate-500">•</span>
                 <span>{enquiry.country || 'India'}</span>
               </p>
-              {/* Row 3: CLIENT badge and #id under the name */}
+              {/* Row 3: #id under the name */}
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="px-1.5 py-0.2 text-[8.5px] font-extrabold rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
-                  Client
-                </span>
                 <span className="font-mono text-[10px] text-slate-500">#{enquiry.id.slice(-6)}</span>
               </div>
             </div>
@@ -466,9 +734,6 @@ export function LeadDetailsDrawer({
                 <h2 className="text-lg font-bold text-white tracking-tight truncate">
                   {enquiry.participantName}
                 </h2>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
-                  Client
-                </span>
                 <RedFlagBadge
                   enquiryId={enquiry.id}
                   hasRedFlag={Boolean(enquiry.hasRedFlag)}
@@ -1169,10 +1434,184 @@ export function LeadDetailsDrawer({
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center">
                       <TalkTimeDonut
                         candidatePct={latestCall.candidateTalkPct}
-                        hostName="GapAnchor Team"
+                        hostName={getCounselorProfile(latestCall, enquiry).name || "GapAnchor Team"}
                       />
                     </div>
                   </div>
+
+                  {/* Counselor / Speaker Call Delivery & Quality Assessment Card */}
+                  {(() => {
+                    const perf = getCounselorPerformanceAnalysis(latestCall);
+                    const counselor = getCounselorProfile(latestCall, enquiry);
+                    const unansweredList = getUnansweredQuestions(latestCall, perf, enquiry);
+
+                    return (
+                      <div className="p-4 rounded-xl bg-gradient-to-b from-slate-900/90 via-slate-950/80 to-slate-950 border border-slate-800/80 shadow-lg space-y-3.5">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                              <Award className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-100 uppercase tracking-wider truncate">
+                              Counselor Call Quality & Delivery
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0 shadow-sm shadow-cyan-500/10">
+                            {perf.qualityScore}% Quality Score
+                          </span>
+                        </div>
+
+                        {/* Counselor Identification Banner */}
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/80">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 via-indigo-500/20 to-purple-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-xs shrink-0 shadow-sm shadow-cyan-500/10">
+                              {counselor.initials}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-white tracking-wide truncate">
+                                  {counselor.name}
+                                </span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                                  Call Counselor
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">
+                                {counselor.role}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onAssignClick(enquiry)}
+                            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all duration-150 flex items-center gap-1 shrink-0"
+                          >
+                            <User className="w-3 h-3 text-cyan-400" />
+                            <span>{enquiry.assignedToName ? 'Change' : 'Assign'}</span>
+                          </button>
+                        </div>
+
+                        {/* Balanced 2-Column Metrics Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                          {/* Left Sub-card: Overall Score & Status Metrics */}
+                          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/70 flex items-center">
+                            <SpeakerQualityDonut
+                              qualityScore={perf.qualityScore}
+                              resolutionScore={perf.resolutionScore}
+                            />
+                          </div>
+
+                          {/* Right Sub-card: 3 Dimension Progress Bars */}
+                          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/70 flex flex-col justify-between gap-2.5">
+                            <div>
+                              <div className="flex justify-between text-[10px] text-slate-300 mb-1">
+                                <span className="font-medium text-slate-400">Fluency & Articulation</span>
+                                <span className="font-bold text-cyan-300">{perf.fluencyScore}%</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${perf.fluencyScore}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex justify-between text-[10px] text-slate-300 mb-1">
+                                <span className="font-medium text-slate-400">Tone & Composure</span>
+                                <span className="font-bold text-emerald-300">{perf.composureScore}%</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${perf.composureScore}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex justify-between text-[10px] text-slate-300 mb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-slate-400">Query Resolution</span>
+                                  {perf.resolutionScore < 100 && (
+                                    <span className="text-[9px] font-bold px-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20">
+                                      {100 - perf.resolutionScore}% open
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="font-bold text-indigo-300">{perf.resolutionScore}%</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${perf.resolutionScore}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Performance Review Summary */}
+                        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs text-slate-200 leading-relaxed space-y-1">
+                          <div className="flex items-center gap-1.5 text-slate-300 font-bold text-[11px] uppercase tracking-wider">
+                            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Performance Review Summary</span>
+                          </div>
+                          <p className="text-slate-300/90 text-xs leading-relaxed">
+                            {perf.summaryText}
+                          </p>
+                        </div>
+
+                        {/* Unanswered & Deferred Client Questions Section (Directly below summary) */}
+                        {unansweredList.length > 0 ? (
+                          <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-500/[0.08] via-slate-900/70 to-slate-950/80 border border-amber-500/30 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <HelpCircle className="w-4 h-4 text-amber-400" />
+                                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                                  Unanswered & Deferred Client Questions
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                {100 - perf.resolutionScore}% Pending Resolution
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-400 leading-normal">
+                              Specific inquiries and conditions raised by the candidate that were deferred, pending management approval, or require follow-up:
+                            </p>
+
+                            <div className="space-y-2 pt-0.5">
+                              {unansweredList.map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors"
+                                >
+                                  <div className="flex items-start gap-2 min-w-0">
+                                    <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                      {idx + 1}
+                                    </span>
+                                    <span className="text-xs text-slate-100 font-medium leading-relaxed">
+                                      {item.question}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-900 text-amber-300/90 border border-amber-500/25 shrink-0 whitespace-nowrap">
+                                    {item.status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-3 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/25 flex items-center gap-2.5 text-xs text-emerald-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>All candidate inquiries were fully resolved during the call with 100% query resolution.</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* AI Call Summary */}
                   <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80">

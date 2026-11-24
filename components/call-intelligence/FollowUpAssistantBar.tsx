@@ -438,7 +438,11 @@ export function FollowUpAssistantBar({
       const res = await fetch('/api/enquiries/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: cleanPrompt }),
+        body: JSON.stringify({
+          prompt: cleanPrompt,
+          previousMatchedIds: aiResponse?.matchedIds || [],
+          previousPrompt: aiResponse?.prompt || '',
+        }),
       });
 
       const data = await res.json();
@@ -456,8 +460,8 @@ export function FollowUpAssistantBar({
         );
       }
 
-      // Display AI insight immediately on screen (zero delay for user)
-      setAiResponse({
+      // Prepare AI response payload to illuminate in exact sync with speech start
+      const pendingAiResponseData: AiResponseData = {
         answer: data.answer,
         actionAdvice: '',
         matchedIds: data.matchedIds || [],
@@ -467,7 +471,7 @@ export function FollowUpAssistantBar({
         apiError: data.apiError,
         model: data.model,
         prompt: cleanPrompt,
-      });
+      };
 
       // 2. Stream neural voice without reading Tactical Directive
       const humanizedBriefing = formatHumanizedJarvisBriefing(data.answer, null);
@@ -482,6 +486,7 @@ export function FollowUpAssistantBar({
       await speakJarvis(fullSpeech, {
         includeIntro: false,
         onStart: () => {
+          setAiResponse(pendingAiResponseData);
           setIsSpeakingJarvis(true);
           setVoiceStage('speaking_output');
           setVoiceStatusMessage('');
@@ -493,6 +498,7 @@ export function FollowUpAssistantBar({
           startListeningInline();
         },
         onError: () => {
+          setAiResponse(pendingAiResponseData);
           setIsSpeakingJarvis(false);
           setVoiceStage('idle');
           setVoiceStatusMessage('Executive briefing ready.');
@@ -720,7 +726,11 @@ export function FollowUpAssistantBar({
       const res = await fetch('/api/enquiries/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: query }),
+        body: JSON.stringify({
+          prompt: query,
+          previousMatchedIds: aiResponse?.matchedIds || [],
+          previousPrompt: aiResponse?.prompt || '',
+        }),
       });
 
       const data = await res.json();
@@ -943,23 +953,16 @@ export function FollowUpAssistantBar({
                     <span className="text-sm font-semibold tracking-tight bg-gradient-to-r from-white via-slate-100 to-cyan-200 bg-clip-text text-transparent shrink-0">
                       Jarvis Voice
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium max-w-full truncate border transition-colors ${
-                        voiceStage === 'listening'
-                          ? 'bg-white/[0.08] text-slate-200 border-white/20'
-                          : voiceStage === 'speaking_output' || voiceStage === 'greeting'
-                          ? 'bg-white/[0.06] text-slate-200 border-white/15'
-                          : 'bg-white/[0.04] text-slate-400 border-white/10'
-                      }`}
-                    >
+                    {/* Header Status (No rounded border line) */}
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-300">
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                           voiceStage === 'listening' || voiceStage === 'speaking_output' || voiceStage === 'thinking'
-                            ? 'bg-slate-300 animate-pulse'
+                            ? 'bg-cyan-400 animate-pulse'
                             : 'bg-slate-500'
                         }`}
                       />
-                      <span className="truncate">
+                      <span>
                         {voiceStage === 'greeting'
                           ? 'Ready'
                           : voiceStage === 'listening'
@@ -1032,6 +1035,85 @@ export function FollowUpAssistantBar({
                   <span className="hidden sm:inline">Exit Voice</span>
                 </button>
               </div>
+            </div>
+
+            {/* ─── Three-Phase Status Tabs with Clean Non-Glowing Moving Underline ─── */}
+            <div className="pt-2 pb-0.5 flex items-center justify-center gap-7 sm:gap-9">
+              {/* LISTENING */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (voiceStage !== 'listening') startListeningInline();
+                }}
+                className="group relative flex flex-col items-center cursor-pointer transition-all focus:outline-none"
+              >
+                <span
+                  className={`text-[9.5px] sm:text-[10px] font-sans font-semibold tracking-wider uppercase transition-colors duration-200 ${
+                    voiceStage === 'listening' || (voiceStage === 'idle' && !isSpeakingJarvis && !isAskingAi)
+                      ? 'text-sky-400'
+                      : 'text-slate-400 group-hover:text-slate-300'
+                  }`}
+                >
+                  Listening
+                </span>
+                <span
+                  className={`h-[2px] w-5 sm:w-6 mx-auto mt-1 rounded-full transition-all duration-300 ${
+                    voiceStage === 'listening' || (voiceStage === 'idle' && !isSpeakingJarvis && !isAskingAi)
+                      ? 'bg-sky-400 opacity-100 scale-x-100'
+                      : 'bg-transparent opacity-0 scale-x-50'
+                  }`}
+                />
+              </button>
+
+              {/* THINKING */}
+              <div className="relative flex flex-col items-center">
+                <span
+                  className={`text-[9.5px] sm:text-[10px] font-sans font-semibold tracking-wider uppercase transition-colors duration-200 ${
+                    voiceStage === 'thinking' || isAskingAi
+                      ? 'text-sky-400'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  Thinking
+                </span>
+                <span
+                  className={`h-[2px] w-5 sm:w-6 mx-auto mt-1 rounded-full transition-all duration-300 ${
+                    voiceStage === 'thinking' || isAskingAi
+                      ? 'bg-sky-400 opacity-100 scale-x-100'
+                      : 'bg-transparent opacity-0 scale-x-50'
+                  }`}
+                />
+              </div>
+
+              {/* SPEAKING */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSpeakingJarvis) {
+                    stopJarvis();
+                    setIsSpeakingJarvis(false);
+                    startListeningInline();
+                  }
+                }}
+                className="group relative flex flex-col items-center cursor-pointer transition-all focus:outline-none"
+              >
+                <span
+                  className={`text-[9.5px] sm:text-[10px] font-sans font-semibold tracking-wider uppercase transition-colors duration-200 ${
+                    isSpeakingJarvis || voiceStage === 'speaking_output' || voiceStage === 'greeting' || voiceStage === 'acknowledging'
+                      ? 'text-sky-400'
+                      : 'text-slate-400 group-hover:text-slate-300'
+                  }`}
+                >
+                  Speaking
+                </span>
+                <span
+                  className={`h-[2px] w-5 sm:w-6 mx-auto mt-1 rounded-full transition-all duration-300 ${
+                    isSpeakingJarvis || voiceStage === 'speaking_output' || voiceStage === 'greeting' || voiceStage === 'acknowledging'
+                      ? 'bg-sky-400 opacity-100 scale-x-100'
+                      : 'bg-transparent opacity-0 scale-x-50'
+                  }`}
+                />
+              </button>
             </div>
 
             {/* ─── Center Stage: J.A.R.V.I.S. Living Particle Visual System ─── */}

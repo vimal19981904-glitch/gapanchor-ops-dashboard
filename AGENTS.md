@@ -24,6 +24,13 @@ The following core modules have been fully implemented, authenticated via Micros
    - Continuous background wake-word monitor ("Hey Jarvis", "Wake up", "Wake up Jarvis").
    - Instant zero-pause neural voice streaming (`speakJarvis`) and parallel answer rendering.
    - Core files: `lib/jarvis-listener.ts`, `lib/jarvis-speech.ts`, `components/call-intelligence/FollowUpAssistantBar.tsx`.
+   - **PERMANENT SINGLE NEURAL VOICE LOCK (ZERO LOCAL OS/BROWSER VOICE FALLBACK)**: Jarvis must strictly and exclusively output audio using ONE SINGLE NEURAL VOICE: Brian (`en-US-BrianMultilingualNeural`) via Edge-TTS. All fallback to local Windows/browser desktop voices (`Microsoft David`, `Microsoft Zira`, `Samantha`, etc.) is permanently banned. Never switch or alternate voices under any circumstance; if network latency occurs, Jarvis must retry/buffer Brian exclusively without voice switching.
+   - **STAGGERED SPEECH PIPELINE & ZERO CHUNK DROPS**: TTS synthesis runs via staggered pre-buffering (Chunk 0 begins immediately, next chunks buffer in background). Chunks must never be silently dropped or skipped (`continue;`), preventing mid-sentence silence pauses.
+
+6. **J.A.R.V.I.S. Living Particle Sphere & Speaking Dust Formation Animation** ([`components/jarvis/JarvisParticleSphere.tsx`](file:///c:/Users/ARUL%20XAVIER/OneDrive%20-%20gapanchor/dashboard/components/jarvis/JarvisParticleSphere.tsx))
+   - 3D WebGL Living Particle Sphere, idle/listening/thinking strata and silk ribbons, and speaking harmonics.
+   - Word-by-word dust pouring from orb underside, swirling in 3D physics turbulence, and coalescing into glowing cyan words.
+   - **LOCKED against modification**: Do NOT touch or alter the particle animation when modifying or adding Jarvis functionalities.
 
 ---
 

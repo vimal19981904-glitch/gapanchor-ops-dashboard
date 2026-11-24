@@ -4,6 +4,17 @@ import { callGemini, getGeminiConfig } from '@/lib/gemini-client';
 import { numberToIndianWords, sanitizeIndianCurrencyForSpeech } from '@/lib/utils';
 import { listCalendarEvents } from '@/lib/googleCalendar';
 import {
+  getMicrosoftCalendarEvents,
+  getUnifiedCalendarEvents,
+  formatCalendarEventsForJarvis,
+  MicrosoftCalendarEvent,
+} from '@/lib/microsoft-calendar';
+import {
+  getAllLeadActionItemProfiles,
+  formatActionItemsReportForJarvis,
+  ClientActionItemProfile,
+} from '@/lib/action-items';
+import {
   getTranscriptKnowledgeSnapshot,
   searchTranscriptsHeuristically,
   TranscriptSnapshot,
@@ -14,6 +25,10 @@ import {
   getComprehensiveLeadContext,
   getComprehensiveOperationsSnapshot,
   evaluateAllCandidatesPriorities,
+  setActiveSubjectLead,
+  getActiveSubjectLead,
+  getActiveTopicContext,
+  setActiveTopicContext,
   OperationsIntelligenceSnapshot,
   ComprehensiveLeadProfile,
 } from '@/lib/jarvis-pipeline-controller';
@@ -74,17 +89,113 @@ function stripTechnicalCodes(text: string): string {
 
 /**
  * Ensures output is stripped of technical codes, all salutations normalized to "boss",
- * and all currency values are formatted into natural Indian spoken words.
+ * all currency values are formatted into natural Indian spoken words,
+ * robotic intro phrases eliminated, and hyphenated/dashed words replaced with natural spoken English.
  */
 function cleanOutput(text: string): string {
   if (!text) return '';
-  const noCodes = stripTechnicalCodes(text);
-  const normalizedBoss = noCodes
-    .replace(/\b(?:hey\s+)?(?:man|partner|sir)\b/gi, (match) => {
-      if (/^hey/i.test(match)) return 'Hey boss';
-      return 'boss';
-    });
-  return sanitizeIndianCurrencyForSpeech(normalizedBoss);
+  let cleaned = stripTechnicalCodes(text);
+
+  // Normalize salutations to boss
+  cleaned = cleaned.replace(/\b(?:hey\s+)?(?:man|partner|sir)\b/gi, (match) => {
+    if (/^hey/i.test(match)) return 'Hey boss';
+    return 'boss';
+  });
+
+  // Ban robotic openers
+  cleaned = cleaned
+    .replace(/^Alright boss, here is the rundown[\.,:\s]*/i, 'Boss, ')
+    .replace(/^Here is the rundown[\.,:\s]*/i, 'Boss, here is the current update: ')
+    .replace(/^Here is the breakdown of your calendar[\.,:\s]*/i, 'Looking at your calendar, ')
+    .replace(/^Here are the key priorities[\.,:\s]*/i, 'Looking at our top priorities, ')
+    .replace(/\bhere is the rundown\b/gi, 'here is the update')
+    .replace(/\bhere are the key priorities\b/gi, 'here are the top priorities');
+
+  // Conversational zero-hyphen replacements (Section 4)
+  cleaned = cleaned
+    .replace(/\bfollow[\s-]?ups\b/gi, 'follow up activities')
+    .replace(/\bfollow[\s-]?up\b/gi, 'follow up')
+    .replace(/\bhigh[\s-]?priority\b/gi, 'high priority')
+    .replace(/\b(one[\s-]on[\s-]one|1[\s-]on[\s-]1|1:1)\b/gi, 'individual training')
+    .replace(/\bup[\s-]?to[\s-]?date\b/gi, 'current information')
+    .replace(/\baction[\s-]?items?\b/gi, 'action items')
+    .replace(/\bclient[\s-]?specific\b/gi, 'specific client')
+    .replace(/\bend[\s-]?to[\s-]?end\b/gi, 'complete process')
+    .replace(/\bnext[\s-]?steps?\b/gi, 'next steps')
+    .replace(/\btwo[\s-]?day\b/gi, 'two day');
+
+  // Strip em/en dashes, bullets, and word hyphens
+  cleaned = cleaned
+    .replace(/[\u2014\u2013\u2015]/g, ', ')
+    .replace(/[•●▪■◆★]/g, ', ')
+    .replace(/\s+-\s+/g, ', ')
+    .replace(/\b([a-zA-Z]+)-([a-zA-Z]+)\b/g, '$1 $2');
+
+  return sanitizeIndianCurrencyForSpeech(cleaned);
+}
+
+/**
+ * Retrieves past meeting discussion notes and transcript summary for a specific candidate.
+ */
+async function getClientMeetingDiscussionSummary(
+  clientNameOrQuery: string,
+  prismaClient: any
+): Promise<{ answer: string; enquiryId?: string } | null> {
+  const q = clientNameOrQuery.toLowerCase().trim();
+  const enq = await prismaClient.enquiry.findFirst({
+    where: {
+      participantName: { contains: q, mode: 'insensitive' },
+    },
+    select: {
+      id: true,
+      participantName: true,
+      trainingType: true,
+      topic: true,
+      processedNotes: true,
+      callFollowUpDate: true,
+      contactStatus: true,
+    },
+  });
+
+  if (!enq) {
+    return null;
+  }
+
+  const calls = await prismaClient.leadCall.findMany({
+    where: { enquiryId: enq.id },
+    orderBy: { callDate: 'desc' },
+    take: 1,
+  });
+
+  const course = enq.trainingType || enq.topic || 'Enterprise Training';
+  const call = calls[0];
+
+  if (call && call.summary && call.summary.trim().length > 10) {
+    let cleanSummary = call.summary.trim();
+    cleanSummary = cleanSummary.replace(/\[.*?\]/g, '').replace(/#\w+/g, '').trim();
+
+    let nextStepPart = '';
+    if (call.nextAction && call.nextAction.trim().length > 5) {
+      nextStepPart = ` The agreed next steps were to ${call.nextAction.replace(/\.$/, '')}.`;
+    }
+
+    return {
+      answer: `Boss, in our last call with ${enq.participantName} regarding ${course}, ${cleanSummary}.${nextStepPart}`,
+      enquiryId: enq.id,
+    };
+  }
+
+  if (enq.processedNotes && enq.processedNotes.trim().length > 5) {
+    return {
+      answer: `Boss, in our recorded CRM notes for ${enq.participantName} regarding ${course}, discussion indicates: "${enq.processedNotes}".${enq.callFollowUpDate ? ` Scheduled follow up date is ${enq.callFollowUpDate}.` : ''}`,
+      enquiryId: enq.id,
+    };
+  }
+
+  return {
+    answer: `Boss, we have active inquiry details for ${enq.participantName} in ${course}, but no detailed call discussion transcript has been logged yet.`,
+    enquiryId: enq.id,
+  };
 }
 
 interface DatabaseFilterMatch {
@@ -310,7 +421,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, apiKey: requestApiKey } = body;
+    const { prompt, apiKey: requestApiKey, previousMatchedIds, previousPrompt, sessionId } = body;
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -338,7 +449,11 @@ export async function POST(req: NextRequest) {
     // ─── STAGE 1: Check for Direct Jarvis Pipeline Action ─────────
     const pipelineActionType = detectPipelineActionType(prompt);
     if (pipelineActionType !== 'none') {
-      const actionResult = await executeJarvisPipelineAction(pipelineActionType, prompt, prisma);
+      const actionResult = await executeJarvisPipelineAction(pipelineActionType, prompt, prisma, {
+        previousMatchedIds: Array.isArray(previousMatchedIds) ? previousMatchedIds : [],
+        previousPrompt: typeof previousPrompt === 'string' ? previousPrompt : undefined,
+        sessionId: typeof sessionId === 'string' ? sessionId : 'global',
+      });
       return NextResponse.json({
         success: true,
         isRealGemini: Boolean(effectiveApiKey),
@@ -369,13 +484,13 @@ export async function POST(req: NextRequest) {
     const needsCalendar = isSystemStatusQuery || /\b(calendar|schedule|meeting|event|session|demo|today|tomorrow|week|batch)\b/i.test(pLower);
 
     // ─── STAGE 2: Load Full Multi-Entity Operations Snapshot ──────
-    // Uses 30s in-memory cache and conditional external calendar fetch with 1.5s safety timeout
+    // Uses 30s in-memory cache and conditional external calendar fetch with 2.5s safety timeout
     const calendarPromise = needsCalendar
       ? Promise.race([
-          listCalendarEvents({ maxResults: 10 }).catch(() => ({ events: [] })),
-          new Promise<{ events: any[] }>((resolve) => setTimeout(() => resolve({ events: [] }), 1500)),
+          getUnifiedCalendarEvents({ maxResults: 25 }).catch(() => []),
+          new Promise<any[]>((resolve) => setTimeout(() => resolve([]), 8000)),
         ])
-      : Promise.resolve({ events: [] });
+      : Promise.resolve([]);
 
     const [opsContext, transcriptSnapshot, calendarData] = await Promise.all([
       getCachedOperationsSnapshot(prisma),
@@ -385,6 +500,143 @@ export async function POST(req: NextRequest) {
 
     // Full 503+ database filter intent evaluation (never truncated)
     const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
+
+    // ─── Multi-turn Conversational Context & Query Intent Resolution ───
+    const sessionIdStr = typeof sessionId === 'string' ? sessionId : 'global';
+    const activeTopic = getActiveTopicContext(sessionIdStr);
+
+    // Multi-turn context resolution for Calendar
+    const isTomorrowFollowup =
+      /^(what\s+about\s+tomorrow|what\s+about\s+tomorrow\?|tomorrow\??|how\s+about\s+tomorrow\??)$/i.test(prompt.trim()) ||
+      (/\btomorrow\b/i.test(prompt) && activeTopic?.topic === 'calendar');
+
+    const isCalendarQuery =
+      isTomorrowFollowup ||
+      (/\b(calendar|schedule|schedules|upcoming\s+event|upcoming\s+session|what('s|\s+is)\s+on\s+my\s+calendar|what\s+do\s+i\s+have|meetings?\s+today|meetings?\s+tomorrow|events?\s+going\s+on|events?\s+for\s+today|events?\s+for\s+tomorrow|upcoming\s+days)\b/i.test(pLower) &&
+      !/\blead|candidate|prospect|finances?|revenue/i.test(pLower));
+
+    const targetCalendarDate: 'today' | 'tomorrow' | 'upcoming' | undefined =
+      isTomorrowFollowup || /\btomorrow\b/i.test(pLower) ? 'tomorrow' :
+      /\btoday\b/i.test(pLower) ? 'today' : undefined;
+
+    // Follow-up client matching for action items or discussion (e.g. "What about Hema?")
+    const whatAboutClientMatch = prompt.trim().match(/^(?:what\s+about|how\s+about)\s+([A-Za-z\s]+)\??$/i);
+    const clientSpecificActionMatch = prompt.match(/\b(?:pending\s+tasks?|action\s*items?|tasks?\s*left)\s+for\s+([A-Za-z\s]+)\b/i);
+
+    const isMeetingDiscussionQuery =
+      /\b(what\s+did\s+we\s+discuss|what\s+was\s+discussed|what\s+happened\s+on\s+the\s+call|last\s+meeting\s+with|last\s+call\s+with)\b/i.test(pLower) ||
+      (Boolean(whatAboutClientMatch) && activeTopic?.topic === 'meeting_notes');
+
+    const meetingMatch = prompt.match(/(?:discuss(?:ed)?\s+(?:in\s+the\s+last\s+meeting\s+)?with|call\s+with|meeting\s+with)\s+([A-Za-z\s]+?)(?:\?|$|\.|\,)/i);
+    const meetingClientQuery = meetingMatch ? meetingMatch[1].trim() : (whatAboutClientMatch ? whatAboutClientMatch[1].trim() : undefined);
+
+    let specificClientQuery: string | undefined = undefined;
+    if (clientSpecificActionMatch) {
+      specificClientQuery = clientSpecificActionMatch[1].trim();
+    } else if (whatAboutClientMatch && !isMeetingDiscussionQuery && activeTopic?.topic !== 'calendar') {
+      specificClientQuery = whatAboutClientMatch[1].trim();
+    }
+
+    const isOverdueQuery = /\b(overdue|overdue\s+activities|past\s+due|missed\s+deadline)\b/i.test(pLower);
+    const isWaitingResponseQuery = /\b(waiting\s+for\s+(?:a\s+)?response|waiting\s+on\s+us|who\s+is\s+waiting|clients?\s+waiting)\b/i.test(pLower);
+
+    const isActionItemsQuery =
+      Boolean(specificClientQuery) ||
+      isOverdueQuery ||
+      isWaitingResponseQuery ||
+      /\b(action\s*items?|to\s*-?\s*do(?:s)?|pending\s*tasks?|open\s*tasks?|tasks?\s*left|checklist|what\s+tasks?\s+are\s+left|pending\s+items?|pending\s+action\s+items?|what\s+do\s+i\s+need\s+to\s+follow\s+up\s+on|follow\s+ups?\s+pending|pending\s+follow\s*ups?)\b/i.test(pLower);
+
+    const isExecutiveFocusQuery =
+      /\b(what\s+should\s+i\s+focus\s+on|what\s+needs\s+my\s+attention|focus\s+today|what's\s+my\s+focus|priorities\s+for\s+today|what\s+should\s+i\s+do\s+today)\b/i.test(pLower);
+
+    // Update active topic context for multi-turn sessions
+    if (isCalendarQuery) {
+      setActiveTopicContext({ topic: 'calendar', targetDate: targetCalendarDate }, sessionIdStr);
+    } else if (isActionItemsQuery) {
+      setActiveTopicContext({ topic: 'action_items', clientName: specificClientQuery }, sessionIdStr);
+    } else if (isMeetingDiscussionQuery) {
+      setActiveTopicContext({ topic: 'meeting_notes', clientName: meetingClientQuery }, sessionIdStr);
+    } else if (isExecutiveFocusQuery) {
+      setActiveTopicContext({ topic: 'general' }, sessionIdStr);
+    }
+
+    // Preload action items if relevant
+    const actionItemProfiles = (isActionItemsQuery || isExecutiveFocusQuery)
+      ? await getAllLeadActionItemProfiles(prisma)
+      : [];
+
+    // Preload meeting discussion if relevant
+    const meetingDiscussion = (isMeetingDiscussionQuery && meetingClientQuery)
+      ? await getClientMeetingDiscussionSummary(meetingClientQuery, prisma)
+      : null;
+
+    const intentContext = {
+      isCalendarQuery,
+      targetCalendarDate,
+      isActionItemsQuery,
+      specificClientQuery,
+      overdueOnly: isOverdueQuery,
+      waitingResponseOnly: isWaitingResponseQuery,
+      isExecutiveFocusQuery,
+      isMeetingDiscussionQuery,
+      meetingClientQuery,
+      meetingDiscussion,
+      actionItemProfiles,
+      calendarData: Array.isArray(calendarData) ? calendarData : ((calendarData as any)?.events || []),
+    };
+
+    // ─── INSTANT CALENDAR FAST-PATH (< 500ms Thinking Latency) ───
+    // Directly answers pure calendar/schedule queries with live Microsoft Graph data,
+    // eliminating heavy LLM serialization delays and 429 quota stalls.
+    if (isCalendarQuery) {
+      let calendarPart = 'Boss, your calendar is completely clear with zero scheduled sessions.';
+      try {
+        const msEvents = intentContext.calendarData;
+        if (msEvents && msEvents.length > 0) {
+          calendarPart = formatCalendarEventsForJarvis(msEvents, { targetDate: targetCalendarDate });
+        }
+      } catch (err: any) {
+        console.error('DEBUG formatCalendarEventsForJarvis threw:', err);
+      }
+
+      const cleanAns = cleanOutput(
+        calendarPart.startsWith('Boss') ? calendarPart : `Boss, looking at your calendar, ${calendarPart}`
+      );
+
+      return NextResponse.json({
+        success: true,
+        isRealGemini: false,
+        model: 'GAP Calendar Fast-Path',
+        answer: cleanAns,
+        actionAdvice: 'View your live Microsoft Calendar or Microsoft Bookings dashboard at https://bookings.cloud.microsoft/bookings/calendar to manage invite slots.',
+        matchedIds: [],
+        recommendedFilter: 'all',
+        pipelineAction: null,
+      });
+    }
+
+    // ─── INSTANT ACTION ITEMS FAST-PATH (< 600ms Thinking Latency) ───
+    // Directly aggregates CRM action items from structured CX checklists and CRM discussion notes,
+    // eliminating 40s thinking stalls and JSON token truncation errors.
+    if (isActionItemsQuery) {
+      const profiles = actionItemProfiles.length > 0 ? actionItemProfiles : await getAllLeadActionItemProfiles(prisma);
+      const answer = formatActionItemsReportForJarvis(profiles, {
+        specificClientQuery,
+        overdueOnly: isOverdueQuery,
+        waitingResponseOnly: isWaitingResponseQuery,
+      });
+
+      return NextResponse.json({
+        success: true,
+        isRealGemini: false,
+        model: 'GAP Action Items Fast-Path',
+        answer: cleanOutput(answer),
+        actionAdvice: 'Click Details on any candidate row to update action items or log next steps.',
+        matchedIds: profiles.filter((p) => p.pendingCount > 0).slice(0, 8).map((p) => p.enquiryId),
+        recommendedFilter: 'all',
+        pipelineAction: null,
+      });
+    }
 
     // ─── STAGE 3: If Gemini API Key Available: Real Neural Reasoning ───
     if (effectiveApiKey) {
@@ -397,10 +649,9 @@ export async function POST(req: NextRequest) {
             !['what', 'when', 'where', 'who', 'how', 'show', 'tell', 'the', 'are', 'is', 'for', 'and', 'with', 'about', 'from', 'all', 'our', 'my'].includes(w)
         );
 
-      // Query Intent Classification
       const isFinanceOnlyQuery =
         /\b(how\s+are\s+the\s+finances|finance\s+status|how's\s+finance\s+doing|financial\s+update|revenue|expenses|net\s+profit)\b/i.test(pLower) &&
-        !/\blead|candidate|prospect|system\s+status|going\s+on/i.test(pLower);
+        !/\blead|candidate|prospect|system\s+status|going\s+on|focus/i.test(pLower);
 
       // Full Database 503+ leads distribution & intelligence statistics
       const totalLeadsCount = opsContext.allLeads.length;
@@ -415,12 +666,15 @@ export async function POST(req: NextRequest) {
         statusBreakdown[s] = (statusBreakdown[s] || 0) + 1;
       }
 
-      // Upcoming Calendar Events & Cohorts
-      const upcomingCalendarEvents = (calendarData?.events || []).map((e: any) => ({
-        title: e.title || e.summary || 'Meeting / Session',
-        start: e.start,
-        end: e.end,
-        description: e.description || '',
+      // Upcoming Calendar Events & Cohorts (Microsoft Graph Calendar contact@gapanchor.com)
+      const upcomingCalendarEvents = (Array.isArray(calendarData) ? calendarData : ((calendarData as any)?.events || [])).map((e: any) => ({
+        title: e.subject || e.title || e.summary || 'Meeting / Session',
+        start: e.startFormattedIst || e.start,
+        end: e.endFormattedIst || e.end,
+        isToday: Boolean(e.isToday),
+        isTomorrow: Boolean(e.isTomorrow),
+        joinUrl: e.joinUrl || undefined,
+        description: e.bodyPreview || e.description || '',
       }));
 
       // Dynamically match any specific prospects across all 500+ leads
@@ -462,6 +716,12 @@ export async function POST(req: NextRequest) {
         .sort((a, b) => b.matchScore - a.matchScore)
         .slice(0, 15)
         .map((item) => item.lead);
+
+      if (matchedProspects.length > 0) {
+        setActiveSubjectLead(matchedProspects[0], typeof sessionId === 'string' ? sessionId : 'global');
+      } else if (fullDbFilter.intentDetected && fullDbFilter.matchedLeads.length === 1) {
+        setActiveSubjectLead(fullDbFilter.matchedLeads[0], typeof sessionId === 'string' ? sessionId : 'global');
+      }
 
       // All leads with active Call Notes & Follow-up Due Dates
       // Prioritize leads where notes exist and match prompt, or most recent notes
@@ -520,11 +780,12 @@ export async function POST(req: NextRequest) {
       const lastPaymentWords = numberToIndianWords(fin.latestIncomeAmount || 0);
       const lastPaymentDate = fin.latestIncomeDate || 'October 24, 2026';
 
-      const systemPrompt = `You are J.A.R.V.I.S., the co-founder, partner, and operations controller for GapAnchor enterprise academy (Manhattan Active WMS, Blue Yonder, SAP, Kinaxis). You are speaking directly to your CEO / business partner.
+      const systemPrompt = `You are J.A.R.V.I.S., the executive assistant and operations controller for GapAnchor enterprise academy (Manhattan Active WMS, Blue Yonder, SAP, Kinaxis). You are speaking directly to your CEO.
+
 You have live neural database access across all GapAnchor systems:
 1. All ${totalLeadsCount} candidate leads (full contact details: email, phone, country, course, service type, initial query message, entry dates, status, CRM call notes, call transcripts & scores).
 2. Live Training Batches & Sessions (platform, trainer, scheduled times, trainer total payout, trainer amount paid/due, trainee participants with fees & payment statuses: PAID, PARTIAL, PENDING).
-3. Live Calendar Events & Training Schedules (upcoming demos, meetings, batches).
+3. Live Microsoft Calendar Events & Training Schedules (upcoming demos, meetings, batches).
 4. Financial Ledger Transactions (income, expenses, payment methods, transaction notes, amounts).
 5. Trainer Registrations (work-with-us candidate profiles, experience years, primary domains, contact info).
 
@@ -534,16 +795,16 @@ USER INQUIRY: "${prompt}"
 1. LATEST INCOMING ENQUIRIES (Most Recent First):
 ${JSON.stringify(opsContext.latestEnquiries.slice(0, 10), null, 2)}
 
-2. DYNAMICALLY MATCHED PROSPECTS (Searched across Name, Lead Code, Phone, Email, Course, Call Notes, Messages):
+2. DYNAMICALLY MATCHED PROSPECTS:
 ${JSON.stringify(matchedProspects, null, 2)}
 
-3. ACTIVE CRM CALL NOTES & DISCUSSION LOGS (Real caller remarks, price discussions, demo requests, callback notes):
+3. ACTIVE CRM CALL NOTES & DISCUSSION LOGS:
 ${JSON.stringify(leadsWithCallNotes, null, 2)}
 
 4. HIGH-INTENT EVALUATED CANDIDATES (Call Notes & Transcripts):
 ${JSON.stringify(evaluatedCandidates, null, 2)}
 
-5. ACTIVE TRAINING BATCHES & TRAINER PAYOUTS (Session & SessionParticipant):
+5. ACTIVE TRAINING BATCHES & TRAINER PAYOUTS:
 ${JSON.stringify(opsContext.activeSessions.slice(0, 6), null, 2)}
 
 6. UPCOMING CALENDAR EVENTS & SCHEDULED SESSIONS:
@@ -577,54 +838,92 @@ ${JSON.stringify(fullDbFilter.matchedLeads.map(l => ({
   notes: l.notes
 })), null, 2)}
 ` : ''}
+${isActionItemsQuery || isExecutiveFocusQuery ? `
+10. CRM TO-DO LISTS & IMMEDIATE ACTION ITEMS (Checked vs Pending Tasks):
+${JSON.stringify(actionItemProfiles, null, 2)}
+` : ''}
+${meetingDiscussion ? `
+11. MEETING DISCUSSION RECORD FOR ${meetingClientQuery}:
+${meetingDiscussion.answer}
+` : ''}
 ==============================
 
-OPERATIONAL INSTRUCTIONS & PERSONA:
-1. CASUAL AMERICAN STYLE (MANDATORY SALUTATION: ALWAYS ADDRESS USER AS "BOSS"):
-   - ALWAYS address the user as "boss" (e.g. "Alright boss...", "Here's what's going on, boss...").
-   - Speak like a sharp, confident, trustworthy operations partner.
-   - NEVER output or read "practical directive" or include a heading called practical directive.
+OPERATIONAL INSTRUCTIONS & PERSONA (MANDATORY):
+1. EXECUTIVE ASSISTANT VOICE PERSONA:
+   - Speak naturally like a trusted human executive assistant, NEVER like a database or spreadsheet.
+   - Address the user as "boss" naturally and conversationally, but do NOT force "boss" into every sentence.
+   - BANNED ROBOTIC INTROS: NEVER say "Alright boss, here is the rundown", "Here is the breakdown of your calendar", "Here are the key priorities".
+   - NATURAL OPENINGS: Use conversational hooks: "Boss, you've got three sessions scheduled today.", "Boss, looking at your schedule...", "Boss, there are several pending items that need your attention."
 
-2. STRICT INTENT-BASED REPORTING (CRITICAL):
-${isSystemStatusQuery ? `
+2. ZERO HYPHENS DIRECTIVE (STRICT ENFORCEMENT):
+   - Never use hyphens or dash-based wording in your spoken answer or action advice.
+   - Replace "follow-ups" with "follow up activities".
+   - Replace "follow-up" with "follow up".
+   - Replace "high-priority" with "high priority".
+   - Replace "one-on-one", "1-on-1", "1:1" with "individual training" or "one on one".
+   - Replace "up-to-date" with "current information".
+   - Replace "action-item" with "action items".
+   - Replace "client-specific" with "specific client".
+   - Replace "end-to-end" with "complete process".
+   - Replace "next-step" with "next steps".
+   - Replace "two-day" with "two day".
+   - Never output em dashes, en dashes, or bullet points.
+
+3. STRICT INTENT-BASED REPORTING:
+${isMeetingDiscussionQuery && meetingDiscussion ? `
+   - THIS IS A PAST MEETING DISCUSSION QUERY:
+     Summarize what was discussed with ${meetingClientQuery} naturally: their technical track/goals, schedule requirements, budget/qualification, and agreed next action. Use short, clear sentences.
+` : isExecutiveFocusQuery ? `
+   - THIS IS AN EXECUTIVE FOCUS QUERY ("What should I focus on today" / "What needs my attention"):
+     Deliver a sharp executive briefing:
+     1. Start naturally: "Boss, here is where your focus should be today."
+     2. Schedule check: mention today's scheduled sessions or state that your calendar is completely clear today.
+     3. CRM priorities: highlight top pending items needing immediate attention (demo confirmations for clients waiting, pricing queries, overdue contacts).
+     4. Conclude with a helpful offer to coordinate.
+` : isActionItemsQuery ? `
+   - THIS IS AN ACTION ITEMS / TO-DO QUERY:
+     * Focus ONLY on genuinely pending items (exclude completed tasks).
+     * Group action items by client: demo requests (e.g. Sugnan Paul, Pramod P), pricing inquiries (e.g. Arya), batch scheduling (e.g. Hema Sai, Omsai Kumar, Upasana), retry outreach for disconnected calls (e.g. Sagar, Shorya Garg).
+     * If asking for a specific client (e.g. "${specificClientQuery || ''}"), focus exclusively on that client's open tasks.
+     * If asking about overdue activities, list the clients with overdue deadlines first.
+     * If asking which clients are waiting for a response, list those waiting on demo confirmations or pricing.
+     * DO NOT MENTION FINANCES.
+` : isCalendarQuery ? `
+   - THIS IS A CALENDAR / SCHEDULE QUERY:
+     * Target Date Focus: ${targetCalendarDate ? targetCalendarDate.toUpperCase() : 'TODAY FIRST, THEN TOMORROW, THEN UPCOMING'}.
+     * State exact times in IST (e.g. "11 AM", "5 PM", "6:48 PM").
+     * Simplify attendee names to their first name.
+     * Omit Teams meeting links unless specifically requested.
+     * Highlight any schedule conflicts or overlapping appointments.
+     * If today or tomorrow has zero events, explicitly state that your calendar is clear.
+` : isSystemStatusQuery ? `
    - THIS IS A SYSTEM / GAPANCHOR STATUS BRIEFING:
      Deliver a crisp, cohesive 3-part operational report:
-     1. Leads Status: Scan of recent pipeline and last 48-hour inquiries across our ${totalLeadsCount} leads (state courses, active inquiries).
-     2. Calendar Status: State upcoming scheduled sessions or calendar events (from UPCOMING CALENDAR EVENTS & SESSIONS). If calendar has zero conflicts or is clear, state that cleanly.
-     3. Finance Status: Short concise finance update (net revenue is ${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}). Keep finance short and concise (1 to 2 sentences max).
+     1. Leads Status: Pipeline scan of recent inquiries across our ${totalLeadsCount} leads.
+     2. Calendar Status: Today and upcoming sessions on Microsoft Calendar with zero conflicts.
+     3. Finance Status: Concise finance update (net revenue is ${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}).
 ` : isFinanceOnlyQuery ? `
    - THIS IS A FINANCE-SPECIFIC QUERY:
      Deliver concise financial standing: Net revenue is ${finNetWords} on ${finIncomeWords} total income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}.
 ` : `
    - THIS IS A LEADS / CANDIDATES / CRM QUERY:
-     * DO NOT MENTION FINANCES UNDER ANY CIRCUMSTANCE: Do NOT mention net revenue, income, expenses, or payment records! The user is asking about LEADS.
-     * SCAN ALL ${totalLeadsCount} LEADS ACROSS THE FULL DATABASE: You have live access to the entire database of ${totalLeadsCount} enquiries. Provide a thorough, insightful breakdown answering the user's specific prompt.
-     * DETAIL THE EXACT NEXT STEPS: When the user asks for next steps, details, or priorities, clearly articulate who to call, which candidates have high intent (demo requests, active notes, callbacks), their specific course tracks (Manhattan Active, Blue Yonder, etc.), and the immediate operational actions to take.
+     * DO NOT MENTION FINANCES.
+     * SCAN ALL ${totalLeadsCount} LEADS ACROSS THE FULL DATABASE.
+     * Detail exact next steps on who to call and immediate operational actions.
 `}
 
-3. CURRENCY IN SPOKEN INDIAN WORDS (WHEN APPLICABLE):
+4. CURRENCY IN SPOKEN INDIAN WORDS:
    - When stating money amounts, ALWAYS write them in natural Indian spoken words (e.g. "${finNetWords}", "${lastPaymentWords}", "800 US dollars").
-   - NEVER output bare currency symbols like ₹ or Rs. or numbers with commas like ₹6,57,062. This ensures text-to-speech reads the money naturally without mispronouncing.
+   - NEVER output bare currency symbols like ₹ or Rs. or numbers with commas like ₹6,57,062.
 
-4. STRICT NAME DIRECTIVE:
-   - Under NO circumstance should you speak or include primary key codes like [GAMA-0224], [GABY-0002], [GAGN-0001], or bare codes in "answer" or "actionAdvice". Speak ONLY the real person's name (e.g. 'Bovani Anusha', 'Pramod P', 'Karandeep Singh'). Technical codes are strictly forbidden in speech.
+5. STRICT NAME DIRECTIVE:
+   - Never speak or include primary key codes like [GAMA-0224], [GABY-0002], [GAGN-0001], or bare codes in "answer" or "actionAdvice". Speak ONLY real person names.
 
-5. "answer": Spoken operational briefing directly answering the prompt with exact data (never include GAMA/GABY codes, write money in words).
-6. "actionAdvice": Crisp tactical next directive for the operations team.
-7. "matchedIds": Array of matching lead ID strings from the provided dataset. If the user asked a general system status overview, leave matchedIds as [] so the table retains all leads. If the user asked about next steps or specific leads, return all relevant lead IDs.
-8. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
-9. Optional "pipelineAction": if the prompt requests pushing, staging, or removing leads.
-${fullDbFilter.intentDetected ? `
-10. MANDATORY FULL-DATABASE QUERY DIRECTIVE:
-    - The user specifically requested: "${prompt}".
-    - We evaluated ALL ${opsContext.allLeads.length} enquiries across our CRM database and identified EXACTLY ${fullDbFilter.uniqueCandidateNames.length} matching candidates.
-    - You MUST:
-      * ALWAYS address the user as "boss".
-      * State explicitly that you evaluated all ${opsContext.allLeads.length} enquiries in the database.
-      * Clearly state that the table below is filtered to all ${fullDbFilter.uniqueCandidateNames.length} matching candidates.
-      * Mention key candidate names from this list (e.g. ${fullDbFilter.uniqueCandidateNames.slice(0, 7).join(', ')}).
-      * Never state there are only 4 candidates or truncate the real count.
-` : ''}
+6. "answer": Spoken operational briefing directly answering the prompt with exact data.
+7. "actionAdvice": Crisp tactical next directive for the operations team.
+8. "matchedIds": Array of matching lead ID strings.
+9. "recommendedFilter": "all" | "due_today" | "high_intent" | "demo_followup" | "email_pending" | "red_flags" | "has_notes" or null.
+10. Optional "pipelineAction": if prompt requests moving or staging leads.
 
 Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", "recommendedFilter", optional "pipelineAction".`;
 
@@ -634,18 +933,41 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
           model,
           jsonMode: true,
           temperature: 0.1,
-          maxOutputTokens: 750,
+          maxOutputTokens: 2048,
         });
 
-        const parsed = JSON.parse(geminiRes.text);
-        const cleanAnswer = cleanOutput(parsed.answer || 'Operational analysis complete, boss.');
-        const cleanAdvice = parsed.actionAdvice ? cleanOutput(parsed.actionAdvice) : null;
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(geminiRes.text);
+        } catch (jsonErr) {
+          const raw = geminiRes.text || '';
+          const jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              parsed = JSON.parse(jsonMatch[0]);
+            } catch {
+              const ansMatch = raw.match(/"answer"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/);
+              const adviceMatch = raw.match(/"actionAdvice"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/);
+              if (ansMatch) {
+                parsed = {
+                  answer: ansMatch[1].replace(/\\"/g, '"').replace(/\\n/g, ' '),
+                  actionAdvice: adviceMatch ? adviceMatch[1].replace(/\\"/g, '"') : null,
+                  matchedIds: [],
+                  recommendedFilter: 'all',
+                };
+              }
+            }
+          }
+          if (!parsed) throw jsonErr;
+        }
+
+        const cleanAnswer = cleanOutput(parsed?.answer || 'Operational analysis complete, boss.');
+        const cleanAdvice = parsed?.actionAdvice ? cleanOutput(parsed.actionAdvice) : null;
 
         let finalMatchedIds: string[] = [];
         if (isSystemStatusQuery) {
-          finalMatchedIds = []; // System overview keeps all CRM leads visible
+          finalMatchedIds = [];
         } else if (fullDbFilter.intentDetected && fullDbFilter.matchedLeadIds.length > 0) {
-          // Guarantee that ALL matching candidates across the database are retained
           const idSet = new Set([
             ...fullDbFilter.matchedLeadIds,
             ...(Array.isArray(parsed.matchedIds) ? parsed.matchedIds : []),
@@ -668,7 +990,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
       } catch (geminiErr: any) {
         console.error('AI API execution error:', geminiErr);
         // Fallback to deterministic multi-entity engine
-        const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
+        const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot, intentContext);
         return NextResponse.json({
           success: true,
           isRealGemini: false,
@@ -683,7 +1005,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
     }
 
     // ─── STAGE 4: Deterministic Multi-Entity Heuristics ───────────
-    const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot);
+    const fallback = await fallbackComprehensiveOperations(prompt, opsContext, transcriptSnapshot, intentContext);
     return NextResponse.json({
       success: true,
       isRealGemini: false,
@@ -710,7 +1032,8 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
 async function fallbackComprehensiveOperations(
   prompt: string,
   opsContext: OperationsIntelligenceSnapshot,
-  transcriptSnapshot: TranscriptSnapshot
+  transcriptSnapshot: TranscriptSnapshot,
+  intentContext?: any
 ) {
   // 0a. Check comprehensive full-database filter intents (transcripts, notes, dues, country, course)
   const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
@@ -726,6 +1049,103 @@ async function fallbackComprehensiveOperations(
   const q = prompt.toLowerCase();
   const fin = opsContext.aggregates.finance;
   const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
+
+  // 1. Past Meeting Discussion Query
+  if (intentContext?.isMeetingDiscussionQuery) {
+    const disc = intentContext.meetingDiscussion || (intentContext.meetingClientQuery ? await getClientMeetingDiscussionSummary(intentContext.meetingClientQuery, prisma) : null);
+    if (disc) {
+      return {
+        answer: disc.answer,
+        actionAdvice: 'Click Details on the client card to review full call recording or customer experience transcript.',
+        matchedIds: disc.enquiryId ? [disc.enquiryId] : [],
+        recommendedFilter: 'all',
+      };
+    }
+  }
+
+  // 2. Executive Focus Query ("What should I focus on today", "What needs my attention")
+  if (intentContext?.isExecutiveFocusQuery) {
+    let calSummary = 'your calendar is completely clear with zero scheduled sessions today.';
+    try {
+      const msEvents = intentContext.calendarData || await getUnifiedCalendarEvents({ maxResults: 15 }).catch(() => []);
+      if (msEvents && msEvents.length > 0) {
+        calSummary = formatCalendarEventsForJarvis(msEvents, { targetDate: 'today' }).replace(/^Boss,\s*/i, '');
+      }
+    } catch {}
+
+    const profiles = intentContext.actionItemProfiles || await getAllLeadActionItemProfiles(prisma);
+    const pendingClients = profiles.filter((p: any) => p.pendingCount > 0);
+    const demoWaiters = pendingClients.filter((p: any) => p.category === 'demo').map((p: any) => p.clientName).slice(0, 2);
+    const pricingWaiters = pendingClients.filter((p: any) => p.category === 'pricing').map((p: any) => p.clientName).slice(0, 1);
+    const overdueWaiters = pendingClients.filter((p: any) => p.isOverdue).map((p: any) => p.clientName).slice(0, 2);
+
+    const prioritiesList: string[] = [];
+    if (demoWaiters.length > 0) prioritiesList.push(`locking in demo sessions for ${demoWaiters.join(' and ')}`);
+    if (pricingWaiters.length > 0) prioritiesList.push(`responding to pricing questions for ${pricingWaiters.join(', ')}`);
+    if (overdueWaiters.length > 0) prioritiesList.push(`reaching out to overdue contacts including ${overdueWaiters.join(' and ')}`);
+
+    const answer = `Boss, here is where your focus should be today. Looking at your schedule, ${calSummary} In your CRM pipeline, your top priorities are ${prioritiesList.join(', and ')}. Let me know if you would like me to coordinate any of these right away.`;
+    return {
+      answer: stripTechnicalCodes(answer),
+      actionAdvice: 'Prioritize demo confirmations and outreach to overdue contacts.',
+      matchedIds: pendingClients.slice(0, 5).map((p: any) => p.enquiryId),
+      recommendedFilter: 'all',
+    };
+  }
+
+  // 3. Calendar & Schedule Briefing ("what's on my calendar", "what's the schedules", "tomorrow", etc.)
+  const isCalendarOrScheduleFallback =
+    intentContext?.isCalendarQuery ||
+    (/\b(calendar|schedule|schedules|meeting|meetings|appointment|appointments|event|events)\b/i.test(q) &&
+    !/\blead|candidate|prospect|finances?|revenue|expense/i.test(q));
+
+  if (isCalendarOrScheduleFallback) {
+    let calendarPart = 'Your Microsoft Calendar is completely clear with zero scheduled conflicts.';
+    try {
+      const msEvents = intentContext?.calendarData || await getUnifiedCalendarEvents({ maxResults: 15 }).catch(() => []);
+      if (msEvents && msEvents.length > 0) {
+        calendarPart = formatCalendarEventsForJarvis(msEvents, { targetDate: intentContext?.targetCalendarDate });
+      }
+    } catch {}
+
+    let trainingPart = '';
+    const todayStr = new Date().toISOString().split('T')[0];
+    const upcomingBatches = (opsContext.activeSessions || []).filter((s) => s.date >= todayStr);
+    if (upcomingBatches.length > 0 && !intentContext?.targetCalendarDate) {
+      const s = upcomingBatches[0];
+      trainingPart = ` Additionally, on your training batch schedule, "${s.title}" with trainer ${s.trainer} is scheduled for ${s.date}${s.time ? ` at ${s.time}` : ''}.`;
+    }
+
+    return {
+      answer: stripTechnicalCodes(calendarPart.startsWith('Boss') ? `${calendarPart}${trainingPart}` : `Boss, on your calendar, ${calendarPart}${trainingPart}`),
+      actionAdvice: 'View your live Microsoft Calendar or Microsoft Bookings dashboard at https://bookings.cloud.microsoft/bookings/calendar to manage invite slots.',
+      matchedIds: [],
+      recommendedFilter: 'all',
+    };
+  }
+
+  // 4. Action Items & To-Do Lists
+  if (
+    intentContext?.isActionItemsQuery ||
+    q.includes('action item') ||
+    q.includes('to do') ||
+    q.includes('todo') ||
+    q.includes('task') ||
+    q.includes('open task')
+  ) {
+    const actionProfiles = intentContext?.actionItemProfiles || await getAllLeadActionItemProfiles(prisma);
+    const answer = formatActionItemsReportForJarvis(actionProfiles, {
+      specificClientQuery: intentContext?.specificClientQuery,
+      overdueOnly: intentContext?.overdueOnly,
+      waitingResponseOnly: intentContext?.waitingResponseOnly,
+    });
+    return {
+      answer: stripTechnicalCodes(answer),
+      actionAdvice: 'Open Customer Experience tabs to review and check off client action items.',
+      matchedIds: actionProfiles.map((p: any) => p.enquiryId),
+      recommendedFilter: 'all',
+    };
+  }
 
   // 0. Comprehensive System Status Briefing ("What's going on with the system", "How is the system", "How is GapAnchor doing", "Daily briefing", "System status")
   const isSystemStatusFallback =
@@ -781,22 +1201,12 @@ async function fallbackComprehensiveOperations(
 
     const leadsPart = `Over the last 48 hours, we tracked ${count48} inquiries in the pipeline${trackPhrase}, including ${candidateNames}.`;
 
-    // 2. Calendar Status: Check Google / iCal database events & active training cohorts
+    // 2. Calendar Status: Check Microsoft Graph calendar events & active training cohorts
     let calendarPart = 'On the calendar, all schedules are aligned with zero conflicts.';
     try {
-      const calData = await listCalendarEvents({ maxResults: 5 });
-      const upcomingEvents = (calData?.events || []).filter((e) => {
-        const start = new Date(e.start);
-        return !isNaN(start.getTime()) && start >= now;
-      });
-
-      if (upcomingEvents.length > 0) {
-        const nextEv = upcomingEvents[0];
-        const dateStr = new Date(nextEv.start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        calendarPart = `On your calendar, you have "${nextEv.title}" upcoming on ${dateStr}.`;
-      } else if (calData?.events && calData.events.length > 0) {
-        const nextEv = calData.events[0];
-        calendarPart = `On your calendar, upcoming schedule includes "${nextEv.title}".`;
+      const msEvents = await getMicrosoftCalendarEvents({ maxResults: 5 });
+      if (msEvents && msEvents.length > 0) {
+        calendarPart = `On your calendar, ${formatCalendarEventsForJarvis(msEvents)}`;
       } else if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
         const nextSession = opsContext.activeSessions[0];
         calendarPart = `On your training calendar, ${nextSession.title} with trainer ${nextSession.trainer} is scheduled for ${nextSession.date}.`;
@@ -957,6 +1367,10 @@ async function fallbackComprehensiveOperations(
     const hay = `${l.name} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''} ${l.notes || ''}`.toLowerCase();
     return q.split(' ').some((w) => w.length > 2 && hay.includes(w));
   });
+
+  if (matched.length > 0) {
+    setActiveSubjectLead(matched[0]);
+  }
 
   const matchedIds = matched.map((l) => l.id);
   const sampleNames = matched.slice(0, 3).map((l) => l.name).join(', ');
