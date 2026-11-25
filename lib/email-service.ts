@@ -359,7 +359,7 @@ export async function sendPipelineDueAlertEmail(params: {
   const recipient = process.env.ALERT_EMAIL_RECIPIENT || 'contact@gapanchor.com';
   const dashboardLink = process.env.NEXTAUTH_URL
     ? `${process.env.NEXTAUTH_URL}/enquiries`
-    : 'https://dashboard-green-psi-12.vercel.app/enquiries';
+    : 'https://gapanchor-ops-dashboard-two.vercel.app/enquiries';
 
   const subject = `[URGENT] Pipeline SLA Breach - ${params.totalCount} Prospects Overdue (> 3 Days)`;
 

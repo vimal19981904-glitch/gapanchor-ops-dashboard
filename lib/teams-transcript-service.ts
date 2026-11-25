@@ -36,7 +36,7 @@ export function getAppBaseUrl(): string {
   if (process.env.APP_BASE_URL) {
     return process.env.APP_BASE_URL.replace(/\/$/, '');
   }
-  return 'https://dashboard-green-psi-12.vercel.app';
+  return 'https://gapanchor-ops-dashboard-two.vercel.app';
 }
 
 /**

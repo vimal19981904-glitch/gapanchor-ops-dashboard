@@ -4,7 +4,7 @@ import { sendLeadAlertEmail, LeadEmailPayload } from '@/lib/email-service';
 export async function sendNtfyLeadAlert(payload: LeadEmailPayload): Promise<void> {
   try {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
-    const baseUrl = 'https://dashboard-green-psi-12.vercel.app';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://gapanchor-ops-dashboard-two.vercel.app';
     const rawTitle = `❗ 4h Pending SLA: ${payload.leadName}`;
     // Base64 encode Title using RFC 2047 so Node.js HTTP fetch never throws [ERR_INVALID_CHAR] for emojis
     const safeTitle = '=?UTF-8?B?' + Buffer.from(rawTitle).toString('base64') + '?=';
@@ -56,7 +56,7 @@ export async function sendNtfyPipelineDueAlert(params: {
 }): Promise<void> {
   try {
     const topic = process.env.NTFY_TOPIC || 'gapanchor-leads-alert';
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://dashboard-green-psi-12.vercel.app';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://gapanchor-ops-dashboard-two.vercel.app';
     const count = params.totalCount;
     const rawTitle = `Pipeline Alert: ${count} Prospect${count > 1 ? 's' : ''} Overdue (> 3 Days)`;
 
