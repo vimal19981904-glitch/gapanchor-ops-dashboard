@@ -42,12 +42,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json({
+        success: false,
+        error: 'Your account has been deactivated by the administrator. Please contact admin@gapanchor.com.'
+      }, { status: 403 });
+    }
+
     const userData = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       assignedCourse: user.assignedCourse,
+      allowedUIs: user.allowedUIs || (user.role === 'admin' ? ['*'] : ['enquiries']),
+      isActive: user.isActive,
     };
 
     const res = NextResponse.json({ success: true, user: userData });

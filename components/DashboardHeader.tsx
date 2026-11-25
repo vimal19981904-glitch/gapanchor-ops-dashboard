@@ -28,14 +28,14 @@ export default function DashboardHeader({ onRefresh, isRefreshing, onOpenNav }: 
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
-              <h1 className="text-sm sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent leading-snug">
+              <h1 className="text-sm sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-slate-300 dark:bg-clip-text dark:text-transparent leading-snug">
                 GapAnchor Ops Dashboard
               </h1>
-              <span className="bg-brand-500/20 text-brand-300 border border-brand-500/30 text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+              <span className="bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/30 text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                 Enterprise
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs font-medium hidden sm:block truncate text-slate-400 mt-0.5">
+            <p className="text-[10px] sm:text-xs font-medium hidden sm:block truncate text-slate-500 dark:text-slate-400 mt-0.5">
               Finance Intelligence • Training Ops • WhatsApp Comms • Dev Progress
             </p>
           </div>
@@ -59,12 +59,12 @@ export default function DashboardHeader({ onRefresh, isRefreshing, onOpenNav }: 
           {/* Liquid Glass Navigation Drawer Trigger Button */}
           <button
             onClick={handleOpenNav}
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-full bg-slate-900/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/25 dark:border-white/20 text-white hover:bg-slate-800 hover:border-brand-500/60 hover:shadow-[0_0_24px_rgba(99,102,241,0.4)] active:scale-95 transition-all duration-200 flex items-center justify-center shrink-0 cursor-pointer group relative overflow-hidden shadow-lg shadow-black/20"
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-full bg-white/90 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-blue-500/60 dark:hover:border-brand-500/60 hover:shadow-md dark:hover:shadow-[0_0_24px_rgba(99,102,241,0.4)] active:scale-95 transition-all duration-200 flex items-center justify-center shrink-0 cursor-pointer group relative overflow-hidden shadow-sm dark:shadow-lg dark:shadow-black/20"
             title="Open Ops Navigation Drawer"
             aria-label="Open Navigation Drawer"
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-500/25 via-white/15 to-transparent opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
-            <NavMenuIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-100 group-hover:text-brand-300 transition-transform relative z-10" strokeWidth={2.8} />
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 dark:from-brand-500/25 via-transparent dark:via-white/15 to-transparent opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <NavMenuIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-brand-300 transition-transform relative z-10" strokeWidth={2.8} />
           </button>
         </div>
       </div>

@@ -87,63 +87,63 @@ export const STAGES: StageConfig[] = [
     label: 'No plan yet',
     dotColor: 'bg-slate-500',
     glowColor: 'shadow-slate-500/30',
-    headerTextColor: 'text-slate-400',
-    badgeBg: 'bg-slate-800/80',
-    badgeColor: 'text-slate-400',
+    headerTextColor: 'text-slate-900 dark:text-slate-400',
+    badgeBg: 'bg-slate-100 dark:bg-slate-800/80',
+    badgeColor: 'text-slate-800 dark:text-slate-400',
   },
   {
     key: 'uncontacted',
     label: 'Uncontacted',
-    dotColor: 'bg-sky-400',
+    dotColor: 'bg-sky-500 dark:bg-sky-400',
     glowColor: 'shadow-sky-400/40',
-    headerTextColor: 'text-sky-300',
-    badgeBg: 'bg-sky-500/10',
-    badgeColor: 'text-sky-300',
+    headerTextColor: 'text-sky-800 dark:text-sky-300',
+    badgeBg: 'bg-sky-50 dark:bg-sky-500/10',
+    badgeColor: 'text-sky-800 dark:text-sky-300',
   },
   {
     key: 'aware',
     label: 'Aware',
-    dotColor: 'bg-blue-400',
+    dotColor: 'bg-blue-500 dark:bg-blue-400',
     glowColor: 'shadow-blue-400/40',
-    headerTextColor: 'text-blue-300',
-    badgeBg: 'bg-blue-500/10',
-    badgeColor: 'text-blue-300',
+    headerTextColor: 'text-blue-800 dark:text-blue-300',
+    badgeBg: 'bg-blue-50 dark:bg-blue-500/10',
+    badgeColor: 'text-blue-800 dark:text-blue-300',
   },
   {
     key: 'evaluating',
     label: 'Evaluating',
-    dotColor: 'bg-purple-400',
+    dotColor: 'bg-purple-500 dark:bg-purple-400',
     glowColor: 'shadow-purple-400/40',
-    headerTextColor: 'text-purple-300',
-    badgeBg: 'bg-purple-500/10',
-    badgeColor: 'text-purple-300',
+    headerTextColor: 'text-purple-800 dark:text-purple-300',
+    badgeBg: 'bg-purple-50 dark:bg-purple-500/10',
+    badgeColor: 'text-purple-800 dark:text-purple-300',
   },
   {
     key: 'negotiating',
     label: 'Negotiating',
-    dotColor: 'bg-amber-400',
+    dotColor: 'bg-amber-500 dark:bg-amber-400',
     glowColor: 'shadow-amber-400/50',
-    headerTextColor: 'text-amber-300',
-    badgeBg: 'bg-amber-500/10',
-    badgeColor: 'text-amber-300',
+    headerTextColor: 'text-amber-800 dark:text-amber-300',
+    badgeBg: 'bg-amber-50 dark:bg-amber-500/10',
+    badgeColor: 'text-amber-800 dark:text-amber-300',
   },
   {
     key: 'committed',
     label: 'Committed',
-    dotColor: 'bg-emerald-400',
+    dotColor: 'bg-emerald-500 dark:bg-emerald-400',
     glowColor: 'shadow-emerald-400/40',
-    headerTextColor: 'text-emerald-300',
-    badgeBg: 'bg-emerald-500/10',
-    badgeColor: 'text-emerald-300',
+    headerTextColor: 'text-emerald-800 dark:text-emerald-300',
+    badgeBg: 'bg-emerald-50 dark:bg-emerald-500/10',
+    badgeColor: 'text-emerald-800 dark:text-emerald-300',
   },
   {
     key: 'lost',
     label: 'Lost',
-    dotColor: 'bg-rose-400',
+    dotColor: 'bg-rose-500 dark:bg-rose-400',
     glowColor: 'shadow-rose-400/40',
-    headerTextColor: 'text-rose-300',
-    badgeBg: 'bg-rose-500/10',
-    badgeColor: 'text-rose-300',
+    headerTextColor: 'text-rose-800 dark:text-rose-300',
+    badgeBg: 'bg-rose-50 dark:bg-rose-500/10',
+    badgeColor: 'text-rose-800 dark:text-rose-300',
   },
 ];
 
@@ -225,54 +225,54 @@ export function getCardStatusBadge(lead: PipelineEnquiry, stage: StageKey) {
   if (stage === 'lost') {
     return {
       text: 'Archived / Lost',
-      className: 'bg-rose-500/10 text-rose-300 border-rose-500/30',
-      dotColor: 'bg-rose-400',
+      className: 'bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-500/30 font-bold',
+      dotColor: 'bg-rose-500 dark:bg-rose-400',
     };
   }
 
   if (stage === 'committed') {
     return {
       text: 'Converted & Enrolled',
-      className: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-      dotColor: 'bg-emerald-400',
+      className: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30 font-bold',
+      dotColor: 'bg-emerald-500 dark:bg-emerald-400',
     };
   }
 
   if (stage === 'negotiating') {
     return {
       text: 'Schedule & Fee Review',
-      className: 'bg-amber-500/10 text-amber-300 border-amber-500/40',
-      dotColor: 'bg-amber-400',
+      className: 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-500/40 font-bold',
+      dotColor: 'bg-amber-500 dark:bg-amber-400',
     };
   }
 
   if (stage === 'evaluating') {
     return {
       text: 'Curriculum Review',
-      className: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
-      dotColor: 'bg-purple-400',
+      className: 'bg-purple-50 dark:bg-purple-500/10 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-500/30 font-bold',
+      dotColor: 'bg-purple-500 dark:bg-purple-400',
     };
   }
 
   if (stage === 'aware') {
     return {
       text: 'In Active Dialogue',
-      className: 'bg-blue-500/10 text-blue-300 border-blue-500/30',
-      dotColor: 'bg-blue-400',
+      className: 'bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-500/30 font-bold',
+      dotColor: 'bg-blue-500 dark:bg-blue-400',
     };
   }
 
   if (stage === 'uncontacted') {
     return {
       text: 'Modules Email Sent (Flow)',
-      className: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
-      dotColor: 'bg-sky-400',
+      className: 'bg-sky-50 dark:bg-sky-500/10 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-500/30 font-bold',
+      dotColor: 'bg-sky-500 dark:bg-sky-400',
     };
   }
 
   return {
     text: 'Awaiting Action Plan',
-    className: 'bg-slate-800/80 text-slate-400 border-slate-700/80',
+    className: 'bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 font-bold',
     dotColor: 'bg-slate-500',
   };
 }
@@ -929,7 +929,7 @@ export function DailyPipelineBoard({
         {/* ── Top Header Bar ── */}
       <div className="flex items-center justify-between gap-4 flex-wrap px-1">
         <div>
-          <h2 className="text-base font-extrabold text-white tracking-tight">
+          <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
             Pipeline
           </h2>
         </div>
@@ -943,10 +943,10 @@ export function DailyPipelineBoard({
             type="button"
             onClick={handleTriggerPipelineDueAlerts}
             disabled={isTriggeringAlerts}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/35 text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-300 dark:border-amber-500/35 text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
             title="Dispatch high-priority mobile push (ntfy) and email alerts to employees for prospects in pipeline > 3 days"
           >
-            <Zap className={`w-3.5 h-3.5 ${isTriggeringAlerts ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+            <Zap className={`w-3.5 h-3.5 ${isTriggeringAlerts ? 'animate-spin text-amber-500' : 'text-amber-500'}`} />
             <span>{isTriggeringAlerts ? 'Alerting...' : 'Alert 3d Dues'}</span>
           </button>
 
@@ -954,7 +954,7 @@ export function DailyPipelineBoard({
           <button
             type="button"
             onClick={() => setSearchModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-blue-500/20 dark:hover:from-cyan-500/30 dark:hover:to-blue-500/30 dark:text-cyan-300 dark:border-cyan-500/40 text-xs font-bold transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Prospect</span>
@@ -965,15 +965,15 @@ export function DailyPipelineBoard({
             <button
               type="button"
               onClick={handleResetBoard}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Reset Board to Default Top 10"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
 
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-[11px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 text-[11px] font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
             Live Drag & Drop
           </span>
         </div>
@@ -992,10 +992,10 @@ export function DailyPipelineBoard({
                 <span
                   className={`w-2 h-2 rounded-full ${stage.dotColor} ${stage.glowColor} shadow-sm shrink-0`}
                 />
-                <span className="text-xs font-semibold text-slate-200 tracking-tight">
+                <span className="text-xs font-black text-slate-900 dark:text-slate-200 tracking-tight">
                   {stage.label}
                 </span>
-                <span className="text-xs text-slate-500 font-normal ml-0.5">
+                <span className="text-xs text-slate-800 dark:text-slate-400 font-bold ml-0.5">
                   {leadsInStage.length}
                 </span>
 
@@ -1004,7 +1004,7 @@ export function DailyPipelineBoard({
                   <button
                     type="button"
                     onClick={handleClearAllLostLeads}
-                    className="ml-auto flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 px-1.5 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 transition-colors"
+                    className="ml-auto flex items-center gap-1 text-[10px] font-bold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/25 transition-colors cursor-pointer"
                     title="Remove all lost prospects from active board"
                   >
                     <X className="w-2.5 h-2.5" />
@@ -1054,8 +1054,8 @@ export function DailyPipelineBoard({
 
                 {/* Empty State */}
                 {leadsInStage.length === 0 && !isOverThis && (
-                  <div className="h-32 flex items-center justify-center border border-dashed border-slate-800/60 rounded-xl text-center px-4">
-                    <span className="text-[11px] text-slate-600 font-medium">
+                  <div className="h-32 flex items-center justify-center border border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl text-center px-4 bg-slate-50/50 dark:bg-transparent">
+                    <span className="text-[11px] text-slate-600 dark:text-slate-500 font-semibold">
                       No prospects
                     </span>
                   </div>
@@ -1092,12 +1092,12 @@ export function DailyPipelineBoard({
                         setDragOverStage(null);
                       }}
                       onClick={() => onSelectLead && onSelectLead(lead)}
-                      className={`group relative p-3.5 rounded-xl transition-all duration-200 cursor-grab active:cursor-grabbing select-none shadow-md flex flex-col justify-between min-h-[124px] ${
+                      className={`group relative p-3.5 rounded-xl transition-all duration-200 cursor-grab active:cursor-grabbing select-none shadow-sm dark:shadow-md flex flex-col justify-between min-h-[124px] ${
                         isBeingDragged
-                          ? 'opacity-40 scale-[0.97] ring-2 ring-cyan-400 shadow-2xl shadow-cyan-500/30 -rotate-1 bg-slate-900 border-cyan-500/50'
+                          ? 'opacity-40 scale-[0.97] ring-2 ring-blue-500 dark:ring-cyan-400 shadow-xl shadow-blue-500/20 dark:shadow-cyan-500/30 -rotate-1 bg-white dark:bg-slate-900 border-blue-500/50 dark:border-cyan-500/50'
                           : isNewlyPushed
-                          ? 'bg-slate-900/95 ring-2 ring-cyan-400 shadow-xl shadow-cyan-500/20 border-cyan-400/70 animate-pulse'
-                          : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/80 hover:shadow-xl hover:bg-slate-900/90'
+                          ? 'bg-blue-50/90 dark:bg-slate-900/95 ring-2 ring-blue-500 dark:ring-cyan-400 shadow-lg shadow-blue-500/20 dark:shadow-cyan-500/20 border-blue-500/70 dark:border-cyan-400/70 animate-pulse'
+                          : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700/80 hover:shadow-md dark:hover:shadow-xl hover:bg-slate-50/90 dark:hover:bg-slate-900/90'
                       } ${isMenuOpen ? 'z-40' : 'z-0'}`}
                     >
                       {/* Top Header & Details Section */}
@@ -1105,13 +1105,13 @@ export function DailyPipelineBoard({
                         {/* Top Row: Grip Handle, Name, Primary Key Badge & 3-Dots Menu */}
                         <div className="flex items-start justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 shrink-0 cursor-grab" />
-                            <h4 className="text-[13px] font-bold text-white group-hover:text-cyan-200 transition-colors truncate">
+                            <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 group-hover:text-slate-700 dark:group-hover:text-slate-400 shrink-0 cursor-grab" />
+                            <h4 className="text-[13px] font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-200 transition-colors truncate">
                               {lead.participantName}
                             </h4>
                             {/* Sequential Primary Key Badge */}
                             <span
-                              className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 shrink-0 tracking-wider"
+                              className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/25 shrink-0 tracking-wider"
                               title={`Primary Key: ${lead.leadCode || `#${lead.id.slice(-6)}`}`}
                             >
                               {lead.leadCode || `#${lead.id.slice(-6)}`}
@@ -1120,10 +1120,10 @@ export function DailyPipelineBoard({
                             {/* 3-Days Overdue SLA Alert Pill */}
                             {isThreeDaysOverdue && (
                               <span
-                                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 shrink-0 animate-pulse"
+                                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/40 flex items-center gap-1 shrink-0 animate-pulse"
                                 title="Prospect has been staged in pipeline > 3 days without resolution"
                               >
-                                <Clock className="w-2.5 h-2.5 text-rose-400" />
+                                <Clock className="w-2.5 h-2.5 text-rose-500 dark:text-rose-400" />
                                 3d+ Due
                               </span>
                             )}
@@ -1137,7 +1137,7 @@ export function DailyPipelineBoard({
                                 e.stopPropagation();
                                 setActiveMenuLeadId(isMenuOpen ? null : lead.id);
                               }}
-                              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                              className="p-1 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                               title="Quick Actions & Move Stage"
                             >
                               <MoreVertical className="w-3.5 h-3.5" />
@@ -1147,11 +1147,11 @@ export function DailyPipelineBoard({
                             {isMenuOpen && (
                               <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute right-0 mt-1 w-56 bg-[#0f172a] border border-slate-700 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.95)] z-[99] p-1.5 space-y-1 text-slate-200"
+                                className="absolute right-0 mt-1 w-56 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[99] p-1.5 space-y-1 text-slate-800 dark:text-slate-200"
                               >
-                                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 flex justify-between items-center">
+                                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                                   <span>Move to Stage</span>
-                                  <span className="text-[9px] font-mono text-cyan-400">{lead.leadCode}</span>
+                                  <span className="text-[9px] font-mono text-blue-600 dark:text-cyan-400">{lead.leadCode}</span>
                                 </div>
                                 {STAGES.map((s) => {
                                   const isCurrent = stage.key === s.key;
@@ -1163,10 +1163,10 @@ export function DailyPipelineBoard({
                                         setActiveMenuLeadId(null);
                                         handleMoveLead(lead.id, s.key);
                                       }}
-                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors text-left cursor-pointer ${
                                         isCurrent
-                                          ? 'bg-slate-800 text-cyan-300 font-semibold'
-                                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                          ? 'bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-cyan-300 font-bold'
+                                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                                       }`}
                                     >
                                       <div className="flex items-center gap-2">
@@ -1174,7 +1174,7 @@ export function DailyPipelineBoard({
                                         <span>{s.label}</span>
                                       </div>
                                       {isCurrent && (
-                                        <span className="text-[10px] text-cyan-400 font-bold">
+                                        <span className="text-[10px] text-blue-600 dark:text-cyan-400 font-bold">
                                           Current
                                         </span>
                                       )}
@@ -1183,11 +1183,11 @@ export function DailyPipelineBoard({
                                 })}
 
                                 {/* Manual Removal from Board */}
-                                <div className="pt-1 mt-1 border-t border-slate-800">
+                                <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800">
                                   <button
                                     type="button"
                                     onClick={() => handleInitiateRemoval(lead)}
-                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/15 hover:text-rose-300 transition-colors text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/15 hover:text-rose-900 dark:hover:text-rose-300 transition-colors text-left cursor-pointer"
                                   >
                                     <XCircle className="w-3.5 h-3.5 shrink-0" />
                                     <span>Remove from Board...</span>
@@ -1200,11 +1200,11 @@ export function DailyPipelineBoard({
 
                         {/* Course / Role Details */}
                         <div className="mt-1.5 space-y-0.5 text-xs">
-                          <p className="font-medium text-slate-300 truncate">
+                          <p className="font-bold text-slate-900 dark:text-slate-300 truncate">
                             {lead.trainingType || lead.topic || 'Enterprise Training'}
                           </p>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
-                            <Globe className="w-3 h-3 text-slate-500 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-500 truncate font-semibold">
+                            <Globe className="w-3 h-3 text-slate-600 dark:text-slate-500 shrink-0" />
                             <span>{lead.country || 'Global'}</span>
                             <span>•</span>
                             <span className="truncate">{lead.serviceType || 'Training'}</span>
@@ -1213,7 +1213,7 @@ export function DailyPipelineBoard({
                       </div>
 
                       {/* Bottom Status Pill */}
-                      <div className="mt-2.5 pt-2 border-t border-slate-800/60">
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
                         <div
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${badge.className} w-full truncate`}
                         >

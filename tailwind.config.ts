@@ -14,6 +14,7 @@ const config: Config = {
         mono: ['var(--font-jetbrains)', 'monospace'],
       },
       colors: {
+        page: 'var(--bg-page)',
         brand: {
           50: '#eef2ff',
           100: '#e0e7ff',
@@ -28,10 +29,27 @@ const config: Config = {
           950: '#1e1b4b',
         },
         surface: {
+          DEFAULT: 'var(--bg-surface)',
           0: 'var(--surface-0)',
           1: 'var(--surface-1)',
           2: 'var(--surface-2)',
           3: 'var(--surface-3)',
+          subtle: 'var(--bg-surface-subtle)',
+          elevated: 'var(--bg-surface-elevated)',
+          hover: 'var(--bg-surface-hover)',
+        },
+        token: {
+          border: 'var(--border-default)',
+          'border-subtle': 'var(--border-subtle)',
+          'border-strong': 'var(--border-strong)',
+          'border-focus': 'var(--border-focus)',
+          text: 'var(--text-primary)',
+          'text-secondary': 'var(--text-secondary)',
+          'text-muted': 'var(--text-muted)',
+          'text-inverse': 'var(--text-inverse)',
+          accent: 'var(--accent-primary)',
+          'accent-hover': 'var(--accent-hover)',
+          'accent-subtle': 'var(--accent-subtle)',
         },
         border: {
           DEFAULT: 'var(--border-primary)',

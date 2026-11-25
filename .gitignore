@@ -66,3 +66,4 @@ Account_Statement*.xlsx
 fiance/
 
 .env*
+.vercel

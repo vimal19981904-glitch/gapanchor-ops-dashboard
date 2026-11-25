@@ -33,8 +33,8 @@ export default function LegendItem({
       onClick={() => onClick(name)}
       className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
         isActive
-          ? 'bg-slate-800/90 border-white/30 shadow-lg shadow-black/40'
-          : 'bg-slate-900/60 border-white/10 hover:border-white/20 hover:bg-slate-800/60'
+          ? 'bg-blue-50 dark:bg-slate-800/90 border-blue-400 dark:border-white/30 shadow-sm dark:shadow-lg dark:shadow-black/40'
+          : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-slate-800/60'
       }`}
       style={{
         backdropFilter: 'blur(10px)',
@@ -49,7 +49,7 @@ export default function LegendItem({
           }}
         />
         <span
-          className="text-xs sm:text-sm font-semibold truncate transition-colors text-slate-200 group-hover:text-white"
+          className="text-xs sm:text-sm font-semibold truncate transition-colors text-slate-800 dark:text-slate-200 group-hover:text-slate-950 dark:group-hover:text-white"
         >
           {name}
         </span>
@@ -57,17 +57,17 @@ export default function LegendItem({
 
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="text-right">
-          <div className="text-xs sm:text-sm font-bold font-mono text-slate-100">
+          <div className="text-xs sm:text-sm font-bold font-mono text-slate-900 dark:text-slate-100">
             {formatCurrency(amount)}
           </div>
-          <div className="text-[10px] font-medium text-slate-400">
+          <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
             {percentage}% of total
           </div>
         </div>
         <ChevronRight
           size={14}
           className={`transition-transform duration-200 ${
-            isActive ? 'translate-x-0.5 text-white' : 'text-slate-500 group-hover:text-slate-300'
+            isActive ? 'translate-x-0.5 text-blue-600 dark:text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
           }`}
         />
       </div>

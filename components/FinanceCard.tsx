@@ -141,14 +141,14 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
-          {/* Tab toggle (Image 2 Reference Style) */}
-          <div className="flex rounded-full border border-white/10 p-0.5 sm:p-1 bg-slate-900/60 backdrop-blur-xl">
+          {/* Tab toggle */}
+          <div className="flex rounded-full border border-slate-200 dark:border-white/10 p-0.5 sm:p-1 bg-slate-100 dark:bg-slate-900/60 backdrop-blur-xl">
             <button
               onClick={() => setActiveTab('charts')}
               className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === 'charts'
-                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
               }`}
             >
               Analytics
@@ -157,8 +157,8 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
               onClick={() => setActiveTab('transactions')}
               className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === 'transactions'
-                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
               }`}
             >
               Transactions ({transactions.length})
@@ -178,7 +178,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
 
             <a
               href="/finance/analytics"
-              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl active:scale-95 cursor-pointer"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-sm dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-slate-200 dark:border-white/25 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:hover:from-white/[0.24] dark:hover:to-white/[0.10] backdrop-blur-xl active:scale-95 cursor-pointer"
               title="Open Expanded Finance Intelligence & Excel Import View"
             >
               <Maximize2 size={12} className="sm:w-[13px] sm:h-[13px]" />

@@ -79,24 +79,23 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
     const isDemo = user.email?.toLowerCase() === 'demo@gapanchor.com' || user.isDemo || user.accountType === 'demo';
 
     return (
-      <div className="p-3 bg-slate-900/95 border border-white/15 rounded-2xl flex flex-col gap-2.5 shadow-xl">
+      <div className="p-3 bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-white/15 rounded-2xl flex flex-col gap-2.5 shadow-sm dark:shadow-xl">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-extrabold shrink-0 shadow-md ${
-              isDemo ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-brand-500 to-indigo-600'
-            }`}>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-extrabold shrink-0 shadow-md ${isDemo ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-brand-500 to-indigo-600'
+              }`}>
               {user.name && user.name.toLowerCase().includes('arul') ? 'M' : (user.name ? user.name.charAt(0).toUpperCase() : 'A')}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-100 truncate">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
                   {user.name && user.name.toLowerCase().includes('arul') ? 'Master Admin' : (user.name || 'Master Admin')}
                 </span>
-                <span className="text-[10px] font-medium text-slate-400 lowercase">
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 lowercase">
                   {isDemo ? 'demo' : (user.role?.toLowerCase() || 'admin')}
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 truncate">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                 {user.email || 'contact@gapanchor.com'}
               </div>
             </div>
@@ -106,19 +105,29 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
             onClick={handleLogout}
             disabled={loggingOut}
             title={`Sign out (${user.email})`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/70 hover:border-slate-600 transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70 transition-all cursor-pointer disabled:opacity-50 shrink-0 shadow-sm"
           >
-            <LogOut size={13} className={`text-slate-400 ${loggingOut ? 'animate-spin' : ''}`} />
+            <LogOut size={13} className={`text-slate-500 dark:text-slate-400 ${loggingOut ? 'animate-spin' : ''}`} />
             <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
           </button>
         </div>
 
+        {(user.role === 'admin' || user.email?.toLowerCase() === 'admin@gapanchor.com') && (
+          <a
+            href="/credentials"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-500/15 hover:bg-amber-100 dark:hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 transition-all cursor-pointer no-underline shadow-sm"
+          >
+            <Shield size={14} className="text-amber-600 dark:text-amber-400" />
+            <span>Credentials & Access Control</span>
+          </a>
+        )}
+
         {onOpenSetup && (
           <button
             onClick={() => onOpenSetup('meta')}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-white/10 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
           >
-            <Settings size={14} className="text-brand-400" />
+            <Settings size={14} className="text-blue-600 dark:text-brand-400" />
             <span>Setup APIs & Integration Credentials</span>
           </button>
         )}
@@ -147,10 +156,10 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
   const isDemo = user.email?.toLowerCase() === 'demo@gapanchor.com' || user.isDemo || user.accountType === 'demo';
 
   return (
-    <div className={`flex items-center gap-1.5 sm:gap-2 border rounded-full pl-2 pr-1.5 py-1 shadow-lg backdrop-blur-md shrink-0 ${
+    <div className={`flex items-center gap-1.5 sm:gap-2 border rounded-full pl-2 pr-1.5 py-1 shadow-sm dark:shadow-lg backdrop-blur-md shrink-0 ${
       isDemo
         ? 'bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border-purple-500/50 ring-1 ring-purple-500/30'
-        : 'bg-slate-900/90 border-slate-700/60'
+        : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-700/60'
     }`}>
       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-extrabold shrink-0 shadow-sm ${
         isDemo ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-brand-500 to-indigo-600'
@@ -159,7 +168,7 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
       </div>
       <div className="flex flex-col leading-tight">
         <div className="flex items-center gap-1">
-          <span className="text-xs font-bold text-slate-100 truncate max-w-[70px] sm:max-w-[120px]">
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[70px] sm:max-w-[120px]">
             {user.name && user.name.toLowerCase().includes('arul') ? 'Master Admin' : (user.name || 'Master Admin')}
           </span>
           {isDemo && (
@@ -168,7 +177,7 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
             </span>
           )}
         </div>
-        <span className="text-[10px] font-medium truncate max-w-[70px] sm:max-w-[120px] hidden sm:inline text-slate-400">
+        <span className="text-[10px] font-medium truncate max-w-[70px] sm:max-w-[120px] hidden sm:inline text-slate-500 dark:text-slate-400">
           {isDemo ? 'Isolated • 0 DB Queries' : (user.role === 'admin' ? 'Master Admin' : user.assignedCourse || user.role || 'Team Member')}
         </span>
       </div>
@@ -176,7 +185,7 @@ export default function UserNav({ variant = 'header', onOpenSetup }: UserNavProp
         onClick={handleLogout}
         disabled={loggingOut}
         title={`Sign out (${user.email})`}
-        className="flex items-center gap-1 sm:gap-1.5 ml-0.5 sm:ml-1 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+        className="flex items-center gap-1 sm:gap-1.5 ml-0.5 sm:ml-1 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-rose-50 dark:bg-rose-500/15 hover:bg-rose-100 dark:hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
       >
         <LogOut size={12} className={`sm:w-3.5 sm:h-3.5 ${loggingOut ? 'animate-spin' : ''}`} />
         <span className="hidden sm:inline">{loggingOut ? 'Signing out...' : 'Sign Out'}</span>

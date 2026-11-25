@@ -1,44 +1,80 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'next-themes';
 
-type Theme = 'dark' | 'light';
-const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
+interface ThemeContextType {
+  theme?: string;
+  resolvedTheme?: string;
+  systemTheme?: 'dark' | 'light';
+  setTheme: (theme: string) => void;
+  toggle: () => void;
+  isLightModeEnabled: boolean;
+}
+
+const CustomThemeContext = createContext<ThemeContextType>({
   theme: 'dark',
+  resolvedTheme: 'dark',
+  setTheme: () => {},
   toggle: () => {},
+  isLightModeEnabled: true,
 });
 
-export const useTheme = () => useContext(ThemeContext);
-
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+function ThemeSyncBridge({ children }: { children: React.ReactNode }) {
+  const { theme, resolvedTheme, systemTheme, setTheme } = useNextTheme();
   const [mounted, setMounted] = useState(false);
+  const isLightModeEnabled = process.env.NEXT_PUBLIC_ENABLE_LIGHT_MODE === 'true';
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('gapanchor-theme') as Theme;
-    if (stored) {
-      setTheme(stored);
-      document.documentElement.classList.toggle('dark', stored === 'dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
   }, []);
 
+  useEffect(() => {
+    if (mounted && resolvedTheme) {
+      document.documentElement.setAttribute('data-theme', resolvedTheme);
+    }
+  }, [mounted, resolvedTheme]);
+
   const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
+    if (!isLightModeEnabled) return;
+    const next = resolvedTheme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    localStorage.setItem('gapanchor-theme', next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
   };
 
-  if (!mounted) {
-    return <div className="dark">{children}</div>;
-  }
+  const contextValue: ThemeContextType = {
+    theme: mounted ? theme : 'dark',
+    resolvedTheme: mounted ? (resolvedTheme || 'dark') : 'dark',
+    systemTheme: systemTheme as 'dark' | 'light' | undefined,
+    setTheme: (newTheme: string) => {
+      if (!isLightModeEnabled && newTheme !== 'dark') return;
+      setTheme(newTheme);
+    },
+    toggle,
+    isLightModeEnabled,
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <CustomThemeContext.Provider value={contextValue}>
       {children}
-    </ThemeContext.Provider>
+    </CustomThemeContext.Provider>
+  );
+}
+
+export const useTheme = () => useContext(CustomThemeContext);
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const isLightModeEnabled = process.env.NEXT_PUBLIC_ENABLE_LIGHT_MODE === 'true';
+
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={true}
+      storageKey="gapanchor-theme"
+      disableTransitionOnChange
+      forcedTheme={!isLightModeEnabled ? 'dark' : undefined}
+    >
+      <ThemeSyncBridge>{children}</ThemeSyncBridge>
+    </NextThemesProvider>
   );
 }

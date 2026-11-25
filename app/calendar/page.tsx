@@ -583,10 +583,10 @@ export default function CalendarPage() {
                             isTodayDate
                               ? 'w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-red-500 text-white font-black shadow-lg shadow-red-500/50 text-[11px] sm:text-sm'
                               : isSelected
-                              ? 'w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-cyan-500 text-white font-bold text-[11px] sm:text-sm shadow-md shadow-cyan-500/30'
+                              ? 'w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-600 dark:bg-cyan-500 text-white font-bold text-[11px] sm:text-sm shadow-md shadow-blue-500/30 dark:shadow-cyan-500/30'
                               : isCurrentMonth
-                              ? 'text-slate-200 px-0.5 sm:px-1'
-                              : 'text-slate-500 px-0.5 sm:px-1'
+                              ? 'text-slate-900 dark:text-slate-200 px-0.5 sm:px-1'
+                              : 'text-slate-400 dark:text-slate-500 px-0.5 sm:px-1'
                           }`}
                         >
                           {format(day, 'd')}
@@ -596,10 +596,10 @@ export default function CalendarPage() {
                       {/* Mobile Event Dots (Apple iOS Calendar style) */}
                       <div className="flex sm:hidden items-center justify-center gap-0.5 mt-0.5 flex-wrap">
                         {dayEvents.slice(0, 3).map((ev) => (
-                          <span key={ev.id} className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_3px_#22d3ee]" />
+                          <span key={ev.id} className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-cyan-400 shadow-[0_0_3px_#3b82f6] dark:shadow-[0_0_3px_#22d3ee]" />
                         ))}
                         {dayEvents.length > 3 && (
-                          <span className="text-[7px] font-bold text-slate-400">+{dayEvents.length - 3}</span>
+                          <span className="text-[7px] font-bold text-slate-500 dark:text-slate-400">+{dayEvents.length - 3}</span>
                         )}
                       </div>
 
@@ -619,15 +619,15 @@ export default function CalendarPage() {
                               }}
                               className={`w-full px-1.5 py-1 rounded-md sm:rounded-lg text-left transition-all cursor-pointer border ${
                                 isCurrentSelected
-                                  ? 'bg-sky-500 text-white font-bold border-sky-300 shadow-md ring-1 ring-sky-300'
-                                  : 'bg-sky-500/25 hover:bg-sky-500/40 border-sky-400/30 text-sky-100'
+                                  ? 'bg-blue-600 dark:bg-sky-500 text-white font-bold border-blue-700 dark:border-sky-300 shadow-md ring-1 ring-blue-300 dark:ring-sky-300'
+                                  : 'bg-blue-50 dark:bg-sky-500/25 hover:bg-blue-100 dark:hover:bg-sky-500/40 border-blue-200 dark:border-sky-400/30 text-blue-900 dark:text-sky-100'
                               }`}
                               title={`${ev.title} (${ev.durationText})`}
                             >
-                              <div className="text-[10px] sm:text-xs font-bold text-sky-100 truncate leading-snug">
+                              <div className="text-[10px] sm:text-xs font-bold text-blue-950 dark:text-sky-100 truncate leading-snug">
                                 {ev.title}
                               </div>
-                              <div className="text-[9px] sm:text-[10px] font-semibold text-sky-300 truncate mt-0.5">
+                              <div className="text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-sky-300 truncate mt-0.5">
                                 {timeFormatted || 'All Day'}
                               </div>
                             </div>
@@ -647,15 +647,15 @@ export default function CalendarPage() {
                       {format(selectedDate, 'd')}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
                         <span className="truncate">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
                         {isToday(selectedDate) && (
-                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/30 shrink-0">
                             Today
                           </span>
                         )}
                       </h4>
-                      <p className="text-[10px] sm:text-xs text-slate-400 truncate">
+                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
                         {getEventsForDay(selectedDate).length === 0
                           ? 'No meetings scheduled'
                           : `${getEventsForDay(selectedDate).length} session${getEventsForDay(selectedDate).length > 1 ? 's' : ''} on this day`}
@@ -665,7 +665,7 @@ export default function CalendarPage() {
 
                   <button
                     onClick={() => handleOpenCreateForDate(selectedDate)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition-all shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-blue-50 dark:bg-cyan-500/15 hover:bg-blue-100 dark:hover:bg-cyan-500/25 text-blue-600 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/30 transition-all shrink-0 cursor-pointer"
                   >
                     <Plus size={13} />
                     <span>Add Event</span>
@@ -674,12 +674,12 @@ export default function CalendarPage() {
 
                 {getEventsForDay(selectedDate).length === 0 ? (
                   <div className="p-4 rounded-2xl border border-dashed border-border/80 bg-surface-1/40 text-center">
-                    <p className="text-xs text-slate-400 font-medium">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                       No meetings on {format(selectedDate, 'MMMM d')}.
                     </p>
                     <button
                       onClick={() => handleOpenCreateForDate(selectedDate)}
-                      className="mt-1.5 text-xs font-bold text-cyan-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      className="mt-1.5 text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={12} /> Schedule New Event
                     </button>
@@ -697,17 +697,17 @@ export default function CalendarPage() {
                           onClick={() => setSelectedEvent(ev)}
                           className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
                             isCurrentSelected
-                              ? 'border-cyan-500/60 bg-cyan-500/15 shadow-md ring-1 ring-cyan-400/40'
-                              : 'border-border/80 bg-surface-2 hover:border-cyan-500/30'
+                              ? 'border-blue-500 dark:border-cyan-500/60 bg-blue-50/70 dark:bg-cyan-500/15 shadow-sm dark:shadow-md ring-1 ring-blue-400/40 dark:ring-cyan-400/40'
+                              : 'border-slate-200 dark:border-border/80 bg-white dark:bg-surface-2 hover:border-blue-400 dark:hover:border-cyan-500/30'
                           }`}
                         >
                           <div className="flex items-start gap-2.5 min-w-0">
-                            <div className="p-2 rounded-xl bg-surface-3 border border-border text-cyan-400 shrink-0 mt-0.5">
+                            <div className="p-2 rounded-xl bg-slate-100 dark:bg-surface-3 border border-slate-200 dark:border-border text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5">
                               <Video size={14} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-bold text-white truncate">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                   {ev.title}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border shrink-0 ${style.badge}`}>
@@ -1027,16 +1027,16 @@ export default function CalendarPage() {
                     <label className="text-[11px] font-bold uppercase tracking-wider block mb-2 text-slate-400">
                       Agenda & Customer Details
                     </label>
-                    <div className="p-3.5 rounded-2xl bg-surface-2 border border-border/80 space-y-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-surface-2 border border-slate-200 dark:border-border/80 space-y-3">
                       {/* 1. SCM Program / Course */}
                       {details.scmProgram && (
-                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
-                          <span className="text-cyan-400 text-sm mt-0.5 shrink-0">📦</span>
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-slate-200 dark:border-border/40">
+                          <span className="text-blue-600 dark:text-cyan-400 text-sm mt-0.5 shrink-0">📦</span>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wide">
                               Program Module
                             </span>
-                            <span className="inline-flex items-center px-2.5 py-0.5 mt-0.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold text-xs">
+                            <span className="inline-flex items-center px-2.5 py-0.5 mt-0.5 rounded-lg bg-blue-50 dark:bg-cyan-500/15 border border-blue-200 dark:border-cyan-500/30 text-blue-700 dark:text-cyan-300 font-bold text-xs">
                               {details.scmProgram}
                             </span>
                           </div>
@@ -1045,13 +1045,13 @@ export default function CalendarPage() {
 
                       {/* 2. Customer Name */}
                       {details.customerName && (
-                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-border/40">
-                          <span className="text-indigo-400 text-sm mt-0.5 shrink-0">👤</span>
+                        <div className="flex items-start gap-2.5 text-xs pb-2 border-b border-slate-200 dark:border-border/40">
+                          <span className="text-indigo-600 dark:text-indigo-400 text-sm mt-0.5 shrink-0">👤</span>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wide">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block tracking-wide">
                               Customer Name
                             </span>
-                            <span className="font-bold text-white text-xs block truncate">
+                            <span className="font-bold text-slate-900 dark:text-white text-xs block truncate">
                               {details.customerName}
                             </span>
                           </div>

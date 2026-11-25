@@ -195,6 +195,43 @@ function humanizeTextForSpeech(input: string): string {
 // In-flight synthesis promise map to prevent duplicate work if multiple clients or pre-fetches ask simultaneously
 const inFlightSynthesis = new Map<string, Promise<Buffer>>();
 
+// Warm MsEdgeTTS WebSocket pool keyed by voice so chunks 1..N reuse the open Edge-TTS socket (eliminating 3-10s handshake pauses)
+const pooledTtsClients = new Map<string, { tts: MsEdgeTTS; initPromise: Promise<void> | null }>();
+
+function resetPooledTts(voice: string) {
+  const existing = pooledTtsClients.get(voice);
+  if (existing) {
+    try {
+      existing.tts.close();
+    } catch {}
+    pooledTtsClients.delete(voice);
+  }
+}
+
+async function getReadyPooledTts(voice: string): Promise<MsEdgeTTS> {
+  let entry = pooledTtsClients.get(voice);
+  if (!entry) {
+    const tts = new MsEdgeTTS({ connectionTimeoutMs: 3500, synthesisTimeoutMs: 9000 });
+    entry = { tts, initPromise: null };
+    pooledTtsClients.set(voice, entry);
+  }
+
+  if (!entry.initPromise) {
+    entry.initPromise = entry.tts
+      .setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)
+      .catch((err) => {
+        resetPooledTts(voice);
+        throw err;
+      })
+      .finally(() => {
+        if (entry) entry.initPromise = null;
+      });
+  }
+
+  await entry.initPromise;
+  return entry.tts;
+}
+
 async function synthesizeText(cleanText: string, voice: string, rate: string, pitch: string): Promise<Buffer> {
   const cacheKey = `${voice}_${rate}_${pitch}_${cleanText}`;
   if (serverAudioCache.has(cacheKey)) {
@@ -205,20 +242,21 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
     return inFlightSynthesis.get(cacheKey)!;
   }
 
-  const runSingleSynthesis = async (selectedVoice: string): Promise<Buffer> => {
-    const tts = new MsEdgeTTS({ connectionTimeoutMs: 7000, synthesisTimeoutMs: 14000 });
-    try {
-      await tts.setMetadata(selectedVoice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-      const { audioStream } = tts.toStream(cleanText, { rate, pitch });
-      const chunks: Buffer[] = [];
-      audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
-      return await new Promise<Buffer>((resolve, reject) => {
-        audioStream.on('end', () => resolve(Buffer.concat(chunks)));
-        audioStream.on('error', (err: any) => reject(err));
-      });
-    } finally {
-      try { tts.close(); } catch {}
+  const runPooledSynthesis = async (selectedVoice: string, forceFresh = false): Promise<Buffer> => {
+    if (forceFresh) {
+      resetPooledTts(selectedVoice);
     }
+    const tts = await getReadyPooledTts(selectedVoice);
+    const { audioStream } = tts.toStream(cleanText, { rate, pitch });
+    const chunks: Buffer[] = [];
+    audioStream.on('data', (chunk: Buffer) => chunks.push(chunk));
+    return await new Promise<Buffer>((resolve, reject) => {
+      audioStream.on('end', () => resolve(Buffer.concat(chunks)));
+      audioStream.on('error', (err: any) => {
+        resetPooledTts(selectedVoice);
+        reject(err);
+      });
+    });
   };
 
   const promise = (async () => {
@@ -226,10 +264,10 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
     let lastErr: any = null;
     const startMs = Date.now();
 
-    // Retry once on transient failure with generous timing budget
+    // Attempt 1 uses warm pooled socket; if socket dropped/stalled, reset and retry once immediately
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        audioBuffer = await runSingleSynthesis(voice);
+        audioBuffer = await runPooledSynthesis(voice, attempt > 0);
         if (audioBuffer && audioBuffer.length > 0) {
           break;
         }
@@ -237,8 +275,8 @@ async function synthesizeText(cleanText: string, voice: string, rate: string, pi
       } catch (err) {
         lastErr = err;
         console.warn(`Neural voice (${voice}) attempt ${attempt + 1} failed:`, err);
-        if (attempt === 0 && Date.now() - startMs < 9000) {
-          await new Promise((r) => setTimeout(r, 200));
+        if (attempt === 0 && Date.now() - startMs < 6000) {
+          await new Promise((r) => setTimeout(r, 100));
           continue;
         }
         break;

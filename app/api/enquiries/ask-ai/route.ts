@@ -224,12 +224,14 @@ function detectAndEvaluateFullDatabaseFilter(
   const p = prompt.toLowerCase().trim();
   const allLeads = opsContext.allLeads;
 
-  // 1. Transcript / Call Recording filter
+  // 1. Transcript / Call Recording filter (only when explicitly filtering/listing leads, NOT when asking for action items, CX summary, or system status)
+  const isAskingActionOrSummary =
+    /\b(action\s*items?|pending|to\s*-?\s*do|tasks?|follow\s*ups?|how\s+(?:is|are)\s+it\s+going|what(?:'s|\s+is|\s+are)\s+(?:the\s+things\s+)?going\s+on|summary|summarize|overview|immediate\s+action)\b/i.test(p);
+
   const isTranscriptQuery =
-    /\b(transcript|transcripts|recording|recordings|cx|customer experience|call analysis)\b/i.test(p) ||
-    (/\bfiltrate\b/i.test(p) && (/\bcall\b/i.test(p) || /\bpeople\b/i.test(p) || /\blead\b/i.test(p) || /\btranscript/i.test(p))) ||
-    (/\bwho\s+(?:has|have)\s+call/i.test(p)) ||
-    (/\bwho\s+talked\b/i.test(p));
+    !isAskingActionOrSummary &&
+    (/\b(filter|filtrate|show\s+me\s+leads|list\s+leads|which\s+leads|who\s+has\s+call|who\s+talked)\b/i.test(p) &&
+      /\b(transcript|transcripts|recording|recordings|cx|customer experience|call analysis|call|calls|talked)\b/i.test(p));
 
   if (isTranscriptQuery) {
     const transcriptEnquiryIds = new Set<string>();
@@ -443,6 +445,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Conversational affirmations / closing acknowledgments (e.g. "seems like we should be good Jarvis", "sounds good", "okay great")
+    const isConversationalAck =
+      /\b(seems\s+like\s+we\s+should\s+be\s+good|we\s+should\s+be\s+good|looks?\s+good|sounds?\s+good|we(?:'re|\s+are)\s+good|that(?:'s|\s+is)\s+(?:good|great|fine|perfect|nice|cool|awesome)|all\s+good|makes\s+sense|got\s+it|okay\s+great|pretty\s+good|now\s+(?:it\s+is|it's)\s+good)\b/i.test(
+        prompt.trim()
+      ) &&
+      !/\b(lead|candidate|prospect|calendar|schedule|meeting|finance|action\s*item|pending|filter|book|cancel|system|status|transcript)\b/i.test(
+        prompt
+      );
+
+    if (isConversationalAck) {
+      return NextResponse.json({
+        success: true,
+        isRealGemini: false,
+        model: 'J.A.R.V.I.S. Conversational Core',
+        answer: 'Glad to hear that, boss. Everything is aligned and I am standing by whenever you need me.',
+        actionAdvice: 'Standing by for your next command.',
+        matchedIds: [],
+        recommendedFilter: 'all',
+      });
+    }
+
     const { apiKey: envApiKey, model } = getGeminiConfig();
     const effectiveApiKey = requestApiKey?.trim() || envApiKey;
 
@@ -478,8 +501,9 @@ export async function POST(req: NextRequest) {
 
     const pLower = prompt.toLowerCase();
     const isSystemStatusQuery =
-      /\b(how\s+is\s+the\s+system|how\s+is\s+gap\s*anchor\s+doing|how\s+are\s+we\s+doing|system\s+status|what's\s+going\s+on\s+with\s+the\s+system|what\s+is\s+going\s+on\s+with\s+the\s+system|daily\s+briefing|morning\s+briefing|executive\s+briefing|overall\s+status|update\s+on\s+the\s+system)\b/i.test(pLower) ||
-      (/\bwhat('s|\s+is)\s+going\s+on\b/i.test(pLower) && !/\blead|candidate|prospect|enquir|detail|next\s+step/i.test(pLower));
+      /\b(how\s+is\s+the\s+system|how\s+are\s+things\s+going|how\s+is\s+gap\s*anchor\s+doing|how\s+are\s+we\s+doing|system\s+status|what(?:'s|\s+is|\s+are)\s+(?:the\s+things\s+)?going\s+on\s+(?:with|in)\s+the\s+system|what(?:'s|\s+is|\s+are)\s+happening\s+(?:with|in)\s+the\s+system|daily\s+briefing|morning\s+briefing|executive\s+briefing|overall\s+status|update\s+on\s+the\s+system|system\s+update)\b/i.test(pLower) ||
+      (/\b(what(?:'s|\s+is|\s+are)\s+(?:the\s+things\s+)?going\s+on|things\s+going\s+on)\b/i.test(pLower) &&
+        !/\blead|candidate|prospect|enquir|detail|next\s+step|action\s*item/i.test(pLower));
 
     const needsCalendar = isSystemStatusQuery || /\b(calendar|schedule|meeting|event|session|demo|today|tomorrow|week|batch)\b/i.test(pLower);
 
@@ -540,11 +564,18 @@ export async function POST(req: NextRequest) {
     const isOverdueQuery = /\b(overdue|overdue\s+activities|past\s+due|missed\s+deadline)\b/i.test(pLower);
     const isWaitingResponseQuery = /\b(waiting\s+for\s+(?:a\s+)?response|waiting\s+on\s+us|who\s+is\s+waiting|clients?\s+waiting)\b/i.test(pLower);
 
+    const isTranscriptOrCxSummaryQuery =
+      /\b(cx|customer\s+experience|teams?\s+transcripts?)\b/i.test(pLower) &&
+      !/\b(filter|filtrate)\b/i.test(pLower);
+
     const isActionItemsQuery =
-      Boolean(specificClientQuery) ||
-      isOverdueQuery ||
-      isWaitingResponseQuery ||
-      /\b(action\s*items?|to\s*-?\s*do(?:s)?|pending\s*tasks?|open\s*tasks?|tasks?\s*left|checklist|what\s+tasks?\s+are\s+left|pending\s+items?|pending\s+action\s+items?|what\s+do\s+i\s+need\s+to\s+follow\s+up\s+on|follow\s+ups?\s+pending|pending\s+follow\s*ups?)\b/i.test(pLower);
+      !isSystemStatusQuery &&
+      (Boolean(specificClientQuery) ||
+        isOverdueQuery ||
+        isWaitingResponseQuery ||
+        /\b(action\s*items?|to\s*-?\s*do(?:s)?|pending\s*tasks?|open\s*tasks?|tasks?\s*left|checklist|what\s+tasks?\s+are\s+left|pending\s+items?|pending\s+action\s+items?|immediate\s+actions?|what\s+do\s+i\s+need\s+to\s+follow\s+up\s+on|follow\s+ups?\s+pending|pending\s+follow\s*ups?)\b/i.test(pLower) ||
+        (/\b(pending|open|summary|summarize|check|status|going\s+on|how\s+is\s+it\s+going)\b/i.test(pLower) &&
+          isTranscriptOrCxSummaryQuery));
 
     const isExecutiveFocusQuery =
       /\b(what\s+should\s+i\s+focus\s+on|what\s+needs\s+my\s+attention|focus\s+today|what's\s+my\s+focus|priorities\s+for\s+today|what\s+should\s+i\s+do\s+today)\b/i.test(pLower);
@@ -556,12 +587,12 @@ export async function POST(req: NextRequest) {
       setActiveTopicContext({ topic: 'action_items', clientName: specificClientQuery }, sessionIdStr);
     } else if (isMeetingDiscussionQuery) {
       setActiveTopicContext({ topic: 'meeting_notes', clientName: meetingClientQuery }, sessionIdStr);
-    } else if (isExecutiveFocusQuery) {
+    } else if (isExecutiveFocusQuery || isSystemStatusQuery) {
       setActiveTopicContext({ topic: 'general' }, sessionIdStr);
     }
 
-    // Preload action items if relevant
-    const actionItemProfiles = (isActionItemsQuery || isExecutiveFocusQuery)
+    // Preload action items across Teams transcripts, CX, and CRM notes whenever relevant
+    const actionItemProfiles = (isSystemStatusQuery || isActionItemsQuery || isExecutiveFocusQuery || isTranscriptOrCxSummaryQuery)
       ? await getAllLeadActionItemProfiles(prisma)
       : [];
 
@@ -571,9 +602,11 @@ export async function POST(req: NextRequest) {
       : null;
 
     const intentContext = {
+      isSystemStatusQuery,
       isCalendarQuery,
       targetCalendarDate,
       isActionItemsQuery,
+      isTranscriptOrCxSummaryQuery,
       specificClientQuery,
       overdueOnly: isOverdueQuery,
       waitingResponseOnly: isWaitingResponseQuery,
@@ -632,7 +665,7 @@ export async function POST(req: NextRequest) {
         model: 'GAP Action Items Fast-Path',
         answer: cleanOutput(answer),
         actionAdvice: 'Click Details on any candidate row to update action items or log next steps.',
-        matchedIds: profiles.filter((p) => p.pendingCount > 0).slice(0, 8).map((p) => p.enquiryId),
+        matchedIds: profiles.filter((p) => !p.isLost && p.pendingCount > 0).map((p) => p.enquiryId),
         recommendedFilter: 'all',
         pipelineAction: null,
       });
@@ -838,12 +871,15 @@ ${JSON.stringify(fullDbFilter.matchedLeads.map(l => ({
   notes: l.notes
 })), null, 2)}
 ` : ''}
-${isActionItemsQuery || isExecutiveFocusQuery ? `
-10. CRM TO-DO LISTS & IMMEDIATE ACTION ITEMS (Checked vs Pending Tasks):
-${JSON.stringify(actionItemProfiles, null, 2)}
+${isSystemStatusQuery || isActionItemsQuery || isExecutiveFocusQuery || isTranscriptOrCxSummaryQuery ? `
+10. TEAMS TRANSCRIPTS, CUSTOMER EXPERIENCE (CX) & ACTION ITEMS ACROSS ALL LEADS:
+${JSON.stringify(actionItemProfiles.filter((p) => !p.isLost), null, 2)}
+
+11. TEAMS TRANSCRIPTS REPOSITORY (${transcriptSnapshot.totalTranscripts} Sessions):
+${transcriptSnapshot.compactPromptContext}
 ` : ''}
 ${meetingDiscussion ? `
-11. MEETING DISCUSSION RECORD FOR ${meetingClientQuery}:
+12. MEETING DISCUSSION RECORD FOR ${meetingClientQuery}:
 ${meetingDiscussion.answer}
 ` : ''}
 ==============================
@@ -881,12 +917,10 @@ ${isMeetingDiscussionQuery && meetingDiscussion ? `
      3. CRM priorities: highlight top pending items needing immediate attention (demo confirmations for clients waiting, pricing queries, overdue contacts).
      4. Conclude with a helpful offer to coordinate.
 ` : isActionItemsQuery ? `
-   - THIS IS AN ACTION ITEMS / TO-DO QUERY:
-     * Focus ONLY on genuinely pending items (exclude completed tasks).
-     * Group action items by client: demo requests (e.g. Sugnan Paul, Pramod P), pricing inquiries (e.g. Arya), batch scheduling (e.g. Hema Sai, Omsai Kumar, Upasana), retry outreach for disconnected calls (e.g. Sagar, Shorya Garg).
-     * If asking for a specific client (e.g. "${specificClientQuery || ''}"), focus exclusively on that client's open tasks.
-     * If asking about overdue activities, list the clients with overdue deadlines first.
-     * If asking which clients are waiting for a response, list those waiting on demo confirmations or pricing.
+   - THIS IS AN ACTION ITEMS / TEAMS TRANSCRIPTS / CX QUERY:
+     * Scan ALL active leads in Section 10 and Section 11 (Teams transcripts, CX dossiers, CRM notes) and exclude Lost leads.
+     * Name every active lead with open pending action items, stating how many items each has open and highlighting those needing immediate action.
+     * If asking for a specific client (e.g. "${specificClientQuery || ''}"), focus exclusively on that client's open tasks and CX context.
      * DO NOT MENTION FINANCES.
 ` : isCalendarQuery ? `
    - THIS IS A CALENDAR / SCHEDULE QUERY:
@@ -897,11 +931,13 @@ ${isMeetingDiscussionQuery && meetingDiscussion ? `
      * Highlight any schedule conflicts or overlapping appointments.
      * If today or tomorrow has zero events, explicitly state that your calendar is clear.
 ` : isSystemStatusQuery ? `
-   - THIS IS A SYSTEM / GAPANCHOR STATUS BRIEFING:
-     Deliver a crisp, cohesive 3-part operational report:
-     1. Leads Status: Pipeline scan of recent inquiries across our ${totalLeadsCount} leads.
-     2. Calendar Status: Today and upcoming sessions on Microsoft Calendar with zero conflicts.
+   - THIS IS A SYSTEM / GAPANCHOR EXECUTIVE STATUS BRIEFING:
+     Deliver a crisp, cohesive 5-part executive briefing covering ALL of these points:
+     1. Leads Across Last 48 Hours: Exact count of inquiries received in the last 48 hours, top tracks, and key recent candidate names (out of ${totalLeadsCount} total leads).
+     2. Calendar & Meeting Schedule: Today's and upcoming scheduled meetings on Microsoft and Google Calendar (or state clear schedule + active batch).
      3. Finance Status: Concise finance update (net revenue is ${finNetWords} on ${finIncomeWords} income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}).
+     4. Operational Pace: Clearly state whether we are running on a good pace or need attention based on 48 hour lead inflow, financial margin, and active schedule.
+     5. Pending Action Items: Total open action items from Teams transcripts, Customer Experience dossiers, and CRM notes across active leads, naming the top leads requiring immediate action.
 ` : isFinanceOnlyQuery ? `
    - THIS IS A FINANCE-SPECIFIC QUERY:
      Deliver concise financial standing: Net revenue is ${finNetWords} on ${finIncomeWords} total income vs ${finExpenseWords} expenses, with last payment on ${lastPaymentDate} for ${lastPaymentWords}.
@@ -994,6 +1030,7 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
         return NextResponse.json({
           success: true,
           isRealGemini: false,
+          model: (fallback as any).model || 'GAP Comprehensive Intelligence Engine',
           apiError: geminiErr.message,
           answer: cleanOutput(fallback.answer),
           actionAdvice: cleanOutput(fallback.actionAdvice),
@@ -1027,6 +1064,132 @@ Respond ONLY with valid JSON with keys: "answer", "actionAdvice", "matchedIds", 
 }
 
 /**
+ * Builds the full 5-part executive system status briefing:
+ * 1. 48-hour lead inflow + tracks + recent names
+ * 2. Finance standing (net revenue, income, expenses, latest payment)
+ * 3. Unified calendar schedule (Microsoft + Google Calendar + training batches)
+ * 4. Operational pace assessment (good pace vs needs attention)
+ * 5. Pending action items across Teams transcripts, Customer Experience, and CRM notes
+ */
+async function buildExecutiveSystemBriefing(
+  opsContext: OperationsIntelligenceSnapshot,
+  intentContext?: any
+) {
+  const fin = opsContext.aggregates.finance;
+  const now = new Date();
+  const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+  // 1. 48-Hour Leads Status
+  const leads48h = opsContext.allLeads.filter((l) => {
+    if (!l.dateOfEntry) return false;
+    const d = new Date(l.dateOfEntry);
+    return !isNaN(d.getTime()) && d >= fortyEightHoursAgo;
+  });
+
+  let leadsPart = '';
+  if (leads48h.length > 0) {
+    const candidateNames = leads48h.slice(0, 3).map((l) => l.name).filter(Boolean).join(', ');
+    const uniqueCourses = Array.from(new Set(leads48h.map((l) => l.course).filter(Boolean))).slice(0, 2).join(' and ');
+    const trackPhrase = uniqueCourses ? ` mainly for ${uniqueCourses}` : '';
+    leadsPart = `Boss, over the last 48 hours we received ${leads48h.length} new leads${trackPhrase}, including ${candidateNames}, bringing total CRM enquiries to ${opsContext.allLeads.length}.`;
+  } else {
+    const recentNames = opsContext.allLeads.slice(0, 3).map((l) => l.name).filter(Boolean).join(', ');
+    leadsPart = `Boss, over the last 48 hours we recorded zero new leads across ${opsContext.allLeads.length} total enquiries in the CRM, with most recent prospects including ${recentNames}.`;
+  }
+
+  // 2. Finance Status
+  const netWords = numberToIndianWords(fin.netRevenue);
+  const incWords = numberToIndianWords(fin.totalIncome);
+  const expWords = numberToIndianWords(fin.totalExpense);
+  const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
+  const lastDate = fin.latestIncomeDate || 'recent';
+  const financePart = `Financially, we are in a solid position with net revenue at ${netWords} on ${incWords} total income against ${expWords} expenses, and our latest payment cleared on ${lastDate} for ${lastAmtWords}.`;
+
+  // 3. Meeting / Calendar Schedule
+  let calendarPart = 'On your meeting schedule, your calendar is clear today with zero conflicts.';
+  let upcomingCount = 0;
+  try {
+    const calEvents =
+      (intentContext?.calendarData && intentContext.calendarData.length > 0)
+        ? intentContext.calendarData
+        : await getUnifiedCalendarEvents({ maxResults: 15 }).catch(() => []);
+    if (calEvents && calEvents.length > 0) {
+      upcomingCount = calEvents.length;
+      const formattedCal = formatCalendarEventsForJarvis(calEvents)
+        .replace(/^Boss,\s*/i, '')
+        .replace(/That's your schedule for now\.?$/i, '')
+        .trim();
+      calendarPart = `Looking at your meeting schedule, ${formattedCal}`;
+    } else if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
+      const nextSession = opsContext.activeSessions[0];
+      calendarPart = `Looking at your training schedule, ${nextSession.title} with trainer ${nextSession.trainer} is lined up for ${nextSession.date}.`;
+    }
+  } catch {
+    if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
+      const nextSession = opsContext.activeSessions[0];
+      calendarPart = `Looking at your training schedule, ${nextSession.title} with trainer ${nextSession.trainer} is lined up for ${nextSession.date}.`;
+    }
+  }
+
+  // 4. Pending Action Items across Teams Transcripts, CX & CRM Notes
+  const actionProfiles: ClientActionItemProfile[] =
+    (intentContext?.actionItemProfiles && intentContext.actionItemProfiles.length > 0)
+      ? intentContext.actionItemProfiles
+      : await getAllLeadActionItemProfiles(prisma);
+
+  const activePendingProfiles = actionProfiles
+    .filter((p) => !p.isLost && p.pendingCount > 0)
+    .sort((a, b) => {
+      if (a.isImmediateAction !== b.isImmediateAction) return a.isImmediateAction ? -1 : 1;
+      const aHasCx = a.sources.includes('CX') ? 1 : 0;
+      const bHasCx = b.sources.includes('CX') ? 1 : 0;
+      if (bHasCx !== aHasCx) return bHasCx - aHasCx;
+      return (b.score || 0) - (a.score || 0) || b.pendingCount - a.pendingCount;
+    });
+
+  const totalPendingItems = activePendingProfiles.reduce((sum, p) => sum + p.pendingCount, 0);
+  const immediateLeads = activePendingProfiles.filter((p) => p.isImmediateAction);
+  const overdueLeads = activePendingProfiles.filter((p) => p.isOverdue);
+
+  // 5. Good / Bad Operational Pace Assessment
+  const isStrongInflow = leads48h.length >= 3;
+  const isHealthyFinance = fin.netRevenue > 0;
+  const hasHeavyOverdue = overdueLeads.length >= 5;
+
+  let pacePart = '';
+  if (isStrongInflow && isHealthyFinance && !hasHeavyOverdue) {
+    pacePart = `Overall, operations are running at a good pace with strong 48 hour lead inflow and positive revenue${upcomingCount > 0 ? ', alongside active scheduled sessions' : ''}.`;
+  } else if (isHealthyFinance && (leads48h.length > 0 || upcomingCount > 0)) {
+    pacePart = `Overall, operations are running at a steady pace with healthy finances, though we should accelerate follow ups to keep momentum high.`;
+  } else {
+    pacePart = `Overall, operations need closer attention right now because new lead inflow and overdue follow ups require immediate push.`;
+  }
+
+  let actionItemsPart = '';
+  if (totalPendingItems > 0) {
+    const topImmediateNames = (immediateLeads.length > 0 ? immediateLeads : activePendingProfiles)
+      .slice(0, 4)
+      .map((p) => `${p.clientName} (${p.pendingCount} open)`)
+      .join(', ');
+    actionItemsPart = `For pending action items across our Teams transcripts, Customer Experience records, and call notes, we have ${totalPendingItems} items open across ${activePendingProfiles.length} leads, with immediate action needed for ${topImmediateNames}.`;
+  } else {
+    actionItemsPart = 'All action items across Teams transcripts and Customer Experience records are completely cleared.';
+  }
+
+  const fullBriefing = `${leadsPart} ${financePart} ${calendarPart} ${pacePart} ${actionItemsPart}`;
+
+  return {
+    answer: stripTechnicalCodes(fullBriefing),
+    actionAdvice:
+      immediateLeads.length > 0
+        ? `Immediate action on ${immediateLeads.slice(0, 3).map((p) => p.clientName).join(', ')} pending items.`
+        : 'All pipeline channels synchronized.',
+    matchedIds: [],
+    recommendedFilter: 'all',
+  };
+}
+
+/**
  * Deterministic multi-entity fallback engine when Gemini API is offline
  */
 async function fallbackComprehensiveOperations(
@@ -1035,7 +1198,21 @@ async function fallbackComprehensiveOperations(
   transcriptSnapshot: TranscriptSnapshot,
   intentContext?: any
 ) {
-  // 0a. Check comprehensive full-database filter intents (transcripts, notes, dues, country, course)
+  const q = prompt.toLowerCase();
+  const fin = opsContext.aggregates.finance;
+
+  // 0. Comprehensive System Status Briefing FIRST (never allow DB filter or lead search to hijack it)
+  const isSystemStatusFallback =
+    Boolean(intentContext?.isSystemStatusQuery) ||
+    /\b(what(?:'s|\s+is|\s+are)\s+(?:the\s+things\s+)?going\s+on\s+(?:with|in)\s+the\s+system|things\s+going\s+on|system\s+status|status\s+update|tell\s+me\s+about\s+the\s+system|about\s+the\s+system|how\s+is\s+the\s+system|how\s+are\s+things\s+going|how\s+is\s+gap\s*anchor|gap\s*anchor\s+doing|how\s+are\s+we\s+doing|daily\s+briefing|morning\s+briefing|executive\s+briefing|give\s+me\s+an\s+update)\b/i.test(q) ||
+    (/\bwhat(?:'s|\s+is|\s+are)\s+(?:the\s+things\s+)?going\s+on\b/i.test(q) &&
+      !/\b(lead|candidate|prospect|action\s*item)\b/i.test(q));
+
+  if (isSystemStatusFallback) {
+    return buildExecutiveSystemBriefing(opsContext, intentContext);
+  }
+
+  // 0a. Check comprehensive full-database filter intents (explicit filter requests)
   const fullDbFilter = detectAndEvaluateFullDatabaseFilter(prompt, opsContext, transcriptSnapshot);
   if (fullDbFilter.intentDetected) {
     return {
@@ -1045,10 +1222,6 @@ async function fallbackComprehensiveOperations(
       recommendedFilter: fullDbFilter.recommendedFilter,
     };
   }
-
-  const q = prompt.toLowerCase();
-  const fin = opsContext.aggregates.finance;
-  const isDetailed = /\b(detail|detailed|in[\s-]depth|breakdown|deep[\s-]dive|elaborate|brief me in detail|full report|full update)\b/i.test(prompt);
 
   // 1. Past Meeting Discussion Query
   if (intentContext?.isMeetingDiscussionQuery) {
@@ -1074,20 +1247,20 @@ async function fallbackComprehensiveOperations(
     } catch {}
 
     const profiles = intentContext.actionItemProfiles || await getAllLeadActionItemProfiles(prisma);
-    const pendingClients = profiles.filter((p: any) => p.pendingCount > 0);
+    const pendingClients = profiles.filter((p: any) => !p.isLost && p.pendingCount > 0);
+    const immediateWaiters = pendingClients.filter((p: any) => p.isImmediateAction).map((p: any) => p.clientName).slice(0, 4);
     const demoWaiters = pendingClients.filter((p: any) => p.category === 'demo').map((p: any) => p.clientName).slice(0, 2);
-    const pricingWaiters = pendingClients.filter((p: any) => p.category === 'pricing').map((p: any) => p.clientName).slice(0, 1);
-    const overdueWaiters = pendingClients.filter((p: any) => p.isOverdue).map((p: any) => p.clientName).slice(0, 2);
+    const pricingWaiters = pendingClients.filter((p: any) => p.category === 'pricing').map((p: any) => p.clientName).slice(0, 2);
 
     const prioritiesList: string[] = [];
+    if (immediateWaiters.length > 0) prioritiesList.push(`immediate action items for ${immediateWaiters.join(', ')}`);
     if (demoWaiters.length > 0) prioritiesList.push(`locking in demo sessions for ${demoWaiters.join(' and ')}`);
-    if (pricingWaiters.length > 0) prioritiesList.push(`responding to pricing questions for ${pricingWaiters.join(', ')}`);
-    if (overdueWaiters.length > 0) prioritiesList.push(`reaching out to overdue contacts including ${overdueWaiters.join(' and ')}`);
+    if (pricingWaiters.length > 0) prioritiesList.push(`responding to pricing questions for ${pricingWaiters.join(' and ')}`);
 
-    const answer = `Boss, here is where your focus should be today. Looking at your schedule, ${calSummary} In your CRM pipeline, your top priorities are ${prioritiesList.join(', and ')}. Let me know if you would like me to coordinate any of these right away.`;
+    const answer = `Boss, here is where your focus should be today. Looking at your schedule, ${calSummary} In your CRM pipeline, your top priorities are ${prioritiesList.join(', and ') || 'keeping outreach moving across active leads'}. Let me know if you would like me to coordinate any of these right away.`;
     return {
       answer: stripTechnicalCodes(answer),
-      actionAdvice: 'Prioritize demo confirmations and outreach to overdue contacts.',
+      actionAdvice: 'Prioritize immediate action items, demo confirmations, and pricing follow ups.',
       matchedIds: pendingClients.slice(0, 5).map((p: any) => p.enquiryId),
       recommendedFilter: 'all',
     };
@@ -1124,14 +1297,17 @@ async function fallbackComprehensiveOperations(
     };
   }
 
-  // 4. Action Items & To-Do Lists
+  // 4. Action Items, Teams Transcripts & Customer Experience (CX) Tasks
   if (
     intentContext?.isActionItemsQuery ||
+    intentContext?.isTranscriptOrCxSummaryQuery ||
     q.includes('action item') ||
     q.includes('to do') ||
     q.includes('todo') ||
     q.includes('task') ||
-    q.includes('open task')
+    q.includes('open task') ||
+    q.includes('customer experience') ||
+    /\bcx\b/.test(q)
   ) {
     const actionProfiles = intentContext?.actionItemProfiles || await getAllLeadActionItemProfiles(prisma);
     const answer = formatActionItemsReportForJarvis(actionProfiles, {
@@ -1142,94 +1318,20 @@ async function fallbackComprehensiveOperations(
     return {
       answer: stripTechnicalCodes(answer),
       actionAdvice: 'Open Customer Experience tabs to review and check off client action items.',
-      matchedIds: actionProfiles.map((p: any) => p.enquiryId),
+      matchedIds: actionProfiles.filter((p: any) => !p.isLost && p.pendingCount > 0).map((p: any) => p.enquiryId),
       recommendedFilter: 'all',
     };
   }
 
-  // 0. Comprehensive System Status Briefing ("What's going on with the system", "How is the system", "How is GapAnchor doing", "Daily briefing", "System status")
-  const isSystemStatusFallback =
-    (
-      q.includes("what's going on with the system") ||
-      q.includes('what is going on with the system') ||
-      q.includes('system status') ||
-      q.includes('status update') ||
-      q.includes('tell me about the system') ||
-      q.includes('about the system') ||
-      q.includes('how is the system') ||
-      q.includes('how is gap anchor') ||
-      q.includes('gap anchor doing') ||
-      q.includes('how are we doing') ||
-      q.includes('daily briefing') ||
-      q.includes('morning briefing') ||
-      q.includes('executive briefing') ||
-      q.includes('give me an update') ||
-      (q.includes("what's going on") && !q.includes('lead') && !q.includes('candidate') && !q.includes('prospect'))
-    );
-
-  if (isSystemStatusFallback || q.includes('finance doing') || q.includes('how are the finances')) {
-    // If user asked purely about finances only
-    if (q.includes('finance doing') || q.includes('how are the finances') || (q.includes('finance') && !q.includes('system') && !q.includes('going on'))) {
-      const netWords = numberToIndianWords(fin.netRevenue);
-      const incWords = numberToIndianWords(fin.totalIncome);
-      const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
-      const lastDate = fin.latestIncomeDate || 'recent';
-
-      return {
-        answer: `Finances are solid, boss. Net revenue is sitting at ${netWords} on ${incWords} total income, with your last payment cleared on ${lastDate} for ${lastAmtWords}.`,
-        actionAdvice: '',
-        matchedIds: [],
-        recommendedFilter: 'all',
-      };
-    }
-
-    // 1. Leads Status: Scan all leads and evaluate the last 48 hours
-    const now = new Date();
-    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-
-    const leads48h = opsContext.allLeads.filter((l) => {
-      if (!l.dateOfEntry) return false;
-      const d = new Date(l.dateOfEntry);
-      return !isNaN(d.getTime()) && d >= fortyEightHoursAgo;
-    });
-
-    const displayLeads = leads48h.length > 0 ? leads48h : opsContext.allLeads.slice(0, 4);
-    const count48 = leads48h.length > 0 ? leads48h.length : displayLeads.length;
-    const candidateNames = displayLeads.slice(0, 3).map((l) => l.name).filter(Boolean).join(', ');
-    const uniqueCourses = Array.from(new Set(displayLeads.map((l) => l.course).filter(Boolean))).slice(0, 2).join(' and ');
-    const trackPhrase = uniqueCourses ? ` primarily in ${uniqueCourses}` : '';
-
-    const leadsPart = `Over the last 48 hours, we tracked ${count48} inquiries in the pipeline${trackPhrase}, including ${candidateNames}.`;
-
-    // 2. Calendar Status: Check Microsoft Graph calendar events & active training cohorts
-    let calendarPart = 'On the calendar, all schedules are aligned with zero conflicts.';
-    try {
-      const msEvents = await getMicrosoftCalendarEvents({ maxResults: 5 });
-      if (msEvents && msEvents.length > 0) {
-        calendarPart = `On your calendar, ${formatCalendarEventsForJarvis(msEvents)}`;
-      } else if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
-        const nextSession = opsContext.activeSessions[0];
-        calendarPart = `On your training calendar, ${nextSession.title} with trainer ${nextSession.trainer} is scheduled for ${nextSession.date}.`;
-      }
-    } catch {
-      if (opsContext.activeSessions && opsContext.activeSessions.length > 0) {
-        const nextSession = opsContext.activeSessions[0];
-        calendarPart = `On your training calendar, ${nextSession.title} with trainer ${nextSession.trainer} is scheduled for ${nextSession.date}.`;
-      }
-    }
-
-    // 3. Short Finance Status: Net profit, total income, and latest income date
+  // 4b. Pure Finance Standing
+  if (q.includes('finance doing') || q.includes('how are the finances')) {
     const netWords = numberToIndianWords(fin.netRevenue);
     const incWords = numberToIndianWords(fin.totalIncome);
     const lastAmtWords = numberToIndianWords(fin.latestIncomeAmount || 0);
     const lastDate = fin.latestIncomeDate || 'recent';
 
-    const financePart = `Financially, net revenue is sitting solid at ${netWords} on ${incWords} total income, with your last payment cleared on ${lastDate} for ${lastAmtWords}.`;
-
-    const fullBriefing = `${leadsPart} ${calendarPart} ${financePart}`;
-
     return {
-      answer: stripTechnicalCodes(fullBriefing),
+      answer: `Finances are solid, boss. Net revenue is sitting at ${netWords} on ${incWords} total income, with your last payment cleared on ${lastDate} for ${lastAmtWords}.`,
       actionAdvice: '',
       matchedIds: [],
       recommendedFilter: 'all',
@@ -1362,21 +1464,52 @@ async function fallbackComprehensiveOperations(
     };
   }
 
-  // 7. General lead matching
-  const matched = opsContext.allLeads.filter((l) => {
-    const hay = `${l.name} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''} ${l.notes || ''}`.toLowerCase();
-    return q.split(' ').some((w) => w.length > 2 && hay.includes(w));
-  });
+  // 7. General lead matching (with stopword filtering so random chitchat never matches CRM notes)
+  const SEARCH_STOPWORDS = new Set([
+    'seems', 'like', 'should', 'good', 'great', 'okay', 'fine', 'well', 'about', 'with',
+    'this', 'that', 'have', 'been', 'were', 'they', 'them', 'what', 'when', 'where',
+    'which', 'there', 'their', 'would', 'could', 'really', 'think', 'just', 'some',
+    'things', 'jarvis', 'boss', 'please', 'thank', 'thanks', 'help', 'tell', 'give',
+    'make', 'sure', 'right', 'now', 'can', 'you', 'for', 'are', 'the', 'and', 'going',
+    'how', 'was', 'has', 'had', 'not', 'but', 'from', 'who', 'yes', 'yeah', 'yep',
+    'hey', 'hello', 'here', 'doing', 'want', 'need', 'know', 'look', 'looking',
+  ]);
 
-  if (matched.length > 0) {
-    setActiveSubjectLead(matched[0]);
+  const meaningfulTerms = q
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !SEARCH_STOPWORDS.has(w));
+
+  if (meaningfulTerms.length === 0) {
+    return {
+      answer: 'I am right here, boss. Ask me for a system status update, pending action items across Teams transcripts and Customer Experience, today\'s calendar, or details on a specific lead.',
+      actionAdvice: 'Standing by for your command.',
+      matchedIds: [],
+      recommendedFilter: 'all',
+    };
   }
 
+  const matched = opsContext.allLeads.filter((l) => {
+    const primaryHay = `${l.name} ${l.leadCode} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''}`.toLowerCase();
+    const notesHay = (l.notes || '').toLowerCase();
+    return meaningfulTerms.some((w) => primaryHay.includes(w) || (w.length >= 4 && notesHay.includes(w)));
+  });
+
+  if (matched.length === 0) {
+    return {
+      answer: 'I checked the CRM and did not find a specific lead or operation matching that, boss. Try asking about system status, pending action items, your schedule, or a candidate by name.',
+      actionAdvice: 'Specify a candidate name, course, or operational request.',
+      matchedIds: [],
+      recommendedFilter: 'all',
+    };
+  }
+
+  setActiveSubjectLead(matched[0]);
   const matchedIds = matched.map((l) => l.id);
   const sampleNames = matched.slice(0, 3).map((l) => l.name).join(', ');
 
   return {
-    answer: stripTechnicalCodes(`Located ${matched.length} candidates matching your query: ${sampleNames || 'None found'}.`),
+    answer: stripTechnicalCodes(`Located ${matched.length} candidates matching your query: ${sampleNames}.`),
     actionAdvice: 'Click Details on any lead card to review complete CRM call notes and transcripts.',
     matchedIds,
     recommendedFilter: 'all',

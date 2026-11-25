@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { NavDrawerButton } from '@/components/NavigationContext';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { toast } from 'sonner';
 
 // Monochrome Slate / Black-Grey Gradient Palette (Matching Leads Dashboard)
@@ -36,7 +37,34 @@ function resolveTooltipSwatch(rawColor?: string, index = 0): string {
 }
 
 // Returns a native SVG <defs> node so Recharts mounts gradients inside <svg class="recharts-surface">
-function renderMonoSvgDefs(prefix: string) {
+function renderMonoSvgDefs(prefix: string, isDark: boolean = true) {
+  if (!isDark) {
+    return (
+      <defs>
+        <linearGradient id={`${prefix}Primary`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2563eb" stopOpacity={0.98} />
+          <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.92} />
+          <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.86} />
+        </linearGradient>
+        <linearGradient id={`${prefix}Secondary`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#059669" stopOpacity={0.98} />
+          <stop offset="55%" stopColor="#10b981" stopOpacity={0.98} />
+          <stop offset="100%" stopColor="#34d399" stopOpacity={1} />
+        </linearGradient>
+        <linearGradient id={`${prefix}AreaFill`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
+          <stop offset="55%" stopColor="#3b82f6" stopOpacity={0.10} />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity={0.0} />
+        </linearGradient>
+        <linearGradient id={`${prefix}AreaStroke`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1d4ed8" />
+          <stop offset="50%" stopColor="#2563eb" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+      </defs>
+    );
+  }
+
   return (
     <defs>
       <linearGradient id={`${prefix}Primary`} x1="0" y1="0" x2="0" y2="1">
@@ -103,12 +131,12 @@ function CircularGauge({
   const stopColors = MONO_RING_TIERS[tier % MONO_RING_TIERS.length];
 
   return (
-    <div className="bg-slate-900/70 backdrop-blur-md border border-slate-700/50 hover:border-slate-600/70 transition-colors p-3 sm:p-4 rounded-2xl shadow-lg flex flex-col justify-between gap-2 min-w-0">
-      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+    <div className="bg-white dark:bg-slate-900/70 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600/70 transition-colors p-3 sm:p-4 rounded-2xl shadow-sm dark:shadow-lg flex flex-col justify-between gap-2 min-w-0">
+      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block truncate">
         {label}
       </span>
       <div className="flex items-center justify-between gap-2.5 min-w-0">
-        <span className="text-xs sm:text-base font-black text-white leading-tight break-words min-w-0">
+        <span className="text-xs sm:text-base font-black text-slate-900 dark:text-white leading-tight break-words min-w-0">
           {subtext}
         </span>
         <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
@@ -120,7 +148,8 @@ function CircularGauge({
               </linearGradient>
             </defs>
             <circle
-              stroke="rgba(148, 163, 184, 0.14)"
+              className="stroke-slate-200 dark:stroke-slate-700/30"
+              stroke="currentColor"
               fill="transparent"
               strokeWidth={stroke}
               r={r}
@@ -139,7 +168,7 @@ function CircularGauge({
               cy={40}
             />
           </svg>
-          <span className="absolute text-[10px] sm:text-xs font-black font-mono text-slate-100">
+          <span className="absolute text-[10px] sm:text-xs font-black font-mono text-slate-900 dark:text-slate-100">
             {value}%
           </span>
         </div>
@@ -148,13 +177,13 @@ function CircularGauge({
   );
 }
 
-// Custom Tooltip matching Leads Dashboard Obsidian Palette
+// Custom Tooltip matching Dashboard Palette
 function CustomChartTooltip({ active, payload, label, unit = '' }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-700/60 p-3 rounded-2xl shadow-2xl space-y-1.5 text-xs text-white z-50">
-        <p className="font-bold text-slate-100 border-b border-slate-800 pb-1 flex items-center gap-1.5">
-          <Calendar size={13} className="text-slate-400" />
+      <div className="bg-white dark:bg-slate-950/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-700/60 p-3 rounded-2xl shadow-xl dark:shadow-2xl space-y-1.5 text-xs text-slate-800 dark:text-white z-50">
+        <p className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+          <Calendar size={13} className="text-slate-500 dark:text-slate-400" />
           {label}
         </p>
         {payload.map((item: any, index: number) => (
@@ -871,33 +900,33 @@ export default function OpsAnalyticsPage() {
   }, [jobSupportData]);
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
+    <div className="min-h-screen bg-surface-0 text-slate-800 dark:text-white p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Top Header & Navigation (Matching Leads Dashboard Glass UI) */}
-      <div className="relative z-20 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 bg-slate-900/70 backdrop-blur-md border border-slate-700/50 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xl">
+      <div className="relative z-20 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 bg-white dark:bg-slate-900/70 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm dark:shadow-xl">
         <div className="flex items-center justify-between w-full lg:w-auto gap-3 min-w-0">
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
             <a
               href="/"
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-950/70 border border-slate-700/60 hover:bg-slate-800 transition-colors text-slate-300 hover:text-white shrink-0"
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0"
               title="Return to Dashboard"
             >
               <ArrowLeft size={17} />
             </a>
 
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-950 border border-slate-600/60 flex items-center justify-center text-slate-100 shadow-inner shrink-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-gradient-to-br dark:from-slate-700 dark:via-slate-800 dark:to-slate-950 border border-blue-200 dark:border-slate-600/60 flex items-center justify-center text-blue-600 dark:text-slate-100 shadow-sm shrink-0">
               <BarChart3 size={20} />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base sm:text-2xl font-black bg-gradient-to-r from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent tracking-tight leading-tight">
+                <h1 className="text-base sm:text-2xl font-black text-slate-900 dark:bg-gradient-to-r dark:from-cyan-300 dark:via-white dark:to-indigo-300 dark:bg-clip-text dark:text-transparent tracking-tight leading-tight">
                   Ops Peak Analytics & Trend Intelligence
                 </h1>
-                <span className="bg-slate-800/80 text-slate-300 border border-slate-700/60 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">
+                <span className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">
                   Live Telemetry
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium hidden sm:block mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block mt-0.5">
                 Unified Multi-Chart Executive Analytics with Monochrome Gradient Series & Independent Timeframe Controls
               </p>
             </div>

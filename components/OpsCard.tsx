@@ -53,20 +53,20 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
   };
 
   return (
-    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-slate-900/60 backdrop-blur-xl h-full">
+    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-cyan-500/20 bg-white dark:bg-slate-900/60 backdrop-blur-xl h-full shadow-sm dark:shadow-none">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-4 pb-2.5 sm:pb-4 border-b border-border/50">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 text-brand-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-brand-500/15 border border-blue-200 dark:border-brand-500/30 text-blue-600 dark:text-brand-400 flex items-center justify-center shrink-0">
               <Calendar size={16} className="sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-200 to-cyan-100 bg-clip-text text-transparent">
+                <h2 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-cyan-400 dark:via-indigo-200 dark:to-cyan-100">
                   Training Operations
                 </h2>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-blue-50 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-400 border border-blue-200 dark:border-cyan-500/20 shrink-0">
                   {sessions.length} {sessions.length === 1 ? 'Batch' : 'Batches'}
                 </span>
               </div>
@@ -79,14 +79,14 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <Link
               href="/training"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.10] to-white/[0.04] hover:from-white/[0.16] hover:to-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/15 dark:bg-gradient-to-b dark:from-white/[0.10] dark:to-white/[0.04] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08] dark:hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
             >
               <Maximize2 size={12} />
               <span>Intelligence Deck</span>
             </Link>
             <button
               onClick={onOpenModal}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:hover:from-white/[0.24] dark:hover:to-white/[0.10] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
             >
               <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
               <span>Add Session</span>
@@ -97,9 +97,9 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
         {/* Metrics Grid */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
           {[
-            { label: 'Paid', value: paymentSummary.paidCount || 0, sub: 'Completed', color: 'text-emerald-400' },
-            { label: 'Partial', value: paymentSummary.partialCount || 0, sub: 'Due Remaining', color: 'text-amber-400' },
-            { label: 'Pending', value: paymentSummary.pendingCount || 0, sub: 'Awaiting Fee', color: 'text-rose-400' },
+            { label: 'Paid', value: paymentSummary.paidCount || 0, sub: 'Completed', color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Partial', value: paymentSummary.partialCount || 0, sub: 'Due Remaining', color: 'text-amber-600 dark:text-amber-400' },
+            { label: 'Pending', value: paymentSummary.pendingCount || 0, sub: 'Awaiting Fee', color: 'text-rose-600 dark:text-rose-400' },
           ].map((m, i) => (
             <div
               key={i}
@@ -159,7 +159,7 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
                   {/* Row 1: Platform & Time + Status & Edit */}
                   <div className="flex items-start sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-brand-500/10 text-blue-700 dark:text-brand-400 border border-blue-200 dark:border-brand-500/20 shrink-0">
                         {s.platform}
                       </span>
                       <span
@@ -207,20 +207,20 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
                     style={{ color: 'var(--text-tertiary)' }}
                   >
                     <span>
-                      Trainer: <strong className="font-semibold text-brand-400">{s.trainer}</strong>
+                      Trainer: <strong className="font-semibold text-blue-600 dark:text-brand-400">{s.trainer}</strong>
                     </span>
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
                       style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
                     >
-                      <Users size={10} className="shrink-0 text-brand-400" />
+                      <Users size={10} className="shrink-0 text-blue-600 dark:text-brand-400" />
                       <span><strong style={{ color: 'var(--text-primary)' }}>{s.participantsCount}</strong> Enrolled</span>
                     </span>
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
                       style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
                     >
-                      <GraduationCap size={10} className="shrink-0 text-emerald-400" />
+                      <GraduationCap size={10} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
                       <span><strong style={{ color: 'var(--text-primary)' }}>{s.currentlyParticipating || s.participantsCount}</strong> Active</span>
                     </span>
                     {s.location && (
@@ -235,18 +235,15 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
                     <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                       Fee Status
                     </span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span>Paid: <strong className="font-bold">{pSummary.paidCount}</strong></span>
+                    <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      <span>
+                        Paid: <strong className="font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{pSummary.paidCount}</strong>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-500/20 bg-amber-500/10 text-amber-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                        <span>Partial: <strong className="font-bold">{pSummary.partialCount}</strong></span>
+                      <span>
+                        Partial: <strong className="font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{pSummary.partialCount}</strong>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                        <span>Pending: <strong className="font-bold">{pSummary.pendingCount}</strong></span>
+                      <span>
+                        Pending: <strong className="font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{pSummary.pendingCount}</strong>
                       </span>
                     </div>
                   </div>
@@ -264,7 +261,7 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
           style={{ color: 'var(--text-tertiary)' }}
         >
           <div className="text-[10px] sm:text-[11px]">
-            Showing <span className="font-semibold text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-brand-400">{Math.min(currentPage * pageSize, sessions.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{sessions.length}</span> sessions
+            Showing <span className="font-semibold text-blue-600 dark:text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-blue-600 dark:text-brand-400">{Math.min(currentPage * pageSize, sessions.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{sessions.length}</span> sessions
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -292,12 +289,12 @@ export default function OpsCard({ opsData, onOpenModal, onEditSession, loading }
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/40 text-xs">
-        <span className="text-slate-400 text-[11px]">
+        <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">
           Dedicated Training Cohorts Pipeline
         </span>
         <Link
           href="/training"
-          className="flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-300 no-underline"
+          className="flex items-center gap-1 font-bold text-blue-600 hover:text-blue-700 dark:text-cyan-400 dark:hover:text-cyan-300 no-underline"
         >
           <span>Full Training Ops</span>
           <ChevronRight size={14} />

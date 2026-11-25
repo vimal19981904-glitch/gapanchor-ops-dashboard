@@ -383,445 +383,441 @@ export default function FinanceAnalyticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070c18] text-white p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
-      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
-      {/* Top Header & Navigation */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 glass-card !p-2.5 sm:!p-4 rounded-xl sm:rounded-2xl border border-white/10">
-        <div className="flex items-center justify-between w-full lg:w-auto gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <a
-              href="/"
-              className="h-8 w-8 rounded-xl bg-white/[0.04] border border-white/15 hover:bg-white/[0.08] transition-colors text-slate-300 hover:text-white flex items-center justify-center shrink-0"
-              title="Return to Main Dashboard"
-            >
-              <ArrowLeft size={15} />
-            </a>
+    <div className="min-h-screen bg-surface-0 text-slate-900 dark:text-white p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 w-full">
+      <div className="w-full space-y-3 sm:space-y-4">
+        {/* Top Header & Navigation */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 glass-card !p-2.5 sm:!p-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between w-full lg:w-auto gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <a
+                href="/"
+                className="h-8 w-8 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 hover:bg-slate-200 dark:hover:bg-white/[0.08] transition-colors text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center shrink-0"
+                title="Return to Main Dashboard"
+              >
+                <ArrowLeft size={15} />
+              </a>
 
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-slate-200 shadow-sm shrink-0">
-              <DollarSign size={16} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-sm sm:text-xl font-bold tracking-tight text-white truncate">
-                  <span className="sm:hidden">Finance Intel</span>
-                  <span className="hidden sm:inline">Finance & Revenue Intelligence</span>
-                </h1>
-                <span className="bg-white/10 text-slate-300 border border-white/15 text-[8px] sm:text-[9px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                  Full Statement
-                </span>
+              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-white/[0.06] border border-blue-200 dark:border-white/15 flex items-center justify-center text-blue-600 dark:text-slate-200 shadow-sm shrink-0">
+                <DollarSign size={16} />
               </div>
-              <p className="text-[10px] text-slate-400 font-medium hidden sm:block truncate">
-                Bank Statement Sync (`Account_Statement.xlsx`) • Dual Credit/Debit Classification
-              </p>
-            </div>
-          </div>
 
-          {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
-          <div className="lg:hidden shrink-0">
-            <NavDrawerButton className="!w-8 !h-8" />
-          </div>
-        </div>
-
-        {/* Sync & Action Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept=".xlsx, .xls, .csv"
-            className="hidden"
-          />
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
-          >
-            <Upload size={13} />
-            <span>{uploading ? 'Uploading...' : 'Upload Excel'}</span>
-          </button>
-
-          <button
-            onClick={handleQuickSyncStatement}
-            disabled={syncing}
-            className="h-8 px-2.5 rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.14] text-xs font-bold text-white flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50 transition-all"
-            title="Auto-sync Account_Statement.xlsx"
-          >
-            <FileSpreadsheet size={13} />
-            <span>{syncing ? 'Syncing...' : 'Sync Statement'}</span>
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
-          >
-            <Download size={13} />
-            <span>CSV</span>
-          </button>
-
-          <button
-            onClick={fetchFinanceData}
-            disabled={loading}
-            className="h-8 w-8 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition-all"
-            title="Refresh data"
-          >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-white' : ''} />
-          </button>
-
-          {/* Desktop Navigation Drawer Button */}
-          <div className="hidden lg:block shrink-0">
-            <NavDrawerButton className="!w-8 !h-8" />
-          </div>
-        </div>
-      </div>
-
-      {/* Active Sync & Loading Banner */}
-      {loading && (
-        <div className="glass-card p-2.5 sm:p-3 rounded-xl flex items-center justify-between border border-white/10 bg-slate-900/60 text-slate-200 font-bold text-xs animate-pulse">
-          <div className="flex items-center gap-2">
-            <Loader2 size={15} className="animate-spin text-slate-400" />
-            <span className="text-xs">Synchronizing Financial Analytics & Statement Records...</span>
-          </div>
-          <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Refreshing Data</span>
-        </div>
-      )}
-
-      {/* KPI Summary Scorecards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
-        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Income</span>
-            <TrendingUp size={14} className="shrink-0 text-emerald-400" />
-          </div>
-          {loading ? (
-            <div className="space-y-1 my-1">
-              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
-              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
-            </div>
-          ) : (
-            <>
-              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
-                {formatCurrency(totalIncome)}
-              </p>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
-                {transactions.filter(t => t.type === 'income').length} credit entries
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Expense</span>
-            <TrendingDown size={14} className="shrink-0 text-rose-400" />
-          </div>
-          {loading ? (
-            <div className="space-y-1 my-1">
-              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
-              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
-            </div>
-          ) : (
-            <>
-              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
-                {formatCurrency(totalExpense)}
-              </p>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
-                {transactions.filter(t => t.type === 'expense').length} debit entries
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Net Profit</span>
-            <DollarSign size={14} className="shrink-0 text-slate-400" />
-          </div>
-          {loading ? (
-            <div className="space-y-1 my-1">
-              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
-              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
-            </div>
-          ) : (
-            <>
-              <p className={`text-sm sm:text-xl font-bold font-mono truncate ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
-                {formatCurrency(netProfit)}
-              </p>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
-                Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-white/10 bg-slate-950/60 space-y-0.5">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Transactions</span>
-            <Layers size={14} className="shrink-0 text-slate-400" />
-          </div>
-          {loading ? (
-            <div className="space-y-1 my-1">
-              <div className="h-5 w-24 rounded bg-slate-800 animate-pulse" />
-              <div className="h-3 w-16 rounded bg-slate-800 animate-pulse" />
-            </div>
-          ) : (
-            <>
-              <p className="text-sm sm:text-xl font-bold font-mono text-slate-100 truncate">
-                {transactions.length} Records
-              </p>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
-                Filtered: {filteredTx.length} active
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Flagship Expense Analytics & Breakdown Dashboard Component */}
-      <ExpenseBreakdownDashboard refreshTrigger={data} />
-
-      {/* Flagship Income Analytics & Money Flow Dashboard Component */}
-      <IncomeBreakdownDashboard />
-
-      {/* Multi-Chart Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-        {/* Chart 1: Revenue & Expense Timeline Flow (Full Width Top Row) */}
-        <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 lg:col-span-2 border border-white/10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <LineChartIcon size={16} className="text-slate-300" />
-              <div>
-                <h3 className="text-base font-extrabold">Credit & Debit Timeline Flow</h3>
-                <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
-                  {timelineGranularity === 'hourly' ? 'Hourly Sequence' : timelineGranularity === 'weekly' ? 'Weekly Aggregation' : 'Daily Sequence'}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-sm sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
+                    <span className="sm:hidden">Finance Intel</span>
+                    <span className="hidden sm:inline">Finance & Revenue Intelligence</span>
+                  </h1>
+                  <span className="bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/15 text-[8px] sm:text-[9px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                    Full Statement
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block truncate">
+                  Bank Statement Sync (`Account_Statement.xlsx`) • Dual Credit/Debit Classification
                 </p>
               </div>
             </div>
 
-            {/* Timeframe Granularity Toggle & Calendar Popover Button */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center p-0.5 bg-slate-900/80 border border-white/10 rounded-xl gap-0.5 shrink-0">
-                {[
-                  { id: 'hourly', label: 'Hourly' },
-                  { id: 'day', label: 'Day' },
-                  { id: 'weekly', label: 'Weekly' },
-                ].map((gran) => (
-                  <button
-                    key={gran.id}
-                    onClick={() => setTimelineGranularity(gran.id as any)}
-                    className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      timelineGranularity === gran.id
-                        ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    {gran.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Compact Calendar Button & Floating Popover */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsDatePopoverOpen(!isDatePopoverOpen)}
-                  className={`h-8 px-2.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    timelinePreset !== 'all' || timelineStartDate || timelineEndDate
-                      ? 'bg-white/[0.12] border-white/25 text-white shadow-sm'
-                      : 'bg-white/[0.04] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08]'
-                  }`}
-                  title="Filter Chart Date Range"
-                >
-                  <Calendar size={13} className="text-slate-400" />
-                  <span>
-                    {timelinePreset === 'all'
-                      ? 'All Time'
-                      : timelinePreset === 'jun'
-                      ? 'Jun 2026'
-                      : timelinePreset === 'jul'
-                      ? 'Jul 2026'
-                      : timelinePreset === 'aug'
-                      ? 'Aug 2026'
-                      : timelinePreset === 'sep'
-                      ? 'Sep 2026'
-                      : timelineStartDate || timelineEndDate
-                      ? `${timelineStartDate || 'Start'} → ${timelineEndDate || 'End'}`
-                      : 'Calendar Filter'}
-                  </span>
-                  <ChevronDown size={12} className={`transition-transform duration-200 ${isDatePopoverOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Floating Calendar Dropdown Popover */}
-                {isDatePopoverOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsDatePopoverOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl backdrop-blur-xl animate-fade-in space-y-3.5">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <span className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                          <Calendar size={14} className="text-emerald-400" /> Filter Date Range
-                        </span>
-                        <button
-                          onClick={() => setIsDatePopoverOpen(false)}
-                          className="text-slate-400 hover:text-white transition-colors"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-
-                      {/* Presets Grid */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Quick Presets</span>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { id: 'all', label: 'All Time' },
-                            { id: 'jun', label: 'Jun 2026' },
-                            { id: 'jul', label: 'Jul 2026' },
-                            { id: 'aug', label: 'Aug 2026' },
-                            { id: 'sep', label: 'Sep 2026' },
-                          ].map((preset) => (
-                            <button
-                              key={preset.id}
-                              onClick={() => {
-                                handleTimelinePresetChange(preset.id);
-                                setIsDatePopoverOpen(false);
-                              }}
-                              className={`px-2.5 py-1.5 rounded-lg font-medium text-xs text-left transition-all cursor-pointer ${
-                                timelinePreset === preset.id
-                                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold'
-                                  : 'bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 border border-transparent'
-                              }`}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Custom Range Inputs */}
-                      <div className="space-y-2 pt-2 border-t border-slate-800">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">Custom Date Range</span>
-                        <div className="space-y-2 text-xs">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-slate-400 shrink-0">From:</span>
-                            <input
-                              type="date"
-                              value={timelineStartDate}
-                              onChange={(e) => {
-                                setTimelineStartDate(e.target.value);
-                                setTimelinePreset('custom');
-                              }}
-                              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60 w-full"
-                            />
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-slate-400 shrink-0">To:</span>
-                            <input
-                              type="date"
-                              value={timelineEndDate}
-                              onChange={(e) => {
-                                setTimelineEndDate(e.target.value);
-                                setTimelinePreset('custom');
-                              }}
-                              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60 w-full"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                        <button
-                          onClick={() => {
-                            handleTimelinePresetChange('all');
-                            setIsDatePopoverOpen(false);
-                          }}
-                          className="text-slate-400 hover:text-rose-400 font-semibold transition-colors cursor-pointer"
-                        >
-                          Reset
-                        </button>
-                        <button
-                          onClick={() => setIsDatePopoverOpen(false)}
-                          className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all cursor-pointer"
-                        >
-                          Apply Filter
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+            {/* Pinned Top-Right Navigation Drawer Button for Mobile View */}
+            <div className="lg:hidden shrink-0">
+              <NavDrawerButton className="!w-8 !h-8" />
             </div>
           </div>
 
-          <div className="h-48 sm:h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
-                <Tooltip
-                  formatter={(v: number) => [formatCurrency(v), '']}
-                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                <Area type="monotone" dataKey="income" name="Income (Credit)" stroke="#10b981" strokeWidth={2} fill="url(#incGrad)" />
-                <Area type="monotone" dataKey="expense" name="Expense (Debit)" stroke="#f43f5e" strokeWidth={2} fill="url(#expGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Sync & Action Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".xlsx, .xls, .csv"
+              className="hidden"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
+            >
+              <Upload size={13} />
+              <span>{uploading ? 'Uploading...' : 'Upload Excel'}</span>
+            </button>
+
+            <button
+              onClick={handleQuickSyncStatement}
+              disabled={syncing}
+              className="h-8 px-2.5 rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.14] text-xs font-bold text-white flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50 transition-all"
+              title="Auto-sync Account_Statement.xlsx"
+            >
+              <FileSpreadsheet size={13} />
+              <span>{syncing ? 'Syncing...' : 'Sync Statement'}</span>
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="h-8 px-2.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 cursor-pointer flex items-center gap-1.5 transition-all"
+            >
+              <Download size={13} />
+              <span>CSV</span>
+            </button>
+
+            <button
+              onClick={fetchFinanceData}
+              disabled={loading}
+              className="h-8 w-8 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition-all"
+              title="Refresh data"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin text-white' : ''} />
+            </button>
+
+            {/* Desktop Navigation Drawer Button */}
+            <div className="hidden lg:block shrink-0">
+              <NavDrawerButton className="!w-8 !h-8" />
+            </div>
           </div>
         </div>
 
-        {/* Chart 2: Unified Income & Expense Category Breakdown (Single Pie) */}
-        <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 bg-gradient-to-br from-black via-zinc-950 to-slate-900 border border-white/10 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2 text-white">
-              <PieChartIcon size={16} className="text-slate-300" />
-              <div>
-                <h3 className="text-sm sm:text-base font-bold">Income & Expense Breakdown</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Single Pie Chart Distribution</p>
+        {/* Active Sync & Loading Banner */}
+        {loading && (
+          <div className="glass-card p-2.5 sm:p-3 rounded-xl flex items-center justify-between border border-white/10 bg-slate-900/60 text-slate-200 font-bold text-xs animate-pulse">
+            <div className="flex items-center gap-2">
+              <Loader2 size={15} className="animate-spin text-slate-400" />
+              <span className="text-xs">Synchronizing Financial Analytics & Statement Records...</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Refreshing Data</span>
+          </div>
+        )}
+
+        {/* KPI Summary Scorecards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
+          <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 shadow-sm dark:shadow-none space-y-0.5">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Income</span>
+              <TrendingUp size={14} className="shrink-0 text-emerald-500 dark:text-emerald-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-1 my-1">
+                <div className="h-5 w-24 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className="text-sm sm:text-xl font-bold font-mono text-slate-900 dark:text-slate-100 truncate">
+                  {formatCurrency(totalIncome)}
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                  {transactions.filter(t => t.type === 'income').length} credit entries
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 shadow-sm dark:shadow-none space-y-0.5">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Total Expense</span>
+              <TrendingDown size={14} className="shrink-0 text-rose-500 dark:text-rose-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-1 my-1">
+                <div className="h-5 w-24 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className="text-sm sm:text-xl font-bold font-mono text-slate-900 dark:text-slate-100 truncate">
+                  {formatCurrency(totalExpense)}
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                  {transactions.filter(t => t.type === 'expense').length} debit entries
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 shadow-sm dark:shadow-none space-y-0.5">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Net Profit</span>
+              <DollarSign size={14} className="shrink-0 text-slate-500 dark:text-slate-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-1 my-1">
+                <div className="h-5 w-24 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className={`text-sm sm:text-xl font-bold font-mono truncate ${netProfit >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {formatCurrency(netProfit)}
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                  Margin: {totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(1) : 0}%
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="glass-card !p-2 sm:!p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 shadow-sm dark:shadow-none space-y-0.5">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate">Transactions</span>
+              <Layers size={14} className="shrink-0 text-slate-500 dark:text-slate-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-1 my-1">
+                <div className="h-5 w-24 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <p className="text-sm sm:text-xl font-bold font-mono text-slate-900 dark:text-slate-100 truncate">
+                  {transactions.length} Records
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                  Filtered: {filteredTx.length} active
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Flagship Expense Analytics & Breakdown Dashboard Component */}
+        <ExpenseBreakdownDashboard refreshTrigger={data} />
+
+        {/* Flagship Income Analytics & Money Flow Dashboard Component */}
+        <IncomeBreakdownDashboard />
+
+        {/* Multi-Chart Analytics Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+          {/* Chart 1: Revenue & Expense Timeline Flow (Full Width Top Row) */}
+          <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 lg:col-span-2 border border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 text-white">
+                <LineChartIcon size={16} className="text-slate-300" />
+                <div>
+                  <h3 className="text-base font-extrabold">Credit & Debit Timeline Flow</h3>
+                  <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
+                    {timelineGranularity === 'hourly' ? 'Hourly Sequence' : timelineGranularity === 'weekly' ? 'Weekly Aggregation' : 'Daily Sequence'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Timeframe Granularity Toggle & Calendar Popover Button */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center p-0.5 bg-slate-900/80 border border-white/10 rounded-xl gap-0.5 shrink-0">
+                  {[
+                    { id: 'hourly', label: 'Hourly' },
+                    { id: 'day', label: 'Day' },
+                    { id: 'weekly', label: 'Weekly' },
+                  ].map((gran) => (
+                    <button
+                      key={gran.id}
+                      onClick={() => setTimelineGranularity(gran.id as any)}
+                      className={`h-7 px-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${timelineGranularity === gran.id
+                        ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                        }`}
+                    >
+                      {gran.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Compact Calendar Button & Floating Popover */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDatePopoverOpen(!isDatePopoverOpen)}
+                    className={`h-8 px-2.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${timelinePreset !== 'all' || timelineStartDate || timelineEndDate
+                      ? 'bg-white/[0.12] border-white/25 text-white shadow-sm'
+                      : 'bg-white/[0.04] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                      }`}
+                    title="Filter Chart Date Range"
+                  >
+                    <Calendar size={13} className="text-slate-400" />
+                    <span>
+                      {timelinePreset === 'all'
+                        ? 'All Time'
+                        : timelinePreset === 'jun'
+                          ? 'Jun 2026'
+                          : timelinePreset === 'jul'
+                            ? 'Jul 2026'
+                            : timelinePreset === 'aug'
+                              ? 'Aug 2026'
+                              : timelinePreset === 'sep'
+                                ? 'Sep 2026'
+                                : timelineStartDate || timelineEndDate
+                                  ? `${timelineStartDate || 'Start'} → ${timelineEndDate || 'End'}`
+                                  : 'Calendar Filter'}
+                    </span>
+                    <ChevronDown size={12} className={`transition-transform duration-200 ${isDatePopoverOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Floating Calendar Dropdown Popover */}
+                  {isDatePopoverOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsDatePopoverOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl backdrop-blur-xl animate-fade-in space-y-3.5">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                          <span className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                            <Calendar size={14} className="text-emerald-400" /> Filter Date Range
+                          </span>
+                          <button
+                            onClick={() => setIsDatePopoverOpen(false)}
+                            className="text-slate-400 hover:text-white transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        {/* Presets Grid */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Quick Presets</span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {[
+                              { id: 'all', label: 'All Time' },
+                              { id: 'jun', label: 'Jun 2026' },
+                              { id: 'jul', label: 'Jul 2026' },
+                              { id: 'aug', label: 'Aug 2026' },
+                              { id: 'sep', label: 'Sep 2026' },
+                            ].map((preset) => (
+                              <button
+                                key={preset.id}
+                                onClick={() => {
+                                  handleTimelinePresetChange(preset.id);
+                                  setIsDatePopoverOpen(false);
+                                }}
+                                className={`px-2.5 py-1.5 rounded-lg font-medium text-xs text-left transition-all cursor-pointer ${timelinePreset === preset.id
+                                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold'
+                                  : 'bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 border border-transparent'
+                                  }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Custom Range Inputs */}
+                        <div className="space-y-2 pt-2 border-t border-slate-800">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 block">Custom Date Range</span>
+                          <div className="space-y-2 text-xs">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-400 shrink-0">From:</span>
+                              <input
+                                type="date"
+                                value={timelineStartDate}
+                                onChange={(e) => {
+                                  setTimelineStartDate(e.target.value);
+                                  setTimelinePreset('custom');
+                                }}
+                                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60 w-full"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-400 shrink-0">To:</span>
+                              <input
+                                type="date"
+                                value={timelineEndDate}
+                                onChange={(e) => {
+                                  setTimelineEndDate(e.target.value);
+                                  setTimelinePreset('custom');
+                                }}
+                                className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/60 w-full"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                          <button
+                            onClick={() => {
+                              handleTimelinePresetChange('all');
+                              setIsDatePopoverOpen(false);
+                            }}
+                            className="text-slate-400 hover:text-rose-400 font-semibold transition-colors cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => setIsDatePopoverOpen(false)}
+                            className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all cursor-pointer"
+                          >
+                            Apply Filter
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* View Selector Pills */}
-            <div className="flex rounded-xl p-0.5 border border-white/10 bg-slate-900/80 text-xs font-semibold shrink-0">
-              {[
-                { id: 'combined', label: 'Single Pie' },
-                { id: 'income', label: 'Income' },
-                { id: 'expense', label: 'Expense' },
-              ].map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => setBreakdownView(v.id as any)}
-                  className={`h-7 px-2.5 rounded-lg transition-all cursor-pointer text-xs font-semibold ${
-                    breakdownView === v.id
-                      ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
+            <div className="h-48 sm:h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="incGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                  <Tooltip
+                    formatter={(v: number) => [formatCurrency(v), '']}
+                    contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                  <Area type="monotone" dataKey="income" name="Income (Credit)" stroke="#10b981" strokeWidth={2} fill="url(#incGrad)" />
+                  <Area type="monotone" dataKey="expense" name="Expense (Debit)" stroke="#f43f5e" strokeWidth={2} fill="url(#expGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-            <div className="h-48 sm:h-52 relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={
-                      breakdownView === 'combined'
-                        ? [
+          {/* Chart 2: Unified Income & Expense Category Breakdown (Single Pie) */}
+          <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 bg-gradient-to-br from-black via-zinc-950 to-slate-900 border border-white/10 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 text-white">
+                <PieChartIcon size={16} className="text-slate-300" />
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold">Income & Expense Breakdown</h3>
+                  <p className="text-[10px] text-slate-400 font-medium">Single Pie Chart Distribution</p>
+                </div>
+              </div>
+
+              {/* View Selector Pills */}
+              <div className="flex rounded-xl p-0.5 border border-white/10 bg-slate-900/80 text-xs font-semibold shrink-0">
+                {[
+                  { id: 'combined', label: 'Single Pie' },
+                  { id: 'income', label: 'Income' },
+                  { id: 'expense', label: 'Expense' },
+                ].map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setBreakdownView(v.id as any)}
+                    className={`h-7 px-2.5 rounded-lg transition-all cursor-pointer text-xs font-semibold ${breakdownView === v.id
+                      ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+                      }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              <div className="h-48 sm:h-52 relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={
+                        breakdownView === 'combined'
+                          ? [
                             ...incomePieData.map((item, i) => {
                               const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                               const color = fallbackInc[i % fallbackInc.length];
@@ -845,54 +841,54 @@ export default function FinanceAnalyticsPage() {
                               };
                             }),
                           ]
-                        : breakdownView === 'income'
-                        ? incomePieData.map((item, i) => {
-                            const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
-                            return {
-                              ...item,
-                              rawName: item.name,
-                              name: item.name,
-                              type: 'income' as const,
-                              color: fallbackInc[i % fallbackInc.length],
-                            };
-                          })
-                        : expensePieData.map((item, i) => {
-                            const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
-                            return {
-                              ...item,
-                              rawName: item.name,
-                              name: item.name,
-                              type: 'expense' as const,
-                              color: fallbackExp[i % fallbackExp.length],
-                            };
-                          })
-                    }
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={52}
-                    outerRadius={78}
-                    paddingAngle={3}
-                    stroke="rgba(15, 23, 42, 0.9)"
-                    strokeWidth={3}
-                    dataKey="value"
-                    nameKey="name"
-                    isAnimationActive={true}
-                    animationDuration={600}
-                    animationEasing="ease-out"
-                    onMouseEnter={(entry: any) => {
-                      if (entry) {
-                        setActivePieSlice({
-                          name: entry.rawName || entry.name,
-                          value: entry.value,
-                          type: entry.type || 'income',
-                          color: entry.color,
-                        });
+                          : breakdownView === 'income'
+                            ? incomePieData.map((item, i) => {
+                              const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
+                              return {
+                                ...item,
+                                rawName: item.name,
+                                name: item.name,
+                                type: 'income' as const,
+                                color: fallbackInc[i % fallbackInc.length],
+                              };
+                            })
+                            : expensePieData.map((item, i) => {
+                              const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
+                              return {
+                                ...item,
+                                rawName: item.name,
+                                name: item.name,
+                                type: 'expense' as const,
+                                color: fallbackExp[i % fallbackExp.length],
+                              };
+                            })
                       }
-                    }}
-                    onMouseLeave={() => setActivePieSlice(null)}
-                  >
-                    {(breakdownView === 'combined'
-                      ? [
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={52}
+                      outerRadius={78}
+                      paddingAngle={3}
+                      stroke="rgba(15, 23, 42, 0.9)"
+                      strokeWidth={3}
+                      dataKey="value"
+                      nameKey="name"
+                      isAnimationActive={true}
+                      animationDuration={600}
+                      animationEasing="ease-out"
+                      onMouseEnter={(entry: any) => {
+                        if (entry) {
+                          setActivePieSlice({
+                            name: entry.rawName || entry.name,
+                            value: entry.value,
+                            type: entry.type || 'income',
+                            color: entry.color,
+                          });
+                        }
+                      }}
+                      onMouseLeave={() => setActivePieSlice(null)}
+                    >
+                      {(breakdownView === 'combined'
+                        ? [
                           ...incomePieData.map((item, i) => {
                             const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
                             return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
@@ -902,658 +898,653 @@ export default function FinanceAnalyticsPage() {
                             return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
                           }),
                         ]
-                      : breakdownView === 'income'
-                      ? incomePieData.map((item, i) => {
-                          const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
-                          return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
-                        })
-                      : expensePieData.map((item, i) => {
-                          const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
-                          return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
-                        })
-                    ).map((entry, i) => (
-                      <Cell
-                        key={`cell-${entry.rawName}-${i}`}
-                        fill={entry.color}
-                        className="cursor-pointer outline-none transition-all duration-200"
-                        style={{
-                          filter: activePieSlice?.name === entry.rawName ? `brightness(1.3) drop-shadow(0 0 10px ${entry.color})` : 'brightness(1.0)',
-                          opacity: activePieSlice && activePieSlice.name !== entry.rawName ? 0.35 : 1,
-                          transition: 'all 0.2s ease',
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+                        : breakdownView === 'income'
+                          ? incomePieData.map((item, i) => {
+                            const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
+                            return { rawName: item.name, color: fallbackInc[i % fallbackInc.length] };
+                          })
+                          : expensePieData.map((item, i) => {
+                            const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
+                            return { rawName: item.name, color: fallbackExp[i % fallbackExp.length] };
+                          })
+                      ).map((entry, i) => (
+                        <Cell
+                          key={`cell-${entry.rawName}-${i}`}
+                          fill={entry.color}
+                          className="cursor-pointer outline-none transition-all duration-200"
+                          style={{
+                            filter: activePieSlice?.name === entry.rawName ? `brightness(1.3) drop-shadow(0 0 10px ${entry.color})` : 'brightness(1.0)',
+                            opacity: activePieSlice && activePieSlice.name !== entry.rawName ? 0.35 : 1,
+                            transition: 'all 0.2s ease',
+                          }}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
 
-              {/* Dynamic Center Readout (Zero Collision, Perfectly Aligned) */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2 z-10 select-none">
-                {activePieSlice ? (
-                  <div className="flex flex-col items-center animate-fade-in">
-                    <span
-                      className="text-[10px] uppercase font-black tracking-wider truncate max-w-[130px]"
-                      style={{ color: activePieSlice.color }}
-                    >
-                      {activePieSlice.name}
+                {/* Dynamic Center Readout (Zero Collision, Perfectly Aligned) */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2 z-10 select-none">
+                  {activePieSlice ? (
+                    <div className="flex flex-col items-center animate-fade-in">
+                      <span
+                        className="text-[10px] uppercase font-black tracking-wider truncate max-w-[130px]"
+                        style={{ color: activePieSlice.color }}
+                      >
+                        {activePieSlice.name}
+                      </span>
+                      <span className="text-sm sm:text-base font-black font-mono text-white mt-0.5">
+                        {formatCurrency(activePieSlice.value)}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                        {activePieSlice.type === 'income'
+                          ? `${totalIncome > 0 ? Math.round((activePieSlice.value / totalIncome) * 100) : 0}% of Income`
+                          : `${totalExpense > 0 ? Math.round((activePieSlice.value / totalExpense) * 100) : 0}% of Expense`}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center animate-fade-in">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                        Net Profit
+                      </span>
+                      <span className={`text-sm sm:text-base font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
+                        {formatCurrency(netProfit)}
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
+                        {totalIncome > 0 ? `${((netProfit / totalIncome) * 100).toFixed(1)}% margin` : 'Balanced'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {(breakdownView === 'combined' || breakdownView === 'income') && (
+                  <div>
+                    <span className="text-[11px] font-extrabold uppercase text-emerald-400 block mb-1.5 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Income ({formatCurrency(totalIncome)})
                     </span>
-                    <span className="text-sm sm:text-base font-black font-mono text-white mt-0.5">
-                      {formatCurrency(activePieSlice.value)}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                      {activePieSlice.type === 'income'
-                        ? `${totalIncome > 0 ? Math.round((activePieSlice.value / totalIncome) * 100) : 0}% of Income`
-                        : `${totalExpense > 0 ? Math.round((activePieSlice.value / totalExpense) * 100) : 0}% of Expense`}
-                    </span>
+                    <div className="space-y-1.5">
+                      {incomePieData.map((item, i) => {
+                        const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
+                        const color = fallbackInc[i % fallbackInc.length];
+                        const isHovered = activePieSlice?.name === item.name;
+                        const totalVol = totalIncome + totalExpense;
+                        const pct = totalVol > 0 ? ((item.value / totalVol) * 100).toFixed(0) : 0;
+                        return (
+                          <div
+                            key={item.name}
+                            onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'income', color })}
+                            onMouseLeave={() => setActivePieSlice(null)}
+                            className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${isHovered
+                              ? 'bg-slate-800 border-white/30 shadow-sm'
+                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
+                              }`}
+                          >
+                            <div className="flex justify-between font-bold">
+                              <span className="flex items-center gap-1.5 text-slate-300">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                                <span className="truncate">{item.name}</span>
+                              </span>
+                              <span className="text-emerald-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center animate-fade-in">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                      Net Profit
+                )}
+
+                {(breakdownView === 'combined' || breakdownView === 'expense') && (
+                  <div>
+                    <span className="text-[11px] font-extrabold uppercase text-rose-400 block mb-1.5">
+                      Expense Categories (Debit)
                     </span>
-                    <span className={`text-sm sm:text-base font-black font-mono mt-0.5 ${netProfit >= 0 ? 'text-slate-100' : 'text-rose-400'}`}>
-                      {formatCurrency(netProfit)}
-                    </span>
-                    <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
-                      {totalIncome > 0 ? `${((netProfit / totalIncome) * 100).toFixed(1)}% margin` : 'Balanced'}
-                    </span>
+                    <div className="space-y-1.5">
+                      {expensePieData.map((item, i) => {
+                        const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
+                        const color = fallbackExp[i % fallbackExp.length];
+                        const isHovered = activePieSlice?.name === item.name;
+                        const pct = totalExpense > 0 ? ((item.value / totalExpense) * 100).toFixed(0) : 0;
+                        return (
+                          <div
+                            key={item.name}
+                            onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'expense', color })}
+                            onMouseLeave={() => setActivePieSlice(null)}
+                            className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${isHovered
+                              ? 'bg-slate-800 border-white/30 shadow-sm'
+                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
+                              }`}
+                          >
+                            <div className="flex justify-between font-bold">
+                              <span className="flex items-center gap-1.5 text-slate-300">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                                <span className="truncate">{item.name}</span>
+                              </span>
+                              <span className="text-rose-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
+          </div>
 
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {(breakdownView === 'combined' || breakdownView === 'income') && (
-                <div>
-                  <span className="text-[11px] font-extrabold uppercase text-emerald-400 block mb-1.5 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Income ({formatCurrency(totalIncome)})
-                  </span>
-                  <div className="space-y-1.5">
-                    {incomePieData.map((item, i) => {
-                      const fallbackInc = ['#cbd5e1', '#94a3b8', '#64748b', '#475569'];
-                      const color = fallbackInc[i % fallbackInc.length];
-                      const isHovered = activePieSlice?.name === item.name;
-                      const totalVol = totalIncome + totalExpense;
-                      const pct = totalVol > 0 ? ((item.value / totalVol) * 100).toFixed(0) : 0;
-                      return (
-                        <div
-                          key={item.name}
-                          onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'income', color })}
-                          onMouseLeave={() => setActivePieSlice(null)}
-                          className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
-                            isHovered
-                              ? 'bg-slate-800 border-white/30 shadow-sm'
-                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
-                          }`}
-                        >
-                          <div className="flex justify-between font-bold">
-                            <span className="flex items-center gap-1.5 text-slate-300">
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                              <span className="truncate">{item.name}</span>
-                            </span>
-                            <span className="text-emerald-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          {/* Chart 3: Quarterly Revenue & Net Profit Bar Graph */}
+          <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 border border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <BarChart3 size={16} className="text-slate-300" />
+                <h3 className="text-sm sm:text-base font-bold">Quarterly Comparison (Q1 - Q4)</h3>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">Running Quarterly Trends</span>
+            </div>
 
-              {(breakdownView === 'combined' || breakdownView === 'expense') && (
-                <div>
-                  <span className="text-[11px] font-extrabold uppercase text-rose-400 block mb-1.5">
-                    Expense Categories (Debit)
-                  </span>
-                  <div className="space-y-1.5">
-                    {expensePieData.map((item, i) => {
-                      const fallbackExp = ['#64748b', '#475569', '#334155', '#1e293b', '#52525b'];
-                      const color = fallbackExp[i % fallbackExp.length];
-                      const isHovered = activePieSlice?.name === item.name;
-                      const pct = totalExpense > 0 ? ((item.value / totalExpense) * 100).toFixed(0) : 0;
-                      return (
-                        <div
-                          key={item.name}
-                          onMouseEnter={() => setActivePieSlice({ name: item.name, value: item.value, type: 'expense', color })}
-                          onMouseLeave={() => setActivePieSlice(null)}
-                          className={`p-2 rounded-xl border text-xs transition-all cursor-pointer ${
-                            isHovered
-                              ? 'bg-slate-800 border-white/30 shadow-sm'
-                              : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
-                          }`}
-                        >
-                          <div className="flex justify-between font-bold">
-                            <span className="flex items-center gap-1.5 text-slate-300">
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                              <span className="truncate">{item.name}</span>
-                            </span>
-                            <span className="text-rose-300 font-mono shrink-0">{formatCurrency(item.value)} ({pct}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className="h-48 sm:h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={quarterlyTrends} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                  <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={10} />
+                  <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+                  <Tooltip
+                    formatter={(v: number) => [formatCurrency(v), '']}
+                    contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                  <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="net" name="Net Margin" fill="#818cf8" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Chart 3: Quarterly Revenue & Net Profit Bar Graph */}
+        {/* Interactive Statement Categorization & Transaction Table */}
         <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 border border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white">
-              <BarChart3 size={16} className="text-slate-300" />
-              <h3 className="text-sm sm:text-base font-bold">Quarterly Comparison (Q1 - Q4)</h3>
-            </div>
-            <span className="text-[10px] text-slate-400 font-medium">Running Quarterly Trends</span>
-          </div>
-
-          <div className="h-48 sm:h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={quarterlyTrends} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
-                <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={10} />
-                <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
-                <Tooltip
-                  formatter={(v: number) => [formatCurrency(v), '']}
-                  contentStyle={{ background: '#0b1329', borderColor: '#334155', borderRadius: '10px', color: '#fff', fontSize: '11px' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
-                <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="net" name="Net Margin" fill="#818cf8" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Statement Categorization & Transaction Table */}
-      <div className="glass-card p-3 sm:p-4 rounded-2xl space-y-3 border border-white/10">
-        {/* Table Filter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex rounded-xl border border-white/10 p-0.5 bg-slate-900/80">
-              {(['all', 'income', 'expense'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setFilterType(type)}
-                  className={`h-7 px-2.5 sm:px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    filterType === type
+          {/* Table Filter Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex rounded-xl border border-white/10 p-0.5 bg-slate-900/80">
+                {(['all', 'income', 'expense'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setFilterType(type)}
+                    className={`h-7 px-2.5 sm:px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${filterType === type
                       ? 'bg-white/15 text-white shadow-sm border border-white/20 font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <span className="sm:hidden">{type === 'all' ? 'All' : type === 'income' ? '↑ Credit' : '↓ Debit'}</span>
-                  <span className="hidden sm:inline">{type === 'all' ? 'All Transactions' : type === 'income' ? '↑ Credit (Income)' : '↓ Debit (Expense)'}</span>
-                </button>
-              ))}
+                      }`}
+                  >
+                    <span className="sm:hidden">{type === 'all' ? 'All' : type === 'income' ? '↑ Credit' : '↓ Debit'}</span>
+                    <span className="hidden sm:inline">{type === 'all' ? 'All Transactions' : type === 'income' ? '↑ Credit (Income)' : '↓ Debit (Expense)'}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Quarter Filter */}
+              <select
+                value={selectedQuarter}
+                onChange={(e) => setSelectedQuarter(e.target.value)}
+                className="h-8 rounded-xl border border-border px-2.5 text-xs font-semibold bg-surface-2 text-white outline-none cursor-pointer"
+              >
+                <option value="all">All Quarters</option>
+                <option value="Q1">Q1 (Jan - Mar)</option>
+                <option value="Q2">Q2 (Apr - Jun)</option>
+                <option value="Q3">Q3 (Jul - Sep)</option>
+                <option value="Q4">Q4 (Oct - Dec)</option>
+              </select>
             </div>
 
-            {/* Quarter Filter */}
-            <select
-              value={selectedQuarter}
-              onChange={(e) => setSelectedQuarter(e.target.value)}
-              className="h-8 rounded-xl border border-border px-2.5 text-xs font-semibold bg-surface-2 text-white outline-none cursor-pointer"
-            >
-              <option value="all">All Quarters</option>
-              <option value="Q1">Q1 (Jan - Mar)</option>
-              <option value="Q2">Q2 (Apr - Jun)</option>
-              <option value="Q3">Q3 (Jul - Sep)</option>
-              <option value="Q4">Q4 (Oct - Dec)</option>
-            </select>
+            {/* Search Input */}
+            <div className="relative min-w-[200px] sm:min-w-[240px] flex-1 sm:flex-initial">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search particulars, ref no, amount..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 w-full rounded-xl border border-border pl-8 pr-3 text-xs bg-surface-2 text-white outline-none focus:border-white/30"
+              />
+            </div>
           </div>
 
-          {/* Search Input */}
-          <div className="relative min-w-[200px] sm:min-w-[240px] flex-1 sm:flex-initial">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search particulars, ref no, amount..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-full rounded-xl border border-border pl-8 pr-3 text-xs bg-surface-2 text-white outline-none focus:border-white/30"
-            />
-          </div>
-        </div>
-
-        {/* ── Desktop Transactions Table (>= md) ── */}
-        <div className="hidden md:block overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="bg-surface-2 border-b border-border text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                <th className="px-3 py-2">Date</th>
-                <th className="px-2.5 py-2">Type</th>
-                <th className="px-3 py-2">Category (Inline Select)</th>
-                <th className="px-3 py-2">Particulars & Reference</th>
-                <th className="px-2.5 py-2">Payment Method</th>
-                <th className="px-2.5 py-2">Platform</th>
-                <th className="px-3 py-2 text-right">Amount</th>
-                <th className="px-2.5 py-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {filteredTx.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-400 text-xs font-medium">
-                    No transactions match your search or filter criteria.
-                  </td>
+          {/* ── Desktop Transactions Table (>= md) ── */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="bg-surface-2 border-b border-border text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="px-3 py-2">Date</th>
+                  <th className="px-2.5 py-2">Type</th>
+                  <th className="px-3 py-2">Category (Inline Select)</th>
+                  <th className="px-3 py-2">Particulars & Reference</th>
+                  <th className="px-2.5 py-2">Payment Method</th>
+                  <th className="px-2.5 py-2">Platform</th>
+                  <th className="px-3 py-2 text-right">Amount</th>
+                  <th className="px-2.5 py-2 text-center">Actions</th>
                 </tr>
-              ) : (
-                paginatedTx.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-surface-2/60 transition-colors">
-                    <td className="px-3 py-2 font-mono text-slate-300 whitespace-nowrap">
-                      {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
-                    </td>
-
-                    <td className="px-2.5 py-2">
-                      <span className={tx.type === 'income' ? 'badge-income badge' : 'badge-expense badge'}>
-                        {tx.type.toUpperCase()}
-                      </span>
-                    </td>
-
-                    {/* Inline Category Select - Fixed Width & Aligned */}
-                    <td className="px-3 py-2 shrink-0">
-                      <select
-                        value={tx.sourceOrCategory}
-                        onChange={(e) => handleUpdateCategory(tx.id, e.target.value)}
-                        className="w-44 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-200 outline-none cursor-pointer hover:border-white/30 truncate"
-                      >
-                        {(tx.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-
-                    {/* Human Readable Particulars & Reference */}
-                    <td className="px-3 py-2 max-w-sm">
-                      {(() => {
-                        const formatted = formatParticularsAndRef(tx.notes);
-                        return (
-                          <div className="flex flex-col gap-0.5" title={formatted.raw || '—'}>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-slate-100 text-[11px] tracking-tight">
-                                {formatted.primary}
-                              </span>
-                              {formatted.refNo && (
-                                <span className="px-1.5 py-0.2 text-[9px] font-mono font-semibold rounded bg-slate-800/90 text-cyan-300 border border-slate-700/80">
-                                  {formatted.refNo}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
-                              <span>{formatted.secondary}</span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </td>
-
-                    {/* Inline Payment Method Select - Fixed Width & Aligned */}
-                    <td className="px-2.5 py-2 shrink-0">
-                      <select
-                        value={tx.paymentMethod || 'Bank Transfer'}
-                        onChange={(e) => handleUpdatePaymentMethod(tx.id, e.target.value)}
-                        className="w-28 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-300 outline-none cursor-pointer hover:border-white/30 truncate"
-                      >
-                        {PAYMENT_METHODS.map((pm) => (
-                          <option key={pm} value={pm}>
-                            {pm}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-
-                    <td className="px-2.5 py-2 text-slate-300 font-medium">
-                      {tx.platform || 'General'}
-                    </td>
-
-                    <td className={`px-3 py-2 text-right font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                    </td>
-
-                    <td className="px-2.5 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => { setSelectedTx(tx); setIsDetailOpen(true); }}
-                          className="p-1.5 rounded-lg bg-white/[0.05] text-slate-300 hover:text-white hover:bg-white/[0.1] border border-white/10 transition-colors cursor-pointer"
-                          title="View Details"
-                        >
-                          <Eye size={13} />
-                        </button>
-
-                        <button
-                          onClick={() => { setSelectedTx(tx); setIsDeleteConfirmOpen(true); }}
-                          className="p-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 transition-colors cursor-pointer"
-                          title="Delete & Archive"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {filteredTx.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-slate-400 text-xs font-medium">
+                      No transactions match your search or filter criteria.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  paginatedTx.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-surface-2/60 transition-colors">
+                      <td className="px-3 py-2 font-mono text-slate-300 whitespace-nowrap">
+                        {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
+                      </td>
 
-        {/* ── Mobile Transactions Cards (< md) ── */}
-        <div className="md:hidden space-y-2">
-          {filteredTx.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs font-medium border border-dashed border-border rounded-xl">
-              No transactions match your search or filter criteria.
-            </div>
-          ) : (
-            paginatedTx.map((tx) => {
-              const isExpanded = expandedTxId === tx.id;
-              const isIncome = tx.type === 'income';
-              const formatted = formatParticularsAndRef(tx.notes);
-              const formattedDate = new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
-
-              return (
-                <div
-                  key={`mobile-tx-${tx.id}`}
-                  className={`rounded-2xl border transition-all duration-200 ${
-                    isExpanded
-                      ? 'bg-slate-900/95 border-slate-700/90 shadow-lg'
-                      : 'bg-slate-900/60 hover:bg-slate-800/60 border-slate-800/80'
-                  }`}
-                >
-                  {/* Card Header (Always Visible, Compact, Even & Clean) */}
-                  <div
-                    onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
-                    role="button"
-                    tabIndex={0}
-                    className="p-3 cursor-pointer select-none space-y-1.5"
-                  >
-                    {/* Top Row: Date & Type Badge on Left, Amount & Dropdown Chevron on Right */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[11px] font-mono font-medium text-slate-400 shrink-0">
-                          {formattedDate}
-                        </span>
-                        <span
-                          className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase tracking-wider shrink-0 ${
-                            isIncome
-                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                              : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                          }`}
-                        >
+                      <td className="px-2.5 py-2">
+                        <span className={tx.type === 'income' ? 'badge-income badge' : 'badge-expense badge'}>
                           {tx.type.toUpperCase()}
                         </span>
+                      </td>
+
+                      {/* Inline Category Select - Fixed Width & Aligned */}
+                      <td className="px-3 py-2 shrink-0">
+                        <select
+                          value={tx.sourceOrCategory}
+                          onChange={(e) => handleUpdateCategory(tx.id, e.target.value)}
+                          className="w-44 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-200 outline-none cursor-pointer hover:border-white/30 truncate"
+                        >
+                          {(tx.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Human Readable Particulars & Reference */}
+                      <td className="px-3 py-2 max-w-sm">
+                        {(() => {
+                          const formatted = formatParticularsAndRef(tx.notes);
+                          return (
+                            <div className="flex flex-col gap-0.5" title={formatted.raw || '—'}>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-100 text-[11px] tracking-tight">
+                                  {formatted.primary}
+                                </span>
+                                {formatted.refNo && (
+                                  <span className="px-1.5 py-0.2 text-[9px] font-mono font-semibold rounded bg-slate-800/90 text-cyan-300 border border-slate-700/80">
+                                    {formatted.refNo}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+                                <span>{formatted.secondary}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Inline Payment Method Select - Fixed Width & Aligned */}
+                      <td className="px-2.5 py-2 shrink-0">
+                        <select
+                          value={tx.paymentMethod || 'Bank Transfer'}
+                          onChange={(e) => handleUpdatePaymentMethod(tx.id, e.target.value)}
+                          className="w-28 h-7.5 rounded-lg border border-border/80 px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-slate-300 outline-none cursor-pointer hover:border-white/30 truncate"
+                        >
+                          {PAYMENT_METHODS.map((pm) => (
+                            <option key={pm} value={pm}>
+                              {pm}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      <td className="px-2.5 py-2 text-slate-300 font-medium">
+                        {tx.platform || 'General'}
+                      </td>
+
+                      <td className={`px-3 py-2 text-right font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      </td>
+
+                      <td className="px-2.5 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => { setSelectedTx(tx); setIsDetailOpen(true); }}
+                            className="p-1.5 rounded-lg bg-white/[0.05] text-slate-300 hover:text-white hover:bg-white/[0.1] border border-white/10 transition-colors cursor-pointer"
+                            title="View Details"
+                          >
+                            <Eye size={13} />
+                          </button>
+
+                          <button
+                            onClick={() => { setSelectedTx(tx); setIsDeleteConfirmOpen(true); }}
+                            className="p-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 transition-colors cursor-pointer"
+                            title="Delete & Archive"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Mobile Transactions Cards (< md) ── */}
+          <div className="md:hidden space-y-2">
+            {filteredTx.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-medium border border-dashed border-border rounded-xl">
+                No transactions match your search or filter criteria.
+              </div>
+            ) : (
+              paginatedTx.map((tx) => {
+                const isExpanded = expandedTxId === tx.id;
+                const isIncome = tx.type === 'income';
+                const formatted = formatParticularsAndRef(tx.notes);
+                const formattedDate = new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+
+                return (
+                  <div
+                    key={`mobile-tx-${tx.id}`}
+                    className={`rounded-2xl border transition-all duration-200 ${isExpanded
+                      ? 'bg-slate-900/95 border-slate-700/90 shadow-lg'
+                      : 'bg-slate-900/60 hover:bg-slate-800/60 border-slate-800/80'
+                      }`}
+                  >
+                    {/* Card Header (Always Visible, Compact, Even & Clean) */}
+                    <div
+                      onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
+                      role="button"
+                      tabIndex={0}
+                      className="p-3 cursor-pointer select-none space-y-1.5"
+                    >
+                      {/* Top Row: Date & Type Badge on Left, Amount & Dropdown Chevron on Right */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[11px] font-mono font-medium text-slate-400 shrink-0">
+                            {formattedDate}
+                          </span>
+                          <span
+                            className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase tracking-wider shrink-0 ${isIncome
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                              }`}
+                          >
+                            {tx.type.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-xs sm:text-sm font-black font-mono ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                          </span>
+                          <div className="w-5 h-5 rounded-lg text-slate-400 flex items-center justify-center transition-transform duration-200">
+                            {isExpanded ? <ChevronUp size={14} className="text-cyan-400" /> : <ChevronDown size={14} />}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-xs sm:text-sm font-black font-mono ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
-                        </span>
-                        <div className="w-5 h-5 rounded-lg text-slate-400 flex items-center justify-center transition-transform duration-200">
-                          {isExpanded ? <ChevronUp size={14} className="text-cyan-400" /> : <ChevronDown size={14} />}
+                      {/* Bottom Row of Header: Category Badge & Particulars Summary */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 truncate max-w-[150px] shrink-0">
+                            {tx.sourceOrCategory}
+                          </span>
+                          <span className="text-[11px] text-slate-300 font-medium truncate flex-1">
+                            {formatted.primary}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Row of Header: Category Badge & Particulars Summary */}
-                    <div className="flex items-center justify-between gap-2 pt-0.5">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 truncate max-w-[150px] shrink-0">
-                          {tx.sourceOrCategory}
-                        </span>
-                        <span className="text-[11px] text-slate-300 font-medium truncate flex-1">
-                          {formatted.primary}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Dropdown Content */}
-                  {isExpanded && (
-                    <div className="px-3 pb-3 pt-1 border-t border-slate-800/80 space-y-2.5 animate-fade-in text-xs">
-                      {/* Particulars & Reference Full Detail */}
-                      <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/70 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Particulars & Notes
-                          </span>
-                          {formatted.refNo && (
-                            <span className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-slate-800 text-cyan-300 border border-slate-700">
-                              Ref: {formatted.refNo}
+                    {/* Expanded Dropdown Content */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 border-t border-slate-800/80 space-y-2.5 animate-fade-in text-xs">
+                        {/* Particulars & Reference Full Detail */}
+                        <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/70 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                              Particulars & Notes
                             </span>
+                            {formatted.refNo && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-mono font-semibold rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                                Ref: {formatted.refNo}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-200 font-semibold text-xs leading-relaxed break-words">
+                            {formatted.raw || formatted.primary}
+                          </p>
+                          {formatted.secondary && (
+                            <p className="text-[10px] text-slate-400">
+                              {formatted.secondary}
+                            </p>
                           )}
                         </div>
-                        <p className="text-slate-200 font-semibold text-xs leading-relaxed break-words">
-                          {formatted.raw || formatted.primary}
-                        </p>
-                        {formatted.secondary && (
-                          <p className="text-[10px] text-slate-400">
-                            {formatted.secondary}
-                          </p>
-                        )}
-                      </div>
 
-                      {/* Inline Selects Grid: Category & Payment Method */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/60">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                            Category
-                          </label>
-                          <select
-                            value={tx.sourceOrCategory}
-                            onChange={(e) => handleUpdateCategory(tx.id, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full text-xs font-semibold py-1 px-2 rounded-lg bg-slate-800/90 text-cyan-300 border border-slate-700/80 focus:border-cyan-400 focus:outline-none cursor-pointer truncate"
-                          >
-                            {(isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
-                              <option key={cat} value={cat}>
-                                {cat}
-                              </option>
-                            ))}
-                          </select>
+                        {/* Inline Selects Grid: Category & Payment Method */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/60">
+                            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                              Category
+                            </label>
+                            <select
+                              value={tx.sourceOrCategory}
+                              onChange={(e) => handleUpdateCategory(tx.id, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full text-xs font-semibold py-1 px-2 rounded-lg bg-slate-800/90 text-cyan-300 border border-slate-700/80 focus:border-cyan-400 focus:outline-none cursor-pointer truncate"
+                            >
+                              {(isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/60">
+                            <label className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                              Payment Method
+                            </label>
+                            <select
+                              value={tx.paymentMethod || 'Bank Transfer'}
+                              onChange={(e) => handleUpdatePaymentMethod(tx.id, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full text-xs font-semibold py-1 px-2 rounded-lg bg-slate-800/90 text-indigo-300 border border-slate-700/80 focus:border-indigo-400 focus:outline-none cursor-pointer truncate"
+                            >
+                              {PAYMENT_METHODS.map((pm) => (
+                                <option key={pm} value={pm}>
+                                  {pm}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
-                        <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800/60">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                            Payment Method
-                          </label>
-                          <select
-                            value={tx.paymentMethod || 'Bank Transfer'}
-                            onChange={(e) => handleUpdatePaymentMethod(tx.id, e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full text-xs font-semibold py-1 px-2 rounded-lg bg-slate-800/90 text-indigo-300 border border-slate-700/80 focus:border-indigo-400 focus:outline-none cursor-pointer truncate"
-                          >
-                            {PAYMENT_METHODS.map((pm) => (
-                              <option key={pm} value={pm}>
-                                {pm}
-                              </option>
-                            ))}
-                          </select>
+                        {/* Platform & Quick Action Buttons */}
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <span className="text-[11px] text-slate-400">
+                            Platform: <span className="font-semibold text-cyan-400">{tx.platform || 'General'}</span>
+                          </span>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTx(tx);
+                                setIsDetailOpen(true);
+                              }}
+                              className="py-1.5 px-3 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
+                            >
+                              <Eye size={12} />
+                              <span>Details</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTx(tx);
+                                setIsDeleteConfirmOpen(true);
+                              }}
+                              className="py-1.5 px-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-                      {/* Platform & Quick Action Buttons */}
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <span className="text-[11px] text-slate-400">
-                          Platform: <span className="font-semibold text-cyan-400">{tx.platform || 'General'}</span>
-                        </span>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTx(tx);
-                              setIsDetailOpen(true);
-                            }}
-                            className="py-1.5 px-3 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer active:scale-95"
-                          >
-                            <Eye size={12} />
-                            <span>Details</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTx(tx);
-                              setIsDeleteConfirmOpen(true);
-                            }}
-                            className="py-1.5 px-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={12} />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Analytics Table Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/60 text-xs font-medium text-slate-400">
-          <span>
-            Showing {filteredTx.length > 0 ? startIndex + 1 : 0} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredTx.length)} of {filteredTx.length} records
-          </span>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold cursor-pointer text-slate-300 flex items-center gap-1"
-            >
-              <ChevronLeft size={13} />
-              <span>Previous</span>
-            </button>
-
-            <span className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-300 font-extrabold">
-              Page {currentPage} of {totalPages}
+          {/* Analytics Table Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/60 text-xs font-medium text-slate-400">
+            <span>
+              Showing {filteredTx.length > 0 ? startIndex + 1 : 0} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredTx.length)} of {filteredTx.length} records
             </span>
 
-            <button
-              type="button"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3.5 py-1.5 rounded-xl border border-brand-500/40 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-sm"
-            >
-              <span>Next Page</span>
-              <ChevronRight size={13} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-bold cursor-pointer text-slate-300 flex items-center gap-1"
+              >
+                <ChevronLeft size={13} />
+                <span>Previous</span>
+              </button>
+
+              <span className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-300 font-extrabold">
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-3.5 py-1.5 rounded-xl border border-brand-500/40 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-sm"
+              >
+                <span>Next Page</span>
+                <ChevronRight size={13} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Transaction Detail View Modal */}
-      {isDetailOpen && selectedTx && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsDetailOpen(false)}>
-          <div className="w-full max-w-lg rounded-3xl border border-border bg-[#0b1329] p-6 shadow-2xl animate-slide-up text-white" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center">
-                  <Info size={20} />
+        {/* Transaction Detail View Modal */}
+        {isDetailOpen && selectedTx && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setIsDetailOpen(false)}>
+            <div className="w-full max-w-lg rounded-3xl border border-border bg-[#0b1329] p-6 shadow-2xl animate-slide-up text-white" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center">
+                    <Info size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold">Transaction Info Details</h3>
+                    <p className="text-xs text-slate-400 font-mono">ID: {selectedTx.id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsDetailOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-5 text-xs">
+                <div className="p-3.5 rounded-2xl bg-surface-2 border border-border/80 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Type & Amount:</span>
+                    <span className={`font-mono font-bold ${selectedTx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {selectedTx.type.toUpperCase()} ({formatCurrency(selectedTx.amount)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Category:</span>
+                    <span className="font-bold text-white">{selectedTx.sourceOrCategory}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Payment Method:</span>
+                    <span className="font-bold text-indigo-300">{selectedTx.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Date & Quarter:</span>
+                    <span className="font-mono text-slate-200">{formatDate(selectedTx.date)} ({selectedTx.quarter} {selectedTx.year})</span>
+                  </div>
+                  <div className="pt-2 border-t border-border/40">
+                    <span className="text-slate-400 block mb-1">Particulars / Notes:</span>
+                    <p className="p-2 rounded-xl bg-slate-900 font-mono text-slate-300">{selectedTx.notes || '—'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                <button
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-400 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 size={14} /> Delete Record
+                </button>
+
+                <button onClick={() => setIsDetailOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {isDeleteConfirmOpen && selectedTx && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in" onClick={() => !deletingTx && setIsDeleteConfirmOpen(false)}>
+            <div className="w-full max-w-md rounded-3xl border border-rose-500/40 bg-[#0c1222] p-6 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3 pb-3 mb-4 border-b border-slate-800">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
+                  <AlertTriangle size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold">Transaction Info Details</h3>
-                  <p className="text-xs text-slate-400 font-mono">ID: {selectedTx.id}</p>
+                  <h3 className="text-base font-extrabold text-white">Confirm Record Deletion</h3>
+                  <p className="text-xs text-slate-400">Archival purge enabled</p>
                 </div>
               </div>
-              <button onClick={() => setIsDetailOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
 
-            <div className="space-y-3 mb-5 text-xs">
-              <div className="p-3.5 rounded-2xl bg-surface-2 border border-border/80 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Type & Amount:</span>
-                  <span className={`font-mono font-bold ${selectedTx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {selectedTx.type.toUpperCase()} ({formatCurrency(selectedTx.amount)})
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Category:</span>
-                  <span className="font-bold text-white">{selectedTx.sourceOrCategory}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Payment Method:</span>
-                  <span className="font-bold text-indigo-300">{selectedTx.paymentMethod}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Date & Quarter:</span>
-                  <span className="font-mono text-slate-200">{formatDate(selectedTx.date)} ({selectedTx.quarter} {selectedTx.year})</span>
-                </div>
-                <div className="pt-2 border-t border-border/40">
-                  <span className="text-slate-400 block mb-1">Particulars / Notes:</span>
-                  <p className="p-2 rounded-xl bg-slate-900 font-mono text-slate-300">{selectedTx.notes || '—'}</p>
-                </div>
+              <p className="text-xs text-slate-300 mb-4">
+                Are you sure you want to delete <strong className="text-white bg-slate-800 px-2 py-0.5 rounded">{selectedTx.sourceOrCategory} ({formatCurrency(selectedTx.amount)})</strong>?
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+                <button onClick={() => setIsDeleteConfirmOpen(false)} disabled={deletingTx} className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300">
+                  Cancel
+                </button>
+                <button onClick={handleConfirmDeleteTx} disabled={deletingTx} className="flex items-center gap-2 px-5 py-2 text-xs font-extrabold rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white">
+                  {deletingTx ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  <span>Confirm Delete</span>
+                </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-              <button
-                onClick={() => setIsDeleteConfirmOpen(true)}
-                className="px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-400 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
-              >
-                <Trash2 size={14} /> Delete Record
-              </button>
-
-              <button onClick={() => setIsDetailOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">
-                Close
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      {isDeleteConfirmOpen && selectedTx && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in" onClick={() => !deletingTx && setIsDeleteConfirmOpen(false)}>
-          <div className="w-full max-w-md rounded-3xl border border-rose-500/40 bg-[#0c1222] p-6 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 pb-3 mb-4 border-b border-slate-800">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-white">Confirm Record Deletion</h3>
-                <p className="text-xs text-slate-400">Archival purge enabled</p>
-              </div>
-            </div>
+        {/* Per-Session Training Finance Comparison Bar Graph (At Bottom as Requested) */}
+        <SessionFinanceBarChart />
 
-            <p className="text-xs text-slate-300 mb-4">
-              Are you sure you want to delete <strong className="text-white bg-slate-800 px-2 py-0.5 rounded">{selectedTx.sourceOrCategory} ({formatCurrency(selectedTx.amount)})</strong>?
-            </p>
+        {/* Add Client Collection Entry Modal */}
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
-              <button onClick={() => setIsDeleteConfirmOpen(false)} disabled={deletingTx} className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300">
-                Cancel
-              </button>
-              <button onClick={handleConfirmDeleteTx} disabled={deletingTx} className="flex items-center gap-2 px-5 py-2 text-xs font-extrabold rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white">
-                {deletingTx ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                <span>Confirm Delete</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Per-Session Training Finance Comparison Bar Graph (At Bottom as Requested) */}
-      <SessionFinanceBarChart />
-
-      {/* Add Client Collection Entry Modal */}
-
-      <AddCollectionModal
-        isOpen={isAddCollectionModalOpen}
-        onClose={() => setIsAddCollectionModalOpen(false)}
-        onSuccess={fetchFinanceData}
-      />
+        <AddCollectionModal
+          isOpen={isAddCollectionModalOpen}
+          onClose={() => setIsAddCollectionModalOpen(false)}
+          onSuccess={fetchFinanceData}
+        />
       </div>
     </div>
   );

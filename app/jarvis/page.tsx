@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 
 export default function JarvisPage() {
   return (
-    <main className="w-full min-h-screen bg-[#030712] overflow-hidden">
+    /* J.A.R.V.I.S. Holographic HUD is strictly locked to dark mode in v1:
+       The 3D WebGL particle sphere, laser HUD rings, and holographic audio waves require a dark canvas.
+       TODO (Future): Design a high-contrast daylight holographic variant if requested. */
+    <main className="dark w-full min-h-screen bg-[#030712] overflow-hidden" data-theme="dark">
       <JarvisHolographicHud fullScreen={true} />
     </main>
   );

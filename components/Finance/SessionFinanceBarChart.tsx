@@ -10,6 +10,7 @@ import {
   Search, Check, X
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // Custom Rich Tooltip for Bar Chart showing Full Batch Title, Trainer, Platform, and all 5 Metrics
 const CustomBarTooltip = ({ active, payload }: any) => {
@@ -18,18 +19,18 @@ const CustomBarTooltip = ({ active, payload }: any) => {
   if (!data) return null;
 
   return (
-    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-2xl backdrop-blur-xl text-white text-[11px] max-w-[260px] space-y-1.5 font-sans z-50 pointer-events-none">
+    <div className="p-2 sm:p-2.5 rounded-xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-white/20 shadow-xl dark:shadow-2xl backdrop-blur-xl text-slate-800 dark:text-white text-[11px] max-w-[260px] space-y-1.5 font-sans z-50 pointer-events-none">
       {/* Compact Header */}
-      <div className="border-b border-white/10 pb-1 space-y-0.5">
+      <div className="border-b border-slate-200 dark:border-white/10 pb-1 space-y-0.5">
         <div className="flex items-center justify-between gap-1.5">
-          <span className="px-1.5 py-0.2 text-[8px] font-semibold rounded bg-white/10 text-slate-300 border border-white/10">
+          <span className="px-1.5 py-0.2 text-[8px] font-semibold rounded bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
             {data.platform}
           </span>
-          <span className="text-[10px] text-slate-400 truncate">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
             {data.trainer || 'Unassigned'}
           </span>
         </div>
-        <h4 className="text-[11px] font-bold text-slate-100 truncate">
+        <h4 className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
           {data.fullTitle}
         </h4>
       </div>
@@ -249,6 +250,7 @@ const CustomAnimatedBatchDropdown = ({
 };
 
 export default function SessionFinanceBarChart() {
+  const { isDark, grid, textColor } = useThemeColors();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
@@ -350,22 +352,22 @@ export default function SessionFinanceBarChart() {
   };
 
   return (
-    <div className="relative rounded-2xl p-3 sm:p-5 border border-white/10 bg-slate-950/60 backdrop-blur-xl transition-all duration-300 space-y-3.5 sm:space-y-4 overflow-hidden">
+    <div className="relative rounded-2xl p-3 sm:p-5 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 backdrop-blur-xl transition-all duration-300 space-y-3.5 sm:space-y-4 overflow-hidden shadow-sm dark:shadow-none">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10 relative z-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/10 relative z-10">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 text-slate-200 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/15 text-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0">
               <BarChart3 size={16} />
             </div>
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
+            <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
               Training Session & Batch Finance Tracking
             </h2>
-            <span className="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-white/[0.06] text-slate-300 border border-white/12 flex items-center gap-1">
-              <Sparkles size={11} className="text-slate-400" /> 5-Metric Batch Breakdown
+            <span className="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/12 flex items-center gap-1">
+              <Sparkles size={11} className="text-blue-500 dark:text-slate-400" /> 5-Metric Batch Breakdown
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
             Real-time batch level financial performance: Tuition Due vs Collections, Trainer Contract, Compensation & Outstanding Due.
           </p>
         </div>
@@ -531,16 +533,16 @@ export default function SessionFinanceBarChart() {
                   </linearGradient>
                 </defs>
 
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke={grid} opacity={isDark ? 0.6 : 0.8} />
                 <XAxis
                   dataKey="sessionTitle"
-                  stroke="#94a3b8"
+                  stroke={textColor}
                   fontSize={10}
                   tickLine={false}
                   dy={6}
                 />
                 <YAxis
-                  stroke="#94a3b8"
+                  stroke={textColor}
                   fontSize={10}
                   tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
                   dx={-2}

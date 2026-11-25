@@ -24,19 +24,19 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
 
   return (
     <div
-      className="group relative rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 transition-all duration-200 border border-white/10 bg-slate-900/60 hover:border-white/20"
+      className="group relative rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 transition-all duration-200 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-none"
       style={{
         backdropFilter: 'blur(12px)',
       }}
     >
       <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1">
         <span
-          className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 truncate"
+          className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate"
         >
           {label}
         </span>
         {Icon && (
-          <div className="p-1 rounded-lg bg-white/[0.04] text-slate-400 group-hover:text-white transition-colors shrink-0">
+          <div className="p-1 rounded-lg bg-slate-100 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors shrink-0">
             <Icon size={13} />
           </div>
         )}
@@ -44,14 +44,14 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
 
       {loading ? (
         <div className="space-y-1.5 my-1">
-          <div className="h-5 sm:h-6 w-20 sm:w-24 rounded-lg bg-slate-800 animate-pulse" />
-          <div className="h-3 w-16 rounded bg-slate-800/60 animate-pulse" />
+          <div className="h-5 sm:h-6 w-20 sm:w-24 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          <div className="h-3 w-16 rounded bg-slate-100 dark:bg-slate-800/60 animate-pulse" />
         </div>
       ) : (
         <>
           <div className="flex items-baseline justify-between gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
             <span
-              className="text-xs sm:text-lg font-bold tracking-tight font-mono text-white truncate"
+              className="text-xs sm:text-lg font-bold tracking-tight font-mono text-slate-900 dark:text-white truncate"
             >
               {value}
             </span>
@@ -64,7 +64,7 @@ export default function MetricCard({ label, value, subtext, icon: Icon, badge, b
 
           {subtext && (
             <p
-              className="text-[10.5px] mt-0.5 font-medium text-slate-400 truncate"
+              className="text-[10.5px] mt-0.5 font-medium text-slate-500 dark:text-slate-400 truncate"
             >
               {subtext}
             </p>

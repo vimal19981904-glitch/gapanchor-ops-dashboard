@@ -23,11 +23,12 @@ export function getGeminiConfig(): { apiKey: string | null; model: string } {
     process.env.GOOGLE_AI_KEY ||
     process.env.GOOGLE_API_KEY ||
     HARDCODED_GEMINI_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+  const rawModel = (process.env.GEMINI_MODEL || '').trim();
+  const model = /^[a-z0-9.\-]+$/i.test(rawModel) && rawModel.length < 48 ? rawModel : 'gemini-2.0-flash';
   return { apiKey, model };
 }
 
-let cachedWorkingModel = 'gemini-3.1-flash-lite';
+let cachedWorkingModel = 'gemini-2.0-flash';
 
 async function runGeminiGenerateContent(
   contents: any[],
@@ -39,10 +40,10 @@ async function runGeminiGenerateContent(
     maxOutputTokens?: number;
   }
 ): Promise<{ text: string; model: string }> {
-  // Fast 5-minute circuit breaker check to eliminate 8s waiting delays when quota is tripped
+  // Fast 5-minute circuit breaker check to eliminate waiting delays when quota or key is tripped
   if (isGeminiCircuitOpen()) {
     const remainingSec = Math.ceil((circuitBreakerUntil - Date.now()) / 1000);
-    throw new Error(`Gemini API 429 Circuit Breaker active (${remainingSec}s remaining). Instant local heuristics engaged.`);
+    throw new Error(`Gemini API Circuit Breaker active (${remainingSec}s remaining). Instant local heuristics engaged.`);
   }
 
   const { apiKey: envKey, model: defaultModel } = getGeminiConfig();
@@ -55,16 +56,18 @@ async function runGeminiGenerateContent(
 
   // Prioritize verified active high-speed production models on Google AI Studio
   const modelCandidates = [
-    'gemini-3.1-flash-lite',
-    'gemini-3.5-flash',
-    'gemini-flash-latest',
     requestedModel,
     cachedWorkingModel,
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-flash-latest',
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   let lastErrorText = '';
 
   for (const m of modelCandidates) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
 
@@ -85,13 +88,22 @@ async function runGeminiGenerateContent(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
         lastErrorText = await response.text();
-        // If 429 quota exhaustion is detected, trip circuit breaker for 5 minutes
-        if (response.status === 429 || lastErrorText.includes('RESOURCE_EXHAUSTED')) {
+        // Trip circuit breaker immediately on quota exhaustion (429) or revoked/leaked/invalid key (403/401)
+        if (
+          response.status === 429 ||
+          response.status === 403 ||
+          response.status === 401 ||
+          lastErrorText.includes('RESOURCE_EXHAUSTED') ||
+          lastErrorText.includes('API_KEY_INVALID') ||
+          lastErrorText.includes('PERMISSION_DENIED')
+        ) {
           circuitBreakerUntil = Date.now() + 5 * 60 * 1000;
+          break;
         }
         continue;
       }
@@ -107,7 +119,9 @@ async function runGeminiGenerateContent(
       cachedWorkingModel = m;
       return { text, model: m };
     } catch (err: any) {
-      lastErrorText = err.message;
+      lastErrorText = err.name === 'AbortError' ? 'Gemini API request timed out after 4.5s' : err.message;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

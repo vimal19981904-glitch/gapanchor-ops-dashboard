@@ -6,6 +6,7 @@ import NavigationDrawer, { NavMenuIcon } from '@/components/NavigationDrawer';
 import { OpsNotificationBell } from '@/components/navigation/OpsNotificationBell';
 
 import PageTransition from '@/components/PageTransition';
+import { UnauthorizedAlert } from '@/components/navigation/UnauthorizedAlert';
 
 interface NavigationContextType {
   isOpen: boolean;
@@ -16,9 +17,9 @@ interface NavigationContextType {
 
 const NavigationContext = createContext<NavigationContextType>({
   isOpen: false,
-  openNav: () => {},
-  closeNav: () => {},
-  toggleNav: () => {},
+  openNav: () => { },
+  closeNav: () => { },
+  toggleNav: () => { },
 });
 
 function DrawerBellPortal({ isOpen }: { isOpen: boolean }) {
@@ -85,6 +86,10 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <NavigationContext.Provider value={{ isOpen, openNav, closeNav, toggleNav }}>
+      <React.Suspense fallback={null}>
+        <UnauthorizedAlert />
+      </React.Suspense>
+      <UnauthorizedAlert />
       <PageTransition>{children}</PageTransition>
       <NavigationDrawer isOpen={isOpen} onClose={closeNav} />
       <DrawerBellPortal isOpen={isOpen} />
@@ -102,12 +107,12 @@ export function NavDrawerButton({ className = "" }: { className?: string }) {
   return (
     <button
       onClick={openNav}
-      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-slate-900/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/25 text-white hover:bg-slate-800/90 hover:border-brand-500/60 hover:shadow-[0_0_24px_rgba(99,102,241,0.4)] active:scale-95 transition-all duration-200 flex items-center justify-center shrink-0 cursor-pointer group relative overflow-hidden shadow-lg shadow-black/20 ${className}`}
+      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200 dark:border-white/25 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/90 hover:border-blue-500/60 dark:hover:border-brand-500/60 hover:shadow-md dark:hover:shadow-[0_0_24px_rgba(99,102,241,0.4)] active:scale-95 transition-all duration-200 flex items-center justify-center shrink-0 cursor-pointer group relative overflow-hidden shadow-sm dark:shadow-lg dark:shadow-black/20 ${className}`}
       title="Open Ops Navigation Drawer"
       aria-label="Open Navigation Drawer"
     >
-      <div className="absolute inset-0 bg-gradient-to-tr from-brand-500/25 via-white/15 to-transparent opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      <NavMenuIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-100 group-hover:text-brand-300 transition-transform relative z-10" strokeWidth={2.8} />
+      <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 dark:from-brand-500/25 via-transparent dark:via-white/15 to-transparent opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <NavMenuIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-brand-300 transition-transform relative z-10" strokeWidth={2.8} />
     </button>
   );
 }

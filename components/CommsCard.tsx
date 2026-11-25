@@ -70,18 +70,18 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
   };
 
   return (
-    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl">
+    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-cyan-500/20 bg-white dark:bg-slate-900/60 backdrop-blur-xl h-full shadow-sm dark:shadow-none">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-4 pb-2.5 sm:pb-4 border-b border-border/50">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-brand-500/15 border border-brand-500/30 text-brand-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-brand-500/15 border border-blue-200 dark:border-brand-500/30 text-blue-600 dark:text-brand-400 flex items-center justify-center shrink-0">
               <MessageSquare size={16} className="sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Leads Command Center</h2>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-full bg-blue-50 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-400 border border-blue-200 dark:border-cyan-500/20 shrink-0">
                   {total} Enquiries
                 </span>
               </div>
@@ -93,12 +93,12 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <Link
               href="/enquiries"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-500/20 transition-all cursor-pointer no-underline shrink-0 flex-1 sm:flex-auto justify-center"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600 dark:bg-gradient-to-r dark:from-cyan-600 dark:to-indigo-600 dark:hover:from-cyan-500 dark:hover:to-indigo-500 dark:shadow-md dark:shadow-cyan-500/20 transition-all cursor-pointer no-underline shrink-0 flex-1 sm:flex-auto justify-center"
             >
               <Filter size={12} className="sm:w-[13px] sm:h-[13px]" />
               <span>Full Intelligence Center ({total})</span>
             </Link>
-            <div className="flex items-center justify-center gap-1.5 rounded-xl sm:rounded-full px-2 sm:px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shrink-0">
+            <div className="flex items-center justify-center gap-1.5 rounded-xl sm:rounded-full px-2 sm:px-2.5 py-1 text-[9px] sm:text-[10px] font-semibold border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shrink-0">
               <Shield size={11} /> Server Token
             </div>
           </div>
@@ -107,10 +107,10 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
         {/* Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
           {[
-            { label: 'Total Enquiries', value: total, color: 'text-brand-400' },
-            { label: 'Avg Response', value: `${avgResponseTimeMins}m`, icon: Clock, color: 'text-cyan-400' },
-            { label: 'Action Required', value: actionRequiredCount, color: actionRequiredCount > 0 ? 'text-rose-400' : 'text-emerald-400', alert: actionRequiredCount > 0 },
-            { label: 'Open Enquiries', value: openCount, color: 'text-emerald-400' },
+            { label: 'Total Enquiries', value: total, color: 'text-blue-600 dark:text-brand-400' },
+            { label: 'Avg Response', value: `${avgResponseTimeMins}m`, icon: Clock, color: 'text-indigo-600 dark:text-cyan-400' },
+            { label: 'Action Required', value: actionRequiredCount, color: actionRequiredCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400', alert: actionRequiredCount > 0 },
+            { label: 'Open Enquiries', value: openCount, color: 'text-emerald-600 dark:text-emerald-400' },
           ].map((m, i) => (
             <div key={i} className={`rounded-lg sm:rounded-xl border p-2 sm:p-3 ${m.alert ? 'border-rose-500/30 bg-rose-500/8' : 'border-border'}`} style={!m.alert ? { background: 'var(--surface-2)' } : {}}>
               <span className="text-[9px] sm:text-[10px] font-semibold block truncate" style={{ color: m.alert ? '#fb7185' : 'var(--text-tertiary)' }}>{m.label}</span>
@@ -129,13 +129,13 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
             <h4 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
               Enquiry Threads & Actions
             </h4>
-            <div className="flex items-center gap-1 p-0.5 rounded-full border border-white/10 bg-slate-900/60 backdrop-blur-xl">
+            <div className="flex items-center gap-1 p-0.5 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-900/60 backdrop-blur-xl">
               <button
                 onClick={() => handleFilterChange('all')}
                 className={`text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'all'
-                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
                 All
@@ -144,8 +144,8 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                 onClick={() => handleFilterChange('training')}
                 className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'training'
-                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
                 Training
@@ -154,8 +154,8 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                 onClick={() => handleFilterChange('job_support')}
                 className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'job_support'
-                    ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
                 Job Support
@@ -192,14 +192,14 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                        <span className="text-xs font-semibold text-brand-400 flex items-center gap-1 truncate">
-                          {enq.source === 'outlook' ? <Mail size={11} className="text-blue-400 shrink-0" /> : <MessageSquare size={11} className="text-emerald-400 shrink-0" />}
+                        <span className="text-xs font-semibold text-blue-600 dark:text-brand-400 flex items-center gap-1 truncate">
+                          {enq.source === 'outlook' ? <Mail size={11} className="text-blue-500 shrink-0" /> : <MessageSquare size={11} className="text-emerald-500 shrink-0" />}
                           <span className="truncate">{enq.topic}</span>
                         </span>
                         <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                           • {formatRelativeTime(enq.messageTimestamp)}
                         </span>
-                        {enq.staleReason && <span className="text-rose-400 text-[10px] font-medium">• {enq.staleReason}</span>}
+                        {enq.staleReason && <span className="text-rose-600 dark:text-rose-400 text-[10px] font-medium">• {enq.staleReason}</span>}
                       </div>
                     </div>
 
@@ -207,13 +207,13 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                     <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t border-border/20 sm:border-t-0">
                       {/* Assignment Badge */}
                       {enq.assignedToName ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shrink-0">
-                          <UserCheck size={11} className="text-cyan-400 shrink-0" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-cyan-50 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 shrink-0">
+                          <UserCheck size={11} className="text-cyan-600 dark:text-cyan-400 shrink-0" />
                           <span className="truncate max-w-[130px] sm:max-w-[160px]">{enq.assignedToName}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-zinc-800/80 text-zinc-400 border border-zinc-700/60 shrink-0">
-                          <UserCheck size={11} className="text-zinc-500 shrink-0 opacity-50" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-slate-100 dark:bg-zinc-800/80 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700/60 shrink-0">
+                          <UserCheck size={11} className="text-slate-400 dark:text-zinc-500 shrink-0 opacity-70" />
                           <span>Unassigned</span>
                         </span>
                       )}
@@ -222,9 +222,9 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                       <button
                         onClick={() => openAssignModal(enq)}
                         title={enq.assignedToName ? `Currently assigned to ${enq.assignedToName}. Click to reassign.` : "Assign lead to employee"}
-                        className="flex items-center justify-center gap-1.5 min-w-[90px] px-3 py-1 rounded-xl border border-white/15 bg-white/[0.04] text-slate-200 hover:text-white hover:bg-white/[0.08] hover:border-white/25 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
+                        className="flex items-center justify-center gap-1.5 min-w-[90px] px-3 py-1 rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/[0.04] text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.08] hover:border-slate-300 dark:hover:border-white/25 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
                       >
-                        <UserCheck size={13} className="text-slate-300 shrink-0" />
+                        <UserCheck size={13} className="text-slate-600 dark:text-slate-300 shrink-0" />
                         <span>{enq.assignedToName ? 'Reassign' : 'Assign'}</span>
                       </button>
                     </div>
@@ -265,7 +265,7 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border mt-3.5 pt-3 gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
           <div className="text-[11px]">
-            Showing <span className="font-bold text-cyan-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-bold text-cyan-400">{Math.min(currentPage * pageSize, filteredEnquiries.length)}</span> of <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredEnquiries.length}</span> leads
+            Showing <span className="font-bold text-blue-600 dark:text-cyan-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-bold text-blue-600 dark:text-cyan-400">{Math.min(currentPage * pageSize, filteredEnquiries.length)}</span> of <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredEnquiries.length}</span> leads
           </div>
           <div className="flex items-center gap-2">
             <button

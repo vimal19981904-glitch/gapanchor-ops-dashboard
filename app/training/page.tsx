@@ -377,16 +377,10 @@ export default function TrainingOpsPage() {
                             {/* Fee Status Summary */}
                             <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70">
                               <span className="text-[11px] text-slate-400 font-medium">Fee Breakdown</span>
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  Paid: {pSummary.paidCount}
-                                </span>
-                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                  Partial: {pSummary.partialCount}
-                                </span>
-                                <span className="px-2 py-0.5 rounded text-[9.5px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                                  Pending: {pSummary.pendingCount}
-                                </span>
+                              <div className="flex items-center gap-2.5 text-[10px] text-slate-400">
+                                <span>Paid: <strong className="font-bold font-mono text-slate-200">{pSummary.paidCount}</strong></span>
+                                <span>Partial: <strong className="font-bold font-mono text-slate-200">{pSummary.partialCount}</strong></span>
+                                <span>Pending: <strong className="font-bold font-mono text-slate-200">{pSummary.pendingCount}</strong></span>
                               </div>
                             </div>
 
@@ -482,16 +476,10 @@ export default function TrainingOpsPage() {
 
                           {/* Fee Status Breakdown */}
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-                                <span>Paid: <strong className="font-bold">{pSummary.paidCount}</strong></span>
-                              </span>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border border-amber-500/20 bg-amber-500/10 text-amber-400">
-                                <span>Partial: <strong className="font-bold">{pSummary.partialCount}</strong></span>
-                              </span>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-400">
-                                <span>Pending: <strong className="font-bold">{pSummary.pendingCount}</strong></span>
-                              </span>
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap text-xs text-slate-400">
+                              <span>Paid: <strong className="font-bold font-mono text-slate-200">{pSummary.paidCount}</strong></span>
+                              <span>Partial: <strong className="font-bold font-mono text-slate-200">{pSummary.partialCount}</strong></span>
+                              <span>Pending: <strong className="font-bold font-mono text-slate-200">{pSummary.pendingCount}</strong></span>
                             </div>
                           </td>
 

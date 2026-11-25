@@ -5,18 +5,53 @@
 
 :root {
   --surface-0: #f8fafc;
-  --surface-1: rgba(255, 255, 255, 0.75);
-  --surface-2: rgba(241, 245, 249, 0.85);
-  --surface-3: rgba(226, 232, 240, 0.9);
-  --border-primary: rgba(0, 0, 0, 0.08);
-  --border-secondary: rgba(0, 0, 0, 0.15);
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #f1f5f9;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --text-secondary: #334155;
+  --text-tertiary: #475569;
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+
+  /* Semantic Light Palette */
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f8fafc;
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-hover: rgba(0, 0, 0, 0.03);
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-strong: #cbd5e1;
+  --border-focus: #2563eb;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff6ff;
+  --accent-ring: rgba(37, 99, 235, 0.20);
+  --status-success: #059669;
+  --status-success-bg: #ecfdf5;
+  --status-danger: #dc2626;
+  --status-danger-bg: #fef2f2;
+  --status-warning: #d97706;
+  --status-warning-bg: #fffbeb;
+  --status-info: #2563eb;
+  --status-info-bg: #eff6ff;
+  --chart-grid: #f1f5f9;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e2e8f0;
+  --chart-text: #475569;
+  --chart-s1: #2563eb;
+  --chart-s2: #059669;
+  --chart-s3: #d97706;
+  --chart-s4: #7c3aed;
+  --chart-s5: #475569;
 }
 
-.dark {
+.dark,
+[data-theme="dark"] {
   --surface-0: #080c14;
   --surface-1: rgba(15, 23, 42, 0.65);
   --surface-2: rgba(30, 41, 59, 0.7);
@@ -27,6 +62,40 @@
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
   --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+
+  /* Semantic Dark Palette (Pixel-Identical Production Baseline) */
+  --bg-page: #070c18;
+  --bg-surface: rgba(15, 23, 42, 0.65);
+  --bg-surface-subtle: rgba(30, 41, 59, 0.70);
+  --bg-surface-elevated: #090d16;
+  --bg-surface-hover: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-focus: #6366f1;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+  --accent-primary: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-subtle: rgba(99, 102, 241, 0.15);
+  --accent-ring: rgba(99, 102, 241, 0.35);
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-danger: #f43f5e;
+  --status-danger-bg: rgba(244, 63, 94, 0.15);
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-info: #38bdf8;
+  --status-info-bg: rgba(56, 189, 248, 0.15);
+  --chart-grid: rgba(255, 255, 255, 0.06);
+  --chart-tooltip-bg: #090d16;
+  --chart-tooltip-border: rgba(255, 255, 255, 0.15);
+  --chart-text: #94a3b8;
+  --chart-s1: #ffffff;
+  --chart-s2: #94a3b8;
+  --chart-s3: #64748b;
+  --chart-s4: #475569;
+  --chart-s5: #334155;
 }
 
 @layer base {
@@ -45,14 +114,15 @@
   /* ─── Glass Card System ─────────────────────────────────────── */
   .glass-card {
     @apply rounded-3xl p-6 transition-all duration-300 relative overflow-hidden;
-    background: var(--surface-1);
+    background: var(--bg-surface);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--border-default);
     box-shadow: var(--glass-shadow);
   }
 
-  .dark .glass-card {
+  .dark .glass-card,
+  [data-theme="dark"] .glass-card {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.65) 100%);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     border-left: 1px solid rgba(255, 255, 255, 0.08);
@@ -61,6 +131,11 @@
   }
 
   .glass-card:hover {
+    border-color: var(--border-strong);
+  }
+
+  .dark .glass-card:hover,
+  [data-theme="dark"] .glass-card:hover {
     border-color: var(--border-secondary);
     box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.5);
   }
@@ -68,12 +143,10 @@
   /* ─── Skeleton Shimmer ──────────────────────────────────────── */
   .skeleton {
     @apply rounded-xl animate-shimmer;
-    background: linear-gradient(
-      90deg,
-      var(--surface-2) 25%,
-      var(--surface-3) 50%,
-      var(--surface-2) 75%
-    );
+    background: linear-gradient(90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%);
     background-size: 200% 100%;
   }
 
@@ -82,43 +155,98 @@
     @apply inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-[11px] font-bold tracking-wide transition-all duration-200;
     letter-spacing: 0.03em;
   }
-  .badge-income { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
-  .badge-expense { @apply bg-rose-500/15 text-rose-300 border border-rose-500/35 shadow-sm shadow-rose-500/10; }
-  .badge-upi { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
-  .badge-cash { @apply bg-amber-500/15 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10; }
-  .badge-bank { @apply bg-brand-500/15 text-brand-300 border border-brand-500/35 shadow-sm shadow-brand-500/10; }
-  .badge-card { @apply bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm shadow-cyan-500/10; }
 
-  .badge-scheduled { @apply bg-brand-500/15 text-brand-300 border border-brand-500/35 shadow-sm shadow-brand-500/10; }
-  .badge-in-progress { @apply bg-amber-500/15 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10; }
-  .badge-completed { @apply bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 shadow-sm shadow-emerald-500/10; }
-  .badge-stale { @apply bg-rose-500/15 text-rose-300 border border-rose-500/35 shadow-sm shadow-rose-500/10; }
-  .badge-processed { @apply bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm shadow-cyan-500/10; }
-  .badge-open { @apply bg-blue-500/15 text-blue-300 border border-blue-500/35 shadow-sm shadow-blue-500/10; }
+  .badge-income {
+    @apply bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/35 shadow-sm;
+  }
 
-  /* ─── Apple Style Glossy Boxy Buttons (Image 2 Reference Style) ───────────────────────── */
+  .badge-expense {
+    @apply bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/35 shadow-sm;
+  }
+
+  .badge-upi {
+    @apply bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/35 shadow-sm;
+  }
+
+  .badge-cash {
+    @apply bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/35 shadow-sm;
+  }
+
+  .badge-bank {
+    @apply bg-blue-50 dark:bg-brand-500/15 text-blue-700 dark:text-brand-300 border border-blue-200 dark:border-brand-500/35 shadow-sm;
+  }
+
+  .badge-card {
+    @apply bg-cyan-50 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/35 shadow-sm;
+  }
+
+  .badge-scheduled {
+    @apply bg-blue-50 dark:bg-brand-500/15 text-blue-700 dark:text-brand-300 border border-blue-200 dark:border-brand-500/35 shadow-sm;
+  }
+
+  .badge-in-progress {
+    @apply bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/35 shadow-sm;
+  }
+
+  .badge-completed {
+    @apply bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/35 shadow-sm;
+  }
+
+  .badge-stale {
+    @apply bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/35 shadow-sm;
+  }
+
+  .badge-processed {
+    @apply bg-cyan-50 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/35 shadow-sm;
+  }
+
+  .badge-open {
+    @apply bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/35 shadow-sm;
+  }
+
+  /* ─── Apple Style Buttons ────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-white/[0.18] to-white/[0.06] border border-white/25 px-4 py-2 text-xs font-bold text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl transition-all duration-200 hover:from-white/[0.24] hover:to-white/[0.10] hover:border-white/35 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white font-bold px-4 py-2 text-xs shadow-sm hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50;
   }
+
+  .dark .btn-primary,
+  [data-theme="dark"] .btn-primary {
+    @apply bg-gradient-to-b from-white/[0.18] to-white/[0.06] border border-white/25 text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl hover:from-white/[0.24] hover:to-white/[0.10] hover:border-white/35;
+  }
+
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-bold text-slate-300 bg-white/[0.04] backdrop-blur-xl transition-all duration-200 hover:bg-white/[0.08] hover:border-white/25 hover:text-white active:scale-[0.98] disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] transition-all disabled:opacity-50;
   }
+
+  .dark .btn-secondary,
+  [data-theme="dark"] .btn-secondary {
+    @apply border-white/15 text-slate-300 bg-white/[0.04] backdrop-blur-xl hover:bg-white/[0.08] hover:border-white/25 hover:text-white shadow-none;
+  }
+
   .btn-process {
-    @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 px-4 py-2 text-xs font-extrabold text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl transition-all duration-200 hover:from-white/[0.28] hover:to-white/[0.12] hover:border-white/40 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white font-extrabold px-4 py-2 text-xs shadow-sm hover:bg-blue-700 active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .dark .btn-process,
+  [data-theme="dark"] .btn-process {
+    @apply bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl hover:from-white/[0.28] hover:to-white/[0.12] hover:border-white/40;
   }
 
   /* ─── Payment Status Indicator Dots ────────────────────────── */
   .status-dot {
     @apply inline-block w-2 h-2 rounded-full shrink-0;
   }
+
   .status-dot-paid {
     @apply bg-emerald-400;
     box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
   }
+
   .status-dot-partial {
     @apply bg-amber-400;
     box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
   }
+
   .status-dot-pending {
     @apply bg-rose-400;
     box-shadow: 0 0 6px rgba(251, 113, 133, 0.6);
@@ -131,7 +259,7 @@
 
 .dark body {
   background-color: #060911;
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
     radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
@@ -252,6 +380,7 @@
   width: 0 !important;
   height: 0 !important;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
@@ -263,6 +392,7 @@
    for a native, modern application feel. Scrolling remains 100% active.
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+
   html,
   body,
   #__next,
@@ -326,10 +456,21 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* Staggered entrance for grid children */
-.glass-card:nth-child(1) { animation-delay: 0ms; }
-.glass-card:nth-child(2) { animation-delay: 60ms; }
-.glass-card:nth-child(3) { animation-delay: 120ms; }
-.glass-card:nth-child(4) { animation-delay: 180ms; }
+.glass-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.glass-card:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.glass-card:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.glass-card:nth-child(4) {
+  animation-delay: 180ms;
+}
 
 /* Disable hover pop-up / lift / scale animations across all cards & badges (preserving graph tooltips/animations) */
 .glass-card:hover,
@@ -362,7 +503,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* Better visual separation between major module cards */
-.glass-card + .glass-card {
+.glass-card+.glass-card {
   margin-top: 2px;
 }
 
@@ -380,7 +521,9 @@
    Does NOT affect desktop (> 768px)
    ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  html, body {
+
+  html,
+  body {
     overflow-x: hidden !important;
     max-width: 100vw !important;
   }
@@ -465,6 +608,7 @@
       max-height: 0;
       transform: translateY(-3px);
     }
+
     to {
       opacity: 1;
       max-height: 300px;
@@ -478,7 +622,7 @@
   }
 
   /* Mobile: Normalize glass-card stacking gaps */
-  .glass-card + .glass-card {
+  .glass-card+.glass-card {
     margin-top: 0;
   }
 
@@ -499,9 +643,11 @@
     opacity: 0.15;
     backdrop-filter: blur(0px);
   }
+
   60% {
     opacity: 0.85;
   }
+
   100% {
     transform: translateX(0%);
     opacity: 1;
@@ -524,6 +670,7 @@
     opacity: 0;
     backdrop-filter: blur(0px);
   }
+
   100% {
     opacity: 1;
     backdrop-filter: blur(8px);
@@ -565,5 +712,3 @@
     gap: 6px !important;
   }
 }
-
-

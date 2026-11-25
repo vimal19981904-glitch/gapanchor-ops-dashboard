@@ -47,26 +47,26 @@ export default function ExpenseBreakdownDashboard({ refreshTrigger }: { refreshT
 
   return (
     <div
-      className="relative rounded-3xl p-4 sm:p-6 border border-white/10 bg-slate-950/40 backdrop-blur-xl shadow-2xl transition-all duration-300 space-y-4 sm:space-y-5"
+      className="relative rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/40 backdrop-blur-xl shadow-sm dark:shadow-2xl transition-all duration-300 space-y-4 sm:space-y-5"
     >
       {/* Header Section & Time-Based Filter Toggles */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
+            <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
               Expense Overview
             </h2>
-            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/[0.06] text-slate-300 border border-white/12 flex items-center gap-1">
-              <Sparkles size={11} className="text-slate-400" /> Enterprise Analytics
+            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/12 flex items-center gap-1">
+              <Sparkles size={11} className="text-blue-500 dark:text-slate-400" /> Enterprise Analytics
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 font-medium">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
             Financial breakdown & spending analysis
           </p>
         </div>
 
         {/* Time-Based Filtering Controls - Grey Glass Pills */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/80 border border-white/10 self-start sm:self-auto">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 self-start sm:self-auto">
           {[
             { id: 'week', label: 'Week' },
             { id: 'month', label: 'Month' },
@@ -77,11 +77,10 @@ export default function ExpenseBreakdownDashboard({ refreshTrigger }: { refreshT
             <button
               key={item.id}
               onClick={() => setDateRange(item.id)}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
-                dateRange === item.id
-                  ? 'bg-gradient-to-b from-white/[0.18] to-white/[0.06] text-white shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-white/20 backdrop-blur-xl font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-              }`}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${dateRange === item.id
+                ? 'bg-blue-600 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] text-white shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-blue-600 dark:border-white/20 backdrop-blur-xl font-bold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.04]'
+                }`}
             >
               {item.label}
             </button>
@@ -172,11 +171,10 @@ export default function ExpenseBreakdownDashboard({ refreshTrigger }: { refreshT
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">Month-over-Month</span>
             <div
-              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                isMomNegative
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-              }`}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full ${isMomNegative
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                }`}
             >
               {isMomNegative ? <ArrowDownRight size={12} /> : <ArrowUpRight size={12} />}
               <span>{metrics.momPercentage}%</span>

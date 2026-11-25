@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -8,8 +9,40 @@ export async function GET() {
 
     if (sessionCookie && sessionCookie.value) {
       try {
-        const user = JSON.parse(sessionCookie.value);
-        return NextResponse.json({ success: true, user });
+        const sessionUser = JSON.parse(sessionCookie.value);
+
+        // 100% DB-Free Demo Account Interceptor
+        if (sessionUser.isDemo || sessionUser.email?.toLowerCase() === 'demo@gapanchor.com') {
+          return NextResponse.json({ success: true, user: sessionUser });
+        }
+
+        // Live synchronisation against PostgreSQL to reflect latest Master Admin permission changes
+        if (sessionUser.id) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: sessionUser.id },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              isActive: true,
+              assignedCourse: true,
+              allowedUIs: true,
+            },
+          });
+
+          if (dbUser) {
+            return NextResponse.json({
+              success: true,
+              user: {
+                ...sessionUser,
+                ...dbUser,
+              },
+            });
+          }
+        }
+
+        return NextResponse.json({ success: true, user: sessionUser });
       } catch (e) {
         // Invalid session cookie
       }

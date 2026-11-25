@@ -63,13 +63,13 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
   const paginatedItems = allItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-slate-900/60 backdrop-blur-xl h-full">
+    <div className="glass-card animate-slide-up flex flex-col justify-between !p-2.5 sm:!p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-cyan-500/20 bg-white dark:bg-slate-900/60 backdrop-blur-xl h-full shadow-sm dark:shadow-none">
       <div>
         {/* Header (1:1 with Training Operations OpsCard) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-3 sm:mb-4 pb-2.5 sm:pb-4 border-b border-border/50">
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Orange icon badge for logo as requested */}
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Briefcase size={18} className="sm:w-5 sm:h-5" />
             </div>
             <div>
@@ -77,11 +77,11 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                 <h2 className="text-sm sm:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                   Job Support Operations
                 </h2>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold rounded-full bg-blue-50 dark:bg-brand-500/10 text-blue-700 dark:text-brand-400 border border-blue-200 dark:border-brand-500/20 shrink-0">
                   {totalLeads} {totalLeads === 1 ? 'Engagement' : 'Engagements'}
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Dedicated 1-on-1 Engineer Assignments & Fee Tracking
               </p>
             </div>
@@ -89,7 +89,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <Link
               href="/job-support"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.10] to-white/[0.04] hover:from-white/[0.16] hover:to-white/[0.08] text-slate-200 border border-white/15 hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/15 dark:bg-gradient-to-b dark:from-white/[0.10] dark:to-white/[0.04] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08] dark:hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
             >
               <Maximize2 size={12} />
               <span>Intelligence Deck</span>
@@ -98,7 +98,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
             {onOpenModal && (
               <button
                 onClick={onOpenModal}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-gradient-to-b from-white/[0.18] to-white/[0.06] hover:from-white/[0.24] hover:to-white/[0.10] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:hover:from-white/[0.24] dark:hover:to-white/[0.10] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
               >
                 <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
                 <span>Add Session</span>
@@ -110,10 +110,10 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
         {/* Metrics Grid (1:1 with Training Operations OpsCard) */}
         <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
           {[
-            { label: 'Total 1-on-1', value: totalLeads, sub: 'Consultant/Client', color: 'text-indigo-400' },
-            { label: 'Active Support', value: activeCount, sub: 'Scheduled', color: 'text-brand-400' },
-            { label: 'Assigned Eng', value: assignedCount, sub: 'Matched', color: 'text-emerald-400' },
-            { label: 'Pending', value: pendingAssignCount, sub: 'Needs Engineer', color: pendingAssignCount > 0 ? 'text-rose-400' : 'text-slate-400', alert: pendingAssignCount > 0 },
+            { label: 'Total 1-on-1', value: totalLeads, sub: 'Consultant/Client', color: 'text-indigo-600 dark:text-indigo-400' },
+            { label: 'Active Support', value: activeCount, sub: 'Scheduled', color: 'text-blue-600 dark:text-brand-400' },
+            { label: 'Assigned Eng', value: assignedCount, sub: 'Matched', color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Pending', value: pendingAssignCount, sub: 'Needs Engineer', color: pendingAssignCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400', alert: pendingAssignCount > 0 },
           ].map((m, i) => (
             <div
               key={i}
@@ -178,7 +178,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                   {/* Row 1: Target Platform & Date + Engineer Status (Desktop) & Actions */}
                   <div className="flex items-start sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-brand-500/10 text-blue-700 dark:text-brand-400 border border-blue-200 dark:border-brand-500/20 shrink-0">
                         {platform}
                       </span>
                       <span
@@ -193,12 +193,12 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                     <div className="flex items-center gap-1.5 shrink-0">
                       {/* Engineer badge on desktop only (hidden on mobile to prevent badge overlap) */}
                       {engineer ? (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
-                          <UserCheck size={11} className="text-indigo-400 shrink-0" />
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 shrink-0">
+                          <UserCheck size={11} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
                           <span className="truncate max-w-[120px]">{engineer}</span>
                         </span>
                       ) : (
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400 border border-slate-700/60 shrink-0">
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/60 shrink-0">
                           <User size={11} className="opacity-50 shrink-0" />
                           <span>Unassigned</span>
                         </span>
@@ -210,7 +210,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                           e.stopPropagation();
                           openAssignModal(item);
                         }}
-                        className="px-2 py-0.5 rounded-lg border border-border text-slate-300 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 text-[10px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                        className="px-2 py-0.5 rounded-lg border border-slate-200 dark:border-border bg-white dark:bg-transparent text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-brand-400 hover:border-blue-300 dark:hover:border-brand-500/40 hover:bg-blue-50/50 dark:hover:bg-brand-500/10 text-[10px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs dark:shadow-none"
                         title="Assign or reassign support engineer"
                       >
                         <UserCheck size={11} />
@@ -224,7 +224,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                             e.stopPropagation();
                             onEditSession(item);
                           }}
-                          className="p-1 rounded-lg border border-border text-slate-400 hover:text-brand-400 hover:border-brand-500/40 hover:bg-brand-500/10 transition-all shrink-0 cursor-pointer"
+                          className="p-1 rounded-lg border border-slate-200 dark:border-border text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-brand-400 hover:border-blue-300 dark:hover:border-brand-500/40 hover:bg-blue-50/50 dark:hover:bg-brand-500/10 transition-all shrink-0 cursor-pointer"
                           title="Edit Job Support session"
                         >
                           <Edit3 size={12} />
@@ -247,16 +247,16 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                     style={{ color: 'var(--text-tertiary)' }}
                   >
                     <span>
-                      Client: <strong className="font-semibold text-brand-400">{clientName}</strong>
+                      Client: <strong className="font-semibold text-blue-600 dark:text-brand-400">{clientName}</strong>
                     </span>
                     <span>
-                      Engineer: <strong className="font-semibold text-slate-300">{engineer || 'Unassigned'}</strong>
+                      Engineer: <strong className="font-semibold text-slate-700 dark:text-slate-300">{engineer || 'Unassigned'}</strong>
                     </span>
                     <span
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border"
                       style={{ background: 'var(--surface-0)', color: 'var(--text-secondary)' }}
                     >
-                      <MapPin size={10} className="shrink-0 text-slate-400" />
+                      <MapPin size={10} className="shrink-0 text-slate-500 dark:text-slate-400" />
                       <span>{item.location || item.phone || 'Online Sandbox + Teams'}</span>
                     </span>
                   </div>
@@ -266,13 +266,12 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
                     <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
                       Client Financials
                     </span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span>Paid: <strong className="font-bold font-mono">₹ {clientTotalPaid.toLocaleString()}</strong></span>
+                    <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                      <span>
+                        Paid: <strong className="font-bold font-mono" style={{ color: 'var(--text-primary)' }}>₹ {clientTotalPaid.toLocaleString()}</strong>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-brand-500/20 bg-brand-500/10 text-brand-400">
-                        <span>Total Fee: <strong className="font-bold font-mono">₹ {clientTotalDue.toLocaleString()}</strong></span>
+                      <span>
+                        Total Fee: <strong className="font-bold font-mono" style={{ color: 'var(--text-primary)' }}>₹ {clientTotalDue.toLocaleString()}</strong>
                       </span>
                     </div>
                   </div>
@@ -290,7 +289,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
           style={{ color: 'var(--text-tertiary)' }}
         >
           <div className="text-[10px] sm:text-[11px]">
-            Showing <span className="font-semibold text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-brand-400">{Math.min(currentPage * pageSize, allItems.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{allItems.length}</span> sessions
+            Showing <span className="font-semibold text-blue-600 dark:text-brand-400">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-semibold text-blue-600 dark:text-brand-400">{Math.min(currentPage * pageSize, allItems.length)}</span> of <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{allItems.length}</span> sessions
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -318,12 +317,12 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
 
       {/* Footer (1:1 with Training Operations OpsCard) */}
       <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/40 text-xs">
-        <span className="text-slate-400 text-[11px]">
+        <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">
           Dedicated 1-on-1 Support Pipeline
         </span>
         <Link
           href="/job-support"
-          className="flex items-center gap-1 font-bold text-brand-400 hover:text-brand-300 no-underline"
+          className="flex items-center gap-1 font-bold text-blue-600 hover:text-blue-700 dark:text-brand-400 dark:hover:text-brand-300 no-underline"
         >
           <span>Full Job Support Ops</span>
           <ChevronRight size={14} />
