@@ -954,7 +954,7 @@ export function DailyPipelineBoard({
           <button
             type="button"
             onClick={() => setSearchModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-blue-500/20 dark:hover:from-cyan-500/30 dark:hover:to-blue-500/30 dark:text-cyan-300 dark:border-cyan-500/40 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm dark:bg-transparent dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-blue-500/20 dark:hover:from-cyan-500/30 dark:hover:to-blue-500/30 dark:text-cyan-300 dark:border-cyan-500/40 text-xs font-bold transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Prospect</span>

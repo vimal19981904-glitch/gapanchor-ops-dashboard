@@ -134,7 +134,7 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                 onClick={() => handleFilterChange('all')}
                 className={`text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'all'
-                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
@@ -144,7 +144,7 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                 onClick={() => handleFilterChange('training')}
                 className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'training'
-                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
@@ -154,7 +154,7 @@ export default function CommsCard({ commsData, onRefresh, loading, onOpenExcelMo
                 onClick={() => handleFilterChange('job_support')}
                 className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                   typeFilter === 'job_support'
-                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
                 }`}
               >

@@ -17,6 +17,10 @@ export function isGeminiCircuitOpen(): boolean {
   return Date.now() < circuitBreakerUntil;
 }
 
+export function resetGeminiCircuitBreaker(): void {
+  circuitBreakerUntil = 0;
+}
+
 export function getGeminiConfig(): { apiKey: string | null; model: string } {
   const apiKey =
     process.env.GEMINI_API_KEY ||

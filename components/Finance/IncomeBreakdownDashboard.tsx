@@ -75,7 +75,7 @@ export default function IncomeBreakdownDashboard() {
               key={item.id}
               onClick={() => setDateRange(item.id)}
               className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer ${dateRange === item.id
-                ? 'bg-blue-600 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] text-white shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-blue-600 dark:border-white/20 backdrop-blur-xl font-bold'
+                ? 'bg-blue-600 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] text-white shadow-sm dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.3)] border border-blue-600 dark:border-white/20 backdrop-blur-xl font-bold'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.04]'
                 }`}
             >

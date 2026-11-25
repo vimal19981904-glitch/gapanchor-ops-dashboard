@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { callGemini, getGeminiConfig } from '@/lib/gemini-client';
+import { callGemini, getGeminiConfig, resetGeminiCircuitBreaker } from '@/lib/gemini-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Key is verified! Persist to .env and process.env
+    // Key is verified! Persist to .env and process.env and reset circuit breaker
+    resetGeminiCircuitBreaker();
     process.env.GEMINI_API_KEY = trimmedKey;
 
     try {

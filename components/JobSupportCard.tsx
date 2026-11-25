@@ -89,7 +89,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <Link
               href="/job-support"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/15 dark:bg-gradient-to-b dark:from-white/[0.10] dark:to-white/[0.04] dark:hover:from-white/[0.16] dark:hover:to-white/[0.08] dark:hover:border-white/25 shadow-sm backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-white dark:border-white/15 dark:hover:border-white/25 dark:shadow-none backdrop-blur-xl transition-all cursor-pointer no-underline shrink-0 active:scale-95"
             >
               <Maximize2 size={12} />
               <span>Intelligence Deck</span>
@@ -98,7 +98,7 @@ export default function JobSupportCard({ jobSupportData, onRefresh, onOpenModal,
             {onOpenModal && (
               <button
                 onClick={onOpenModal}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:hover:from-white/[0.24] dark:hover:to-white/[0.10] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-white dark:border-white/15 dark:hover:border-white/25 dark:shadow-none backdrop-blur-xl transition-all cursor-pointer shrink-0 flex-1 sm:flex-auto justify-center active:scale-95"
               >
                 <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
                 <span>Add Session</span>

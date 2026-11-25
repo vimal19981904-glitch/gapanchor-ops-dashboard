@@ -212,6 +212,59 @@ interface DatabaseFilterMatch {
 }
 
 /**
+ * Normalizes common Web Speech API voice-to-text mis-transcriptions for GapAnchor domain terms.
+ */
+function normalizeVoiceDomainTerms(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\bman\s+attend\b/gi, 'manhattan')
+    .replace(/\bman\s+hattan\b/gi, 'manhattan')
+    .replace(/\bmanhatten\b/gi, 'manhattan')
+    .replace(/\bmana\s+than\b/gi, 'manhattan')
+    .replace(/\bblue\s+under\b/gi, 'blue yonder')
+    .replace(/\bkinexis\b|\bcan\s+axis\b/gi, 'kinaxis')
+    .replace(/\bpro\s+active\b/gi, 'proactive')
+    .trim();
+}
+
+/**
+ * Produces an executive cohort summary instead of dumping 3 random names.
+ */
+function summarizeMatchedCohort(matchedLeads: ComprehensiveLeadProfile[], label: string): string {
+  const uniqueNames = Array.from(new Set(matchedLeads.map((l) => l.name).filter(Boolean)));
+  const talkedCount = matchedLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'talked').length;
+  const inTouchCount = matchedLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'in touch').length;
+  const convertedCount = matchedLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'converted').length;
+  const pendingCount = matchedLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'pending').length;
+  const dueCount = matchedLeads.filter((l) => l.isDue || Boolean(l.followUpDate)).length;
+  const withNotesOrCalls = matchedLeads.filter((l) => Boolean(l.transcriptSummary) || (l.notes && l.notes.trim().length > 0)).length;
+
+  const topHighIntent = matchedLeads
+    .filter((l) => (l.score || 0) >= 7 || l.leadQuality === 'High')
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 3)
+    .map((l) => (l.score ? `${l.name} rated ${l.score} out of 10` : l.name));
+
+  const statusParts: string[] = [];
+  if (convertedCount > 0) statusParts.push(`${convertedCount} converted`);
+  if (talkedCount > 0) statusParts.push(`${talkedCount} talked`);
+  if (inTouchCount > 0) statusParts.push(`${inTouchCount} in touch`);
+  if (pendingCount > 0) statusParts.push(`${pendingCount} pending outreach`);
+
+  const statusPhrase = statusParts.length > 0 ? ` Status breakdown: ${statusParts.join(', ')}.` : '';
+  const activityPhrase =
+    withNotesOrCalls > 0 || dueCount > 0
+      ? ` ${withNotesOrCalls} have active call notes or transcripts and ${dueCount} have scheduled follow ups.`
+      : '';
+  const highlightPhrase =
+    topHighIntent.length > 0
+      ? ` Top priority candidates include ${topHighIntent.join(', ')}.`
+      : ` Most recent entries include ${uniqueNames.slice(0, 3).join(', ')}.`;
+
+  return `Boss, I filtered the CRM to ${matchedLeads.length} ${label}.${statusPhrase}${activityPhrase}${highlightPhrase}`;
+}
+
+/**
  * Scans ALL 502+ database enquiries to identify matching candidate subsets
  * for filtering prompts (transcripts, notes, due dates, country, course, status).
  * Prevents premature truncation so J.A.R.V.I.S. always evaluates the entire database.
@@ -221,7 +274,7 @@ function detectAndEvaluateFullDatabaseFilter(
   opsContext: OperationsIntelligenceSnapshot,
   transcriptSnapshot: TranscriptSnapshot
 ): DatabaseFilterMatch {
-  const p = prompt.toLowerCase().trim();
+  const p = normalizeVoiceDomainTerms(prompt);
   const allLeads = opsContext.allLeads;
 
   // 1. Transcript / Call Recording filter (only when explicitly filtering/listing leads, NOT when asking for action items, CX summary, or system status)
@@ -362,11 +415,11 @@ function detectAndEvaluateFullDatabaseFilter(
     }
   }
 
-  // 5. Course filter
+  // 5. Course filter (supports natural voice phrasing like "filter me out all manhattan wms enquiry")
   const courseKeywords: Record<string, string> = {
     'blue yonder': 'Blue Yonder WMS',
     jda: 'Blue Yonder WMS (JDA)',
-    manhattan: 'Manhattan Active WMS',
+    manhattan: 'Manhattan WMS',
     'active wms': 'Manhattan Active WMS',
     proactive: 'Manhattan ProActive WMS',
     sap: 'SAP S/4HANA',
@@ -377,7 +430,7 @@ function detectAndEvaluateFullDatabaseFilter(
 
   for (const [key, courseName] of Object.entries(courseKeywords)) {
     const re = new RegExp(`\\b${key}\\b`, 'i');
-    if (re.test(p) && /\b(filter|filtrate|show|list|who|leads|candidates|track)\b/i.test(p)) {
+    if (re.test(p) && /\b(filter|filtrate|show|list|who|leads|candidates|track|enquir|all|find|get)\b/i.test(p)) {
       const matchedLeads = allLeads.filter((l) => (l.course || '').toLowerCase().includes(key));
       const uniqueCandidateNames = Array.from(new Set(matchedLeads.map((l) => l.name)));
 
@@ -391,10 +444,54 @@ function detectAndEvaluateFullDatabaseFilter(
           uniqueCandidateNames,
           totalMatches: matchedLeads.length,
           recommendedFilter: 'all',
-          suggestedAnswer: `Boss, I scanned all ${allLeads.length} database enquiries and filtered the table to all ${uniqueCandidateNames.length} candidates interested in ${courseName}, including ${uniqueCandidateNames.slice(0, 5).join(', ')}.`,
-          suggestedActionAdvice: `Check upcoming batch schedule and trainer availability for ${courseName}.`,
+          suggestedAnswer: summarizeMatchedCohort(matchedLeads, `${courseName} enquiries`),
+          suggestedActionAdvice: `Check upcoming batch schedule and follow up on high intent ${courseName} prospects.`,
         };
       }
+    }
+  }
+
+  // 6. Status / Pipeline filter (talked, in touch, pending, converted, high intent, red flag)
+  if (/\b(filter|filtrate|show|list|find|get)\b/i.test(p)) {
+    let statusMatched: ComprehensiveLeadProfile[] = [];
+    let statusLabel = '';
+    let recFilter = 'all';
+
+    if (/\b(converted|enrolled)\b/i.test(p)) {
+      statusMatched = allLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'converted');
+      statusLabel = 'converted candidates';
+    } else if (/\btalked\b/i.test(p)) {
+      statusMatched = allLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'talked');
+      statusLabel = 'candidates we have talked to';
+    } else if (/\bin\s*touch\b/i.test(p)) {
+      statusMatched = allLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'in touch');
+      statusLabel = 'candidates in touch';
+    } else if (/\bpending\b/i.test(p) && !/\baction\s*item/i.test(p)) {
+      statusMatched = allLeads.filter((l) => (l.contactStatus || '').toLowerCase() === 'pending');
+      statusLabel = 'pending outreach enquiries';
+    } else if (/\b(high\s+intent|hot\s+leads?)\b/i.test(p)) {
+      statusMatched = allLeads.filter((l) => (l.score || 0) >= 8 || l.leadQuality === 'High');
+      statusLabel = 'high intent candidates';
+      recFilter = 'high_intent';
+    } else if (/\bred\s*flags?\b/i.test(p)) {
+      statusMatched = allLeads.filter((l) => l.hasRedFlag);
+      statusLabel = 'candidates with active red flags';
+      recFilter = 'red_flags';
+    }
+
+    if (statusMatched.length > 0) {
+      return {
+        intentDetected: true,
+        filterType: 'status',
+        categoryLabel: statusLabel,
+        matchedLeadIds: statusMatched.map((l) => l.id),
+        matchedLeads: statusMatched,
+        uniqueCandidateNames: Array.from(new Set(statusMatched.map((l) => l.name))),
+        totalMatches: statusMatched.length,
+        recommendedFilter: recFilter,
+        suggestedAnswer: summarizeMatchedCohort(statusMatched, statusLabel),
+        suggestedActionAdvice: `Prioritize top scored leads in ${statusLabel} for immediate follow up.`,
+      };
     }
   }
 
@@ -1464,7 +1561,7 @@ async function fallbackComprehensiveOperations(
     };
   }
 
-  // 7. General lead matching (with stopword filtering so random chitchat never matches CRM notes)
+  // 7. General lead matching (with stopword filtering, voice normalization & executive summarization)
   const SEARCH_STOPWORDS = new Set([
     'seems', 'like', 'should', 'good', 'great', 'okay', 'fine', 'well', 'about', 'with',
     'this', 'that', 'have', 'been', 'were', 'they', 'them', 'what', 'when', 'where',
@@ -1473,9 +1570,14 @@ async function fallbackComprehensiveOperations(
     'make', 'sure', 'right', 'now', 'can', 'you', 'for', 'are', 'the', 'and', 'going',
     'how', 'was', 'has', 'had', 'not', 'but', 'from', 'who', 'yes', 'yeah', 'yep',
     'hey', 'hello', 'here', 'doing', 'want', 'need', 'know', 'look', 'looking',
+    'filter', 'filtrate', 'out', 'all', 'every', 'enquiry', 'enquiries', 'query',
+    'lead', 'leads', 'candidate', 'candidates', 'prospect', 'prospects', 'list',
+    'show', 'find', 'get', 'status', 'summary', 'summarize', 'explain', 'details',
+    'detail', 'data', 'record', 'records', 'database', 'system',
   ]);
 
-  const meaningfulTerms = q
+  const normalizedQ = normalizeVoiceDomainTerms(q);
+  const meaningfulTerms = normalizedQ
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2 && !SEARCH_STOPWORDS.has(w));
@@ -1492,7 +1594,13 @@ async function fallbackComprehensiveOperations(
   const matched = opsContext.allLeads.filter((l) => {
     const primaryHay = `${l.name} ${l.leadCode} ${l.course} ${l.email || ''} ${l.phone} ${l.country || ''}`.toLowerCase();
     const notesHay = (l.notes || '').toLowerCase();
-    return meaningfulTerms.some((w) => primaryHay.includes(w) || (w.length >= 4 && notesHay.includes(w)));
+    return meaningfulTerms.some((w) => {
+      if (w.length <= 4) {
+        const wordRe = new RegExp(`\\b${w}\\b`, 'i');
+        return wordRe.test(primaryHay) || wordRe.test(notesHay);
+      }
+      return primaryHay.includes(w) || notesHay.includes(w);
+    });
   });
 
   if (matched.length === 0) {
@@ -1506,10 +1614,27 @@ async function fallbackComprehensiveOperations(
 
   setActiveSubjectLead(matched[0]);
   const matchedIds = matched.map((l) => l.id);
-  const sampleNames = matched.slice(0, 3).map((l) => l.name).join(', ');
 
+  // Single candidate: rich executive summary
+  if (matched.length === 1) {
+    const c = matched[0];
+    const scoreNote = c.score ? `, rated ${c.score} out of 10` : '';
+    const notesNote = c.notes ? ` CRM notes mention ${c.notes}.` : '';
+    const transcriptNote = c.transcriptSummary ? ` Latest call summary: ${c.transcriptSummary.slice(0, 160)}.` : '';
+    const dueNote = c.followUpDate ? ` Follow up is scheduled for ${c.followUpDate}.` : '';
+    return {
+      answer: stripTechnicalCodes(
+        `Boss, ${c.name} inquired about ${c.course} from ${c.country || 'India'} and is currently marked as ${c.contactStatus}${scoreNote}.${notesNote}${transcriptNote}${dueNote}`
+      ),
+      actionAdvice: 'Click Details on the candidate row for full transcript and Customer Experience actions.',
+      matchedIds,
+      recommendedFilter: 'all',
+    };
+  }
+
+  // Multiple candidates: summarized executive cohort breakdown (never a raw 3-name dump)
   return {
-    answer: stripTechnicalCodes(`Located ${matched.length} candidates matching your query: ${sampleNames}.`),
+    answer: stripTechnicalCodes(summarizeMatchedCohort(matched, 'matching enquiries')),
     actionAdvice: 'Click Details on any lead card to review complete CRM call notes and transcripts.',
     matchedIds,
     recommendedFilter: 'all',

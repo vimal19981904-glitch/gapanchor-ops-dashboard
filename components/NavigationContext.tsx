@@ -28,48 +28,20 @@ function DrawerBellPortal({ isOpen }: { isOpen: boolean }) {
   useEffect(() => {
     if (!isOpen) {
       setTargetEl(null);
-      const actionsGroup = document.getElementById('ops-nav-header-actions');
-      const closeBtn = document.querySelector('button[title="Close navigation"]');
-      if (actionsGroup && closeBtn && actionsGroup.parentElement) {
-        actionsGroup.parentElement.insertBefore(closeBtn, actionsGroup);
-        actionsGroup.remove();
-      }
       return;
     }
 
-    const attachMount = () => {
-      const closeBtn = document.querySelector('button[title="Close navigation"]') as HTMLElement | null;
-      if (!closeBtn || !closeBtn.parentElement) return false;
-
-      let actionsGroup = document.getElementById('ops-nav-header-actions');
-      let mount = document.getElementById('ops-bell-portal-mount');
-
-      if (!actionsGroup) {
-        actionsGroup = document.createElement('div');
-        actionsGroup.id = 'ops-nav-header-actions';
-        actionsGroup.className = 'flex items-center gap-2.5 sm:gap-3 shrink-0 ml-auto';
-
-        closeBtn.parentElement.insertBefore(actionsGroup, closeBtn);
-
-        mount = document.createElement('div');
-        mount.id = 'ops-bell-portal-mount';
-        mount.className = 'flex items-center shrink-0';
-
-        actionsGroup.appendChild(mount);
-        actionsGroup.appendChild(closeBtn);
-      }
-
-      if (mount) {
-        setTargetEl(mount);
-        return true;
-      }
-      return false;
-    };
-
-    if (!attachMount()) {
-      const timer = setTimeout(attachMount, 16);
-      return () => clearTimeout(timer);
+    const mount = document.getElementById('ops-bell-portal-mount');
+    if (mount) {
+      setTargetEl(mount);
+      return;
     }
+
+    const timer = setTimeout(() => {
+      const delayedMount = document.getElementById('ops-bell-portal-mount');
+      if (delayedMount) setTargetEl(delayedMount);
+    }, 16);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   if (!isOpen || !targetEl) return null;
@@ -89,7 +61,6 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       <React.Suspense fallback={null}>
         <UnauthorizedAlert />
       </React.Suspense>
-      <UnauthorizedAlert />
       <PageTransition>{children}</PageTransition>
       <NavigationDrawer isOpen={isOpen} onClose={closeNav} />
       <DrawerBellPortal isOpen={isOpen} />

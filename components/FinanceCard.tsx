@@ -147,7 +147,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
               onClick={() => setActiveTab('charts')}
               className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === 'charts'
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
               }`}
             >
@@ -157,7 +157,7 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
               onClick={() => setActiveTab('transactions')}
               className={`px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-bold rounded-full transition-all duration-300 active:scale-95 cursor-pointer ${
                 activeTab === 'transactions'
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200 dark:bg-transparent dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:text-white dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/25 dark:backdrop-blur-xl'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-white/[0.04] border border-transparent'
               }`}
             >
@@ -171,14 +171,14 @@ export default function FinanceCard({ financeData, onOpenModal, onRefresh, loadi
               <span>CSV</span>
             </button>
 
-            <button onClick={onOpenModal} className="btn-primary !py-1 sm:!py-1.5 !px-2 sm:!px-3 !text-[10.5px] sm:!text-xs">
+            <button onClick={onOpenModal} className="btn-secondary !py-1 sm:!py-1.5 !px-2 sm:!px-3 !text-[10.5px] sm:!text-xs">
               <PlusCircle size={12} className="sm:w-[13px] sm:h-[13px]" />
               <span>Add Entry</span>
             </button>
 
             <a
               href="/finance/analytics"
-              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 dark:text-white text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-sm dark:shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] border border-slate-200 dark:border-white/25 dark:bg-gradient-to-b dark:from-white/[0.18] dark:to-white/[0.06] dark:hover:from-white/[0.24] dark:hover:to-white/[0.10] backdrop-blur-xl active:scale-95 cursor-pointer"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-white dark:border-white/15 dark:hover:border-white/25 dark:shadow-none text-[10.5px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all backdrop-blur-xl active:scale-95 cursor-pointer"
               title="Open Expanded Finance Intelligence & Excel Import View"
             >
               <Maximize2 size={12} className="sm:w-[13px] sm:h-[13px]" />

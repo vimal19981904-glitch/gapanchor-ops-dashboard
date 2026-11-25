@@ -99,6 +99,10 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-surface-0 text-[var(--text-primary)] antialiased;
     font-family: var(--font-jakarta), system-ui, sans-serif;
@@ -211,7 +215,8 @@
 
   .dark .btn-primary,
   [data-theme="dark"] .btn-primary {
-    @apply bg-gradient-to-b from-white/[0.18] to-white/[0.06] border border-white/25 text-white shadow-[0_2px_10px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl hover:from-white/[0.24] hover:to-white/[0.10] hover:border-white/35;
+    background-image: none;
+    @apply border border-white/15 text-slate-200 bg-white/[0.04] backdrop-blur-xl hover:bg-white/[0.08] hover:border-white/25 hover:text-white shadow-none;
   }
 
   .btn-secondary {
@@ -229,7 +234,7 @@
 
   .dark .btn-process,
   [data-theme="dark"] .btn-process {
-    @apply bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl hover:from-white/[0.28] hover:to-white/[0.12] hover:border-white/40;
+    @apply bg-transparent bg-gradient-to-b from-white/[0.22] to-white/[0.08] border border-white/30 text-white shadow-[0_2px_12px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl hover:from-white/[0.28] hover:to-white/[0.12] hover:border-white/40;
   }
 
   /* ─── Payment Status Indicator Dots ────────────────────────── */
@@ -634,30 +639,25 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SMOOTH GENTLE LIQUID GLASS DRAWER SLIDE & BLUR ANIMATION
+   SMOOTH GENTLE LIQUID GLASS DRAWER SLIDE ANIMATION (GPU-Composited)
    ═══════════════════════════════════════════════════════════════ */
 
 @keyframes smoothDrawerSlideIn {
   0% {
-    transform: translateX(100%);
-    opacity: 0.15;
-    backdrop-filter: blur(0px);
-  }
-
-  60% {
-    opacity: 0.85;
+    transform: translate3d(100%, 0, 0);
+    opacity: 0;
   }
 
   100% {
-    transform: translateX(0%);
+    transform: translate3d(0, 0, 0);
     opacity: 1;
-    backdrop-filter: blur(24px);
   }
 }
 
 .animate-drawer-slide-in {
-  animation: smoothDrawerSlideIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-  will-change: transform, opacity, backdrop-filter;
+  animation: smoothDrawerSlideIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   border-top-left-radius: 20px !important;
   border-bottom-left-radius: 20px !important;
   border-top-right-radius: 0px !important;
@@ -668,18 +668,16 @@
 @keyframes smoothBackdropFadeIn {
   0% {
     opacity: 0;
-    backdrop-filter: blur(0px);
   }
 
   100% {
     opacity: 1;
-    backdrop-filter: blur(8px);
   }
 }
 
 .animate-fade-only {
-  animation: smoothBackdropFadeIn 0.85s ease-out forwards !important;
-  will-change: opacity, backdrop-filter;
+  animation: smoothBackdropFadeIn 0.28s ease-out forwards !important;
+  will-change: opacity;
 }
 
 /* ═══════════════════════════════════════════════════════════════
